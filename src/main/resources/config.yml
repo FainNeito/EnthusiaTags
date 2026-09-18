@@ -1,5 +1,14 @@
 config-version: 5
 
+# Display-only native advancement pilot. Claims still use /rewards.
+advancements:
+  enabled: true
+  # Paper remains a normal vanilla icon without the optional logo resource pack.
+  logo-custom-model-data: 815001
+  players-per-tick: 25
+  # Optional per-existing-reward frame overrides: TASK, GOAL or CHALLENGE.
+  frames: {}
+
 # MiniMessage format exposed to nametag consumers. `{tag}` is replaced with configured tag text.
 line-format: "<gray>[{tag}<gray>]"
 

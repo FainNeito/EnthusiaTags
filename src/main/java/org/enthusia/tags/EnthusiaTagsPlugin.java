@@ -32,6 +32,7 @@ public final class EnthusiaTagsPlugin extends JavaPlugin {
     private DailyService dailyService;
     private LoreItemRewardRuntime loreItemRewardRuntime;
     private LoreItemRewardAdmin loreItemRewardAdmin;
+    private org.enthusia.tags.advancements.NativeAdvancementController nativeAdvancements;
 
     @Override
     public void onEnable() {
@@ -82,11 +83,22 @@ public final class EnthusiaTagsPlugin extends JavaPlugin {
         Bukkit.getServicesManager().register(TagVisibilityService.class, tagService, this, ServicePriority.Normal);
         registerListeners();
         registerCommands();
+        if (getConfig().getBoolean("advancements.enabled", true)
+            && Bukkit.getPluginManager().isPluginEnabled("EnthusiaAdvancements")) {
+            try {
+                nativeAdvancements = new org.enthusia.tags.advancements.NativeAdvancementController(this, rewardService);
+            } catch (RuntimeException | LinkageError ex) {
+                getLogger().warning("Native advancement track unavailable; rewards remain accessible: " + ex.getMessage());
+            }
+        } else if (getConfig().getBoolean("advancements.enabled", true)) {
+            getLogger().warning("Install EnthusiaAdvancements pilot and UltimateAdvancementAPI 2.8.1 for the native track. /rewards remains available.");
+        }
         migrationReport.summaryLines().forEach(line -> getLogger().info("Startup summary: " + line));
     }
 
     @Override
     public void onDisable() {
+        if (nativeAdvancements != null) nativeAdvancements.close();
         Bukkit.getServicesManager().unregister(tagService);
         if (rewardTracker != null) {
             rewardTracker.stop();
@@ -160,6 +172,7 @@ public final class EnthusiaTagsPlugin extends JavaPlugin {
     private void registerListeners() {
         Bukkit.getPluginManager().registerEvents(new TagListener(tagService, rewardService), this);
         Bukkit.getPluginManager().registerEvents(new CosmeticsListener(cosmeticsService, tagService, messages, rewardService), this);
+        org.enthusia.tags.cosmetics.RoseChatPresenceHook.register(this, cosmeticsService);
         RewardsCommand rewardsCommand = new RewardsCommand(rewardService, tagService, messages, this);
         if (rewardService.isAvailable()) {
             Bukkit.getPluginManager().registerEvents(new RewardListener(rewardService, rewardsCommand.getRewardMenu()), this);

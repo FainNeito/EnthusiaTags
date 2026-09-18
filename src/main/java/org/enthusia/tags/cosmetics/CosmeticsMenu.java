@@ -65,11 +65,8 @@ public final class CosmeticsMenu {
         holder.setInventory(inventory);
 
         int slot = 0;
-        for (CosmeticDefinition cosmetic : cosmeticsService.getCosmetics().values()) {
-            if (!cosmetic.getCategory().equalsIgnoreCase(categoryId)) {
-                continue;
-            }
-            if (slot >= 54) {
+        for (CosmeticDefinition cosmetic : categoryChoices(cosmeticsService.getCosmetics().values(), categoryId)) {
+            if (slot >= 53) {
                 break;
             }
             inventory.setItem(slot++, createCosmeticItem(player, cosmetic));
@@ -80,6 +77,12 @@ public final class CosmeticsMenu {
 
     public NamespacedKey getCosmeticKey() {
         return cosmeticKey;
+    }
+
+    static List<CosmeticDefinition> categoryChoices(java.util.Collection<CosmeticDefinition> cosmetics, String category) {
+        return cosmetics.stream().filter(value -> value.getCategory().equalsIgnoreCase(category))
+            .sorted(java.util.Comparator.comparing(value -> value.getType() != CosmeticType.ORIGINAL))
+            .toList();
     }
 
     public NamespacedKey getCategoryKey() {

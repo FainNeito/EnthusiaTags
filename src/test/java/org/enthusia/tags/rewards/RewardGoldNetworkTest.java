@@ -1,0 +1,193 @@
+package org.enthusia.tags.rewards;
+
+import java.nio.file.Path;
+import java.sql.SQLException;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import org.enthusia.tags.advancements.domain.GoldRewardPolicy;
+import org.enthusia.tags.PerformanceMonitor;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import static org.junit.jupiter.api.Assertions.*;
+
+class RewardGoldNetworkTest {
+    private static final String ADDRESS = "192.0.2.10";
+    private static final RewardAction GOLD = new RewardAction("gold", RewardActionType.MONEY,
+        "", 100D, "Gold", null, 0, null, java.util.List.of(), true);
+
+    private RewardStorage open(Path directory) throws Exception {
+        RewardStorage storage = new RewardStorage(directory.resolve("rewards.db").toFile(),
+            new PerformanceMonitor(null));
+        storage.init();
+        return storage;
+    }
+
+    @Test
+    void onlyTypedGoldIsLimited() {
+        assertTrue(GoldRewardPolicy.isNetworkLimited("MONEY", null));
+        assertTrue(GoldRewardPolicy.isNetworkLimited("ITEM", "RAW_GOLD"));
+        assertTrue(GoldRewardPolicy.isNetworkLimited("ITEM", "RAW_GOLD_BLOCK"));
+        assertFalse(GoldRewardPolicy.isNetworkLimited("ITEM", "DIAMOND"));
+        assertFalse(GoldRewardPolicy.isNetworkLimited("TAG", null));
+        assertFalse(GoldRewardPolicy.isNetworkLimited("COMMAND", null));
+        assertFalse(GoldRewardPolicy.isNetworkLimited("LORE_ITEM", null));
+    }
+
+    @Test
+    void sameNetworkDenialSurvivesRestartAndAddressChange(@TempDir Path directory) throws Exception {
+        UUID main = UUID.randomUUID();
+        UUID alt = UUID.randomUUID();
+        RewardStorage storage = open(directory);
+        try {
+            assertTrue(storage.reserveGoldActionNow(main, "reward", GOLD, "fingerprint", ADDRESS));
+            assertTrue(storage.reserveGoldActionNow(main, "reward", GOLD, "fingerprint", ADDRESS));
+            assertFalse(storage.reserveGoldActionNow(alt, "reward", GOLD, "fingerprint", ADDRESS));
+            assertEquals(RewardStatus.WITHHELD_NETWORK_LIMIT,
+                storage.loadActionLedgerNow(alt, "reward").get("gold").status());
+            assertTrue(storage.loadNow(alt).claims().isEmpty(), "Gold denial must not finalize the whole reward");
+            assertTrue(storage.listIpClaimsNow(main, "reward").isEmpty(), "Must not write legacy reservations");
+            assertEquals(1, storage.listGoldIpClaimsNow(main, "reward").size());
+            assertTrue(storage.listGoldIpClaimsNow(alt, "reward").isEmpty());
+            assertTrue(storage.listKnownRewardIdsNow(main).contains("reward"));
+        } finally { storage.close(); }
+        storage = open(directory);
+        try {
+            assertFalse(storage.reserveGoldActionNow(alt, "reward", GOLD, "fingerprint", "192.0.2.99"));
+            assertEquals(1, storage.loadActionHistoryNow(alt, "reward", 10).size());
+            assertTrue(storage.listGoldIpClaimsNow(alt, "reward").isEmpty(), "Denied retries must roll back new IP reservations");
+            assertTrue(storage.reserveGoldActionNow(alt, "different_reward", GOLD, "fingerprint", ADDRESS));
+        } finally { storage.close(); }
+    }
+
+    @Test
+    void legacyEvidenceBlocksOnlyGoldAndDoesNotHonorLegacyBypass(@TempDir Path directory) throws Exception {
+        RewardStorage storage = open(directory);
+        UUID main = UUID.randomUUID();
+        UUID alt = UUID.randomUUID();
+        try {
+            storage.reserveIpClaimNow(main, "reward", ADDRESS);
+            storage.addIpBypassPairNow(main, alt);
+            var original = storage.listIpClaimsNow(main, "reward");
+            assertFalse(storage.reserveGoldActionNow(alt, "reward", GOLD, "fingerprint", ADDRESS));
+            assertEquals(original, storage.listIpClaimsNow(main, "reward"));
+            RewardAction tag = new RewardAction("tag", RewardActionType.TAG, "veteran", 0,
+                "Veteran", null, 0, null, java.util.List.of(), true);
+            storage.saveActionLedgerNow(alt, "reward", tag, "tag-fingerprint", RewardStatus.CLAIM_PENDING, null, null);
+            storage.saveActionLedgerNow(alt, "reward", tag, "tag-fingerprint", RewardStatus.CLAIMED, null, null);
+            storage.finalizeRewardNow(alt, "reward");
+            assertTrue(storage.loadNow(alt).claims().contains("reward"));
+            assertEquals(RewardStatus.CLAIMED, storage.loadActionLedgerNow(alt, "reward").get("tag").status());
+            assertEquals(RewardStatus.WITHHELD_NETWORK_LIMIT,
+                storage.loadActionLedgerNow(alt, "reward").get("gold").status());
+        } finally { storage.close(); }
+    }
+
+    @Test
+    void concurrentAccountsAcrossConnectionsHaveOneWinner(@TempDir Path directory) throws Exception {
+        RewardStorage first = open(directory);
+        RewardStorage second = open(directory);
+        try {
+            var a = CompletableFuture.supplyAsync(() -> reserve(first, UUID.randomUUID()));
+            var b = CompletableFuture.supplyAsync(() -> reserve(second, UUID.randomUUID()));
+            assertNotEquals(a.get(5, TimeUnit.SECONDS), b.get(5, TimeUnit.SECONDS));
+        } finally { first.close(); second.close(); }
+    }
+
+    private boolean reserve(RewardStorage storage, UUID player) {
+        try { return storage.reserveGoldActionNow(player, "reward", GOLD, "fingerprint", ADDRESS); }
+        catch (SQLException ex) { throw new RuntimeException(ex); }
+    }
+
+    @Test
+    void claimOrchestratorFinalizesAltInsteadOfRejectingWholeReward(@TempDir Path directory) throws Exception {
+        RewardStorage storage = open(directory);
+        UUID main = UUID.randomUUID();
+        UUID alt = UUID.randomUUID();
+        try {
+            storage.reserveIpClaimNow(main, "reward", ADDRESS);
+            RewardService service = new RewardService(null, null, null, new PerformanceMonitor(null));
+            var storageField = RewardService.class.getDeclaredField("storage");
+            storageField.setAccessible(true);
+            storageField.set(service, storage);
+            var statesField = RewardService.class.getDeclaredField("playerStates");
+            statesField.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            var states = (java.util.Map<UUID, RewardPlayerState>) statesField.get(service);
+            RewardPlayerState state = new RewardPlayerState();
+            state.hydrate(storage.loadNow(alt));
+            states.put(alt, state);
+            RewardDefinition reward = new RewardDefinition("reward", "Existing challenge", java.util.List.of(),
+                null, java.util.List.of(), java.util.List.of(GOLD), "playtime");
+            var claim = RewardService.class.getDeclaredMethod("claimInternal", UUID.class, String.class,
+                RewardDefinition.class, String.class);
+            claim.setAccessible(true);
+            assertEquals(RewardClaimResult.SUCCESS_GOLD_WITHHELD, claim.invoke(service, alt, "Alt", reward, ADDRESS));
+            assertTrue(storage.loadNow(alt).claims().contains("reward"));
+            assertEquals(RewardClaimResult.ALREADY_CLAIMED, claim.invoke(service, alt, "Alt", reward, "192.0.2.99"));
+            assertEquals(RewardStatus.WITHHELD_NETWORK_LIMIT,
+                storage.loadActionLedgerNow(alt, "reward").get("gold").status());
+        } finally { storage.close(); }
+    }
+
+    @Test
+    void allGoldComponentsShareOneAccountOwnerAndWithholdingCannotBecomePending(@TempDir Path directory) throws Exception {
+        RewardStorage storage = open(directory);
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+        RewardAction bonus = new RewardAction("bonus-gold", RewardActionType.MONEY,
+            "", 50D, "Gold bonus", null, 0, null, java.util.List.of(), true);
+        try {
+            assertTrue(storage.reserveGoldActionNow(first, "reward", GOLD, "fp", ADDRESS));
+            assertFalse(storage.reserveGoldActionNow(second, "reward", GOLD, "fp", ADDRESS));
+            assertTrue(storage.reserveGoldActionNow(first, "reward", bonus, "bonus", ADDRESS));
+            assertFalse(storage.reserveGoldActionNow(second, "reward", bonus, "bonus", ADDRESS));
+            assertThrows(SQLException.class, () -> storage.saveActionLedgerNow(second, "reward", GOLD,
+                "fp", RewardStatus.CLAIM_PENDING, null, null));
+            assertThrows(SQLException.class, () -> storage.reserveGoldActionNow(second, "reward", GOLD,
+                "changed-fingerprint", "192.0.2.99"));
+            assertThrows(SQLException.class, () -> storage.reconcileActionNow(second, "reward", "gold",
+                RewardStatus.DELIVERY_FAILED, "test retry"));
+        } finally { storage.close(); }
+    }
+
+    @Test
+    void unavailableVerificationDoesNotWritePermanentDenial(@TempDir Path directory) throws Exception {
+        RewardStorage storage = open(directory);
+        UUID player = UUID.randomUUID();
+        try {
+            assertThrows(SQLException.class, () -> storage.reserveGoldActionNow(player, "reward", GOLD, "fp", ""));
+            assertTrue(storage.loadActionLedgerNow(player, "reward").isEmpty());
+            assertTrue(storage.reserveGoldActionNow(player, "reward", GOLD, "fp", ADDRESS));
+        } finally { storage.close(); }
+        assertThrows(SQLException.class, () -> storage.reserveGoldActionNow(player, "reward", GOLD, "fp", ADDRESS));
+    }
+
+    @Test
+    void pendingAndDeliveredActionsCannotBeReservedForReplay(@TempDir Path directory) throws Exception {
+        RewardStorage storage = open(directory);
+        UUID player = UUID.randomUUID();
+        try {
+            assertTrue(storage.reserveGoldActionNow(player, "reward", GOLD, "fp", ADDRESS));
+            storage.saveActionLedgerNow(player, "reward", GOLD, "fp", RewardStatus.CLAIM_PENDING, null, null);
+            assertThrows(SQLException.class,
+                () -> storage.reserveGoldActionNow(player, "reward", GOLD, "fp", ADDRESS));
+            storage.saveActionLedgerNow(player, "reward", GOLD, "fp", RewardStatus.CLAIMED, null, null);
+            assertThrows(SQLException.class,
+                () -> storage.reserveGoldActionNow(player, "reward", GOLD, "fp", "192.0.2.99"));
+        } finally { storage.close(); }
+    }
+
+    @Test
+    void missingAddressCannotAuthorizeCurrency(@TempDir Path directory) throws Exception {
+        RewardStorage storage = new RewardStorage(directory.resolve("rewards.db").toFile(),
+            new PerformanceMonitor(null));
+        storage.init();
+        try {
+            assertThrows(SQLException.class,
+                () -> storage.reserveIpClaimNow(UUID.randomUUID(), "reward", ""));
+        } finally {
+            storage.close();
+        }
+    }
+}
