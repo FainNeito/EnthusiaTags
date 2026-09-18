@@ -1,5 +1,16 @@
 # SPEAR tasks
 
+## T-006 [TDD] Review reward and shutdown safety
+
+Status: [x] complete locally through SPEAR refine; server staging remains outstanding.
+References: REQ-016, REQ-017; implementation.md Persistence and Presentation.
+Evidence:
+- RewardService.claimInternal loads the ledger before delivery but only checks settled fingerprint conflicts inside the action loop. RewardStorage.reserveGoldActionNow rejects mismatches with SQLException; no schema change is needed.
+- NativeAdvancementController.close calls the provider before clearing state; EnthusiaTagsPlugin.onDisable calls this before other services. Retain at-most-once toast policy unchanged.
+- Existing RewardGoldNetworkTest and PresenceLifecycleTest establish org.junit.jupiter.api.Test, org.junit.jupiter.api.io.TempDir, org.junit.jupiter.api.Assertions, sun.misc.Unsafe and reflection isolation conventions. Existing Paper dependency supplies org.bukkit.Bukkit, org.bukkit.Server, org.bukkit.plugin.PluginManager, org.bukkit.plugin.java.JavaPlugin; existing pilot supplies io.github.badgersmc.advancements.pilot.ProjectionService. No new runtime dependencies or domain imports.
+- Red: ../../review-safety-red.log reports the expected GOLD_VERIFICATION_UNAVAILABLE instead of reconciliation and an escaping provider exception (11 tests, 2 failures, no errors). Green: ../../review-safety-green.log passes all 11 focused tests. Full refine: ../../review-safety-full.log passes all 140 tests with zero failures/errors/skips, including LayerRulesTest. JDK 25, offline cached dependencies and temporary Q: path alias; no production data accessed.
+- No domain changes or new implementation imports. Regression fixtures verify persistence, no gold reservation or earlier component ledger mutation, original fingerprint preservation, cleanup and repeat-close behavior. Other review findings and the original test bundle are unchanged by this task.
+
 ## T-001 [TDD] Component-scoped gold reservations and durable withholding
 
 Status: complete locally through SPEAR refine. Live staging is not yet performed.

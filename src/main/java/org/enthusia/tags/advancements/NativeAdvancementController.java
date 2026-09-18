@@ -166,9 +166,15 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         if (task != null) task.cancel();
         rewards.setAdvancementNotifications(null);
         HandlerList.unregisterAll(this);
-        if (registered && Bukkit.getPluginManager().isPluginEnabled("EnthusiaAdvancements")) projection.removeTree(plugin, "enthusia");
-        registered = false;
-        pendingCelebrations.clear();
-        queue.clear();
+        try {
+            if (registered && Bukkit.getPluginManager().isPluginEnabled("EnthusiaAdvancements"))
+                projection.removeTree(plugin, "enthusia");
+        } catch (RuntimeException ex) {
+            plugin.getLogger().warning("Native advancement tree removal failed during shutdown: " + ex.getMessage());
+        } finally {
+            registered = false;
+            pendingCelebrations.clear();
+            queue.clear();
+        }
     }
 }

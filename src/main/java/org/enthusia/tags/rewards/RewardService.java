@@ -502,6 +502,16 @@ public final class RewardService {
         }
         Map<String, RewardStorage.ActionLedgerEntry> ledger =
             storage.loadActionLedgerNow(playerId, rewardId);
+        // Validate the entire configured claim before reserving or delivering any component.
+        // A definition conflict is not a transient failure of gold/IP verification.
+        for (RewardAction action : reward.getActions()) {
+            RewardStorage.ActionLedgerEntry existing = ledger.get(action.getActionId());
+            if (existing != null && !existing.fingerprint().equals(actionFingerprint(action))) {
+                state.setOverall(rewardId, RewardStatus.REQUIRES_RECONCILIATION);
+                return persistStateBarrier(playerId, state)
+                    ? RewardClaimResult.RECONCILIATION_REQUIRED : RewardClaimResult.DELIVERY_FAILED;
+            }
+        }
         boolean unresolvedHistoricalAction = ledger.values().stream().anyMatch(entry ->
             entry.status() == RewardStatus.REQUIRES_RECONCILIATION
                 || (entry.status() == RewardStatus.CLAIM_PENDING

@@ -20,6 +20,9 @@ Users: existing and new Enthusia players, including alternate accounts; server a
 
 ## Policy interpretation for this pilot
 
+- REQ-016: IF any configured reward action conflicts with its saved fingerprint THEN THE SYSTEM SHALL persist reconciliation-required status before reserving or delivering any component.
+- REQ-017: IF the advancement provider throws during tree removal on shutdown THEN THE SYSTEM SHALL log the failure and clear controller state without interrupting remaining plugin shutdown.
+
 The existing MONEY action is the server's Vault-backed Raw Gold currency (see RewardMoneyPolicy). Explicit RAW_GOLD and RAW_GOLD_BLOCK item actions also count as gold. Arbitrary reward commands are not parsed as currency: administrators must use typed gold actions for gold payouts; otherwise commands cannot be safely classified. Existing whole-reward IP reservations are conservative evidence for gold only. No historical rewards are removed or replayed.
 
 A network-limited component is durably withheld for that account; changing IP later must not make it claimable again. Missing IP or database failure is retryable, not a permanent rejection. No implicit account whitelist exception is introduced for gold.
