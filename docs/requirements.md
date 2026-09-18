@@ -22,6 +22,18 @@ Users: existing and new Enthusia players, including alternate accounts; server a
 
 - REQ-016: IF any configured reward action conflicts with its saved fingerprint THEN THE SYSTEM SHALL persist reconciliation-required status before reserving or delivering any component.
 - REQ-017: IF the advancement provider throws during tree removal on shutdown THEN THE SYSTEM SHALL log the failure and clear controller state without interrupting remaining plugin shutdown.
+- REQ-018: WHEN RoseChat initializes on Paper year-based version strings THE SYSTEM SHALL resolve the Minecraft major and minor versions without interpreting build metadata as a number.
+- REQ-019: WHEN existing consecutive-active, underground-active or maximum-ping criteria omit an explicit counter key THE SYSTEM SHALL resolve their established stored counters without modifying challenge thresholds, rewards, claims or administrator-specified keys.
+- REQ-020: WHEN RoseChat decorates a clickable message THE SYSTEM SHALL preserve each configured click action on Adventure 4 and 5 runtimes without binary linkage errors.
+
+## Approved follow-on: Warzone Duels statistics slice
+
+REQ-014 remains the original pilot boundary; the user explicitly authorized Warzone Duels on 2026-09-18. Guild and Market advancements remain excluded.
+
+- REQ-021: WHEN the optional Warzone Duels statistics bridge is enabled THE SYSTEM SHALL append Arena Initiate (1 win), Arena Win Streak (best streak 5), and The Gladiator (50 wins) to the existing Enthusia tree using read-only persisted WarzoneDuels statistics without issuing rewards or modifying either plugin's player data.
+- REQ-022: WHEN an online player's first valid duel snapshot is observed THE SYSTEM SHALL project historical progress silently and celebrate only subsequent newly observed completions during that session.
+- REQ-023: IF duel statistics are missing, unreadable or malformed THEN THE SYSTEM SHALL retain known progress and retry without substituting zero or announcing completion.
+- REQ-024: THE SYSTEM SHALL keep the duel bridge disabled by default and perform statistics file reads off the server thread while retaining fixed advancement identifiers and keeping all guild integrations excluded.
 
 The existing MONEY action is the server's Vault-backed Raw Gold currency (see RewardMoneyPolicy). Explicit RAW_GOLD and RAW_GOLD_BLOCK item actions also count as gold. Arbitrary reward commands are not parsed as currency: administrators must use typed gold actions for gold payouts; otherwise commands cannot be safely classified. Existing whole-reward IP reservations are conservative evidence for gold only. No historical rewards are removed or replayed.
 

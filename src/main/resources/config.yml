@@ -6,6 +6,9 @@ advancements:
   # Paper remains a normal vanilla icon without the optional logo resource pack.
   logo-custom-model-data: 815001
   players-per-tick: 25
+  # Optional display-only statistics track. Requires WarzoneDuels; restart after changing.
+  # Adds 1 win, best streak 5, and 50 wins. Existing records are credited silently.
+  warzone-duels-enabled: false
   # Optional per-existing-reward frame overrides: TASK, GOAL or CHALLENGE.
   frames: {}
 

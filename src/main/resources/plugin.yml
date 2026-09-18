@@ -1,9 +1,10 @@
 name: EnthusiaTags
 main: org.enthusia.tags.EnthusiaTagsPlugin
-version: 2.2.2-pilot.1
+version: 2.2.2-pilot.2
 api-version: '26.2'
 author: Enthusia
 softdepend:
+  - WarzoneDuels
   - EnthusiaAdvancements
   - RoseChat
   - PlaceholderAPI

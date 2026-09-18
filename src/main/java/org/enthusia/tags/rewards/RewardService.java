@@ -3215,6 +3215,9 @@ public final class RewardService {
 
     private static Map<RewardCriterionType, String> defaultCounterKeys() {
         Map<RewardCriterionType, String> keys = new EnumMap<>(RewardCriterionType.class);
+        keys.put(RewardCriterionType.PLAYTIME_CONSECUTIVE_ACTIVE_MINUTES, "max_consecutive_active");
+        keys.put(RewardCriterionType.UNDERGROUND_ACTIVE_MINUTES, "underground_active");
+        keys.put(RewardCriterionType.PING_MS_AT_LEAST, "max_ping_ms");
         keys.put(RewardCriterionType.KILL_STREAK_CURRENT, "kill_streak");
         keys.put(RewardCriterionType.DEATH_STREAK_SAME, "death_streak_same");
         keys.put(RewardCriterionType.QUICK_KILL_COUNT, "quick_kill");

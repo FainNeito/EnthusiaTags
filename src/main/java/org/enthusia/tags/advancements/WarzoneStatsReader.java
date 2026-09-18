@@ -1,0 +1,31 @@
+package org.enthusia.tags.advancements;
+
+import java.util.Map;
+import java.util.UUID;
+import java.util.HashMap;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.enthusia.tags.advancements.domain.DuelMilestoneProgress;
+
+/** Strict adapter for WarzoneDuels' persisted statistics format. */
+final class WarzoneStatsReader {
+    static Map<UUID, DuelMilestoneProgress.Stats> parse(String yaml) throws Exception {
+        YamlConfiguration config = new YamlConfiguration();
+        config.loadFromString(yaml);
+        ConfigurationSection players = config.getConfigurationSection("players");
+        if (players == null) throw new IllegalArgumentException("Missing players section");
+        Map<UUID, DuelMilestoneProgress.Stats> result = new HashMap<>();
+        for (String key : players.getKeys(false)) {
+            UUID id = UUID.fromString(key);
+            if (!id.toString().equalsIgnoreCase(key)) throw new IllegalArgumentException("Invalid player UUID");
+            ConfigurationSection player = players.getConfigurationSection(key);
+            if (player == null) throw new IllegalArgumentException("Invalid player record");
+            result.put(id, new DuelMilestoneProgress.Stats(counter(player.get("wins")), counter(player.get("best-win-streak"))));
+        }
+        return Map.copyOf(result);
+    }
+    private static int counter(Object value) {
+        if (!(value instanceof Integer number) || number < 0) throw new IllegalArgumentException("Invalid or absent duel counter");
+        return number;
+    }
+}
