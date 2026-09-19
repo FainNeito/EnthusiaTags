@@ -1,0 +1,8 @@
+# Custom icon used by the Dear Diary advancement.
+# Keep this custom-model-data synchronized with EnthusiaTags config.yml.
+enthusia_diary_advancement_icon:
+  itemname: Diary
+  material: WRITABLE_BOOK
+  Pack:
+    model: enthusia:item/journal_quill
+    custom_model_data: 815002
