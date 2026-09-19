@@ -1,88 +1,75 @@
-name: Build
-
+name: EnthusiaTags verification
 on:
   push:
+    branches-ignore: ['test-jars-*']
   pull_request:
-    branches: [main]
-
+  workflow_dispatch:
 permissions:
-  checks: read
   contents: read
-  pull-requests: read
-
 concurrency:
-  group: enthusiatags-build-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: EnthusiaTags-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
+    timeout-minutes: 25
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
-
       - name: Verify exact checkout
         env:
-          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: test "$(git rev-parse HEAD)" = "${EXPECTED_HEAD}"
-
-      - uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4
+          EXPECTED: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED"
+      - uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
           cache: maven
-
-      - name: Bootstrap pinned production LoreItems release
-        shell: bash
+      - name: Validate SPEAR requirements and tooling
         run: |
-          set -o pipefail
-          bash tools/bootstrap_loreitems_release.sh 2>&1 | tee /tmp/enthusiatags-loreitems-bootstrap.log
-
-      - name: Test and package
-        shell: bash
-        run: |
-          set -o pipefail
-          mvn --batch-mode --no-transfer-progress clean test package 2>&1 | tee /tmp/enthusiatags-maven.log
-
-      - name: Preserve failure summary
-        if: failure()
-        shell: bash
-        run: |
-          if [ -f /tmp/enthusiatags-loreitems-bootstrap.log ]; then
-            {
-              echo '### LoreItems release bootstrap tail'
-              echo '```text'
-              tail -n 80 /tmp/enthusiatags-loreitems-bootstrap.log
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
-          if [ -f /tmp/enthusiatags-maven.log ]; then
-            {
-              echo '### Maven failure tail'
-              echo '```text'
-              tail -n 120 /tmp/enthusiatags-maven.log
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-      - name: Verify exact-head Codacy
-        if: github.event_name == 'pull_request' && success()
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
-        run: bash tools/check_codacy.sh
-
-      - name: Upload plugin JAR
-        if: success()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+          node tools/spear/ears.mjs docs/requirements.md
+          node --test tools/spear/*.test.mjs
+      - name: Bootstrap checksum-verified LoreItems release
+        run: bash tools/bootstrap_loreitems_release.sh
+      - name: Build pinned companion renderer and fetch presence contract
+        run: python3 tools/ci/bootstrap_companions.py
+      - name: Clean build and verification
+        run: mvn -B -ntp clean verify
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: EnthusiaTags-${{ github.event.pull_request.head.sha || github.sha }}
-          path: target/EnthusiaTags.jar
+          name: EnthusiaTags-test-reports-${{ github.event.pull_request.head.sha || github.sha }}
+          path: target/surefire-reports/
           if-no-files-found: error
           retention-days: 14
+      - name: Upload verified testing artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: EnthusiaTags-test-jar-${{ github.event.pull_request.head.sha || github.sha }}
+          path: target/*.jar
+          if-no-files-found: error
+          retention-days: 14
+
+  codacy-gate:
+    if: github.event_name == 'pull_request'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      checks: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Require a successful exact-head Codacy result
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+          PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bash tools/check_codacy.sh

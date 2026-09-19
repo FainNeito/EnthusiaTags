@@ -63,3 +63,11 @@ The user explicitly authorized the remaining non-guild WarzoneDuels advancement 
 - REQ-036: THE SYSTEM SHALL treat +10 and +20 as the overall positive milestones, -10 and -25 as the overall negative milestones, and recovery from -12-or-lower back to zero-or-higher as Redemption Arc.
 - REQ-037: WHEN historical reputation evidence is first observed for a session THE SYSTEM SHALL restore completed reputation advancements silently and celebrate only later newly observed completions once.
 - REQ-038: IF reputation evidence is missing, unreadable or malformed THE SYSTEM SHALL retain known session progress and retry rather than substituting zero or inferring historical category peaks.
+
+## PR cleanup safety and verification
+
+- REQ-901: WHEN a live completion is observed THE SYSTEM SHALL recognize its transition once while retaining unacknowledged live evidence across retryable persistence failures.
+- REQ-902: IF the renderer rejects a pending celebration THEN THE SYSTEM SHALL retain that pending work for a later attempt.
+- REQ-903: WHEN RoseChat enables after Tags THE SYSTEM SHALL install its per-viewer presence binding once while preserving RoseChat audience restrictions and defaults when the API is unavailable.
+- REQ-904: WHEN repeated playtime unit tokens are parsed THE SYSTEM SHALL count every occurrence with checked arithmetic and combine seconds before rounding.
+- REQ-905: WHEN local workflow tooling reads or modifies task state THE SYSTEM SHALL reject malformed state, serialize concurrent operations, enforce required evidence, and replace files atomically.

@@ -203,17 +203,11 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                     if (!update.celebrate().isEmpty()) pendingCelebrations
                         .computeIfAbsent(player.getUniqueId(), ignored -> new HashSet<>()).addAll(update.celebrate());
                 }
-                projection.project("enthusia", player, progress);
+                projection.project(plugin, "enthusia", player, progress);
                 Set<String> pending = pendingCelebrations.get(player.getUniqueId());
                 if (pending == null) continue;
-                var iterator = pending.iterator();
-                while (iterator.hasNext()) {
-                    String key = iterator.next();
-                    if (progress.getOrDefault(key, -1) != 1000) continue;
-                    // Consume before sending: retries must not replay a partially sent announcement.
-                    iterator.remove();
-                    projection.celebrate("enthusia", player, key);
-                }
+                org.enthusia.tags.advancements.domain.PendingCelebrations.deliver(
+                    pending, progress, key -> projection.celebrate(plugin, "enthusia", player, key));
                 if (pending.isEmpty()) pendingCelebrations.remove(player.getUniqueId());
             }
         } catch (RuntimeException ex) {
