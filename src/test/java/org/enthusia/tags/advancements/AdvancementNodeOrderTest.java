@@ -43,7 +43,7 @@ class AdvancementNodeOrderTest {
         nodes.addAll(WarzoneAdvancementBridge.nodes(29));
         nodes.addAll(CommendAdvancementBridge.nodes(35));
         nodes.addAll(ExpressAdvancementBridge.nodes(42));
-        nodes.addAll(DiaryAdvancementBridge.nodes(49));
+        nodes.addAll(DiaryAdvancementBridge.nodes(49, 815002));
         Collections.reverse(nodes);
 
         var ordered = AdvancementNodeOrder.parentFirst(nodes);

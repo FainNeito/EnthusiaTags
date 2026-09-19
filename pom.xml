@@ -33,7 +33,7 @@
         <dependency>
             <groupId>io.github.badgersmc</groupId>
             <artifactId>EnthusiaAdvancements-pilot</artifactId>
-            <version>1.0.0-pilot.1</version>
+            <version>1.0.0-pilot.2</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

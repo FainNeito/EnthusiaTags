@@ -48,12 +48,14 @@ class DiaryBridgeTest {
         assertEquals(live.progress(), bridge.observe(player).progress());
     }
     @Test void nodesUseTheDiaryBranchesAndHaveNoRewards() {
-        var nodes = DiaryAdvancementBridge.nodes(49);
+        var nodes = DiaryAdvancementBridge.nodes(49, 815002);
         assertEquals(8, nodes.size());
         var byKey = nodes.stream().collect(
             java.util.stream.Collectors.toMap(node -> node.key(), node -> node));
 
         assertEquals("Dear Diary...", byKey.get("diary/dear_diary").title());
+        assertEquals(org.bukkit.Material.WRITABLE_BOOK, byKey.get("diary/dear_diary").icon());
+        assertEquals(815002, byKey.get("diary/dear_diary").customModelData());
         assertEquals("diary/dear_diary", byKey.get("diary/first_entry").parentKey());
         assertEquals("diary/first_entry", byKey.get("diary/prolific_writer").parentKey());
         assertEquals("diary/indestructible", byKey.get("diary/stubborn").parentKey());
@@ -66,6 +68,22 @@ class DiaryBridgeTest {
             assertTrue(node.description().stream().anyMatch(s -> s.contains("Rewards: None")));
         }
     }
+    @Test void customDiaryIconAssetsMatchConfiguredModelData() throws Exception {
+        Path root = Path.of("resourcepack/diary-icon");
+        String nexo = Files.readString(root.resolve("enthusia_diary_advancement_icon.yml"));
+        String model = Files.readString(root.resolve(
+            "external_pack/assets/enthusia/models/item/journal_quill.json"));
+        byte[] texture = Files.readAllBytes(root.resolve(
+            "external_pack/assets/enthusia/textures/item/journal_quill.png"));
+
+        assertTrue(nexo.contains("material: WRITABLE_BOOK"));
+        assertTrue(nexo.contains("custom_model_data: 815002"));
+        assertTrue(nexo.contains("model: enthusia:item/journal_quill"));
+        assertTrue(model.contains("\"layer0\": \"enthusia:item/journal_quill\""));
+        assertTrue(texture.length > 8);
+        assertArrayEquals(new byte[]{(byte) 0x89, 'P', 'N', 'G'}, java.util.Arrays.copyOf(texture, 4));
+    }
+
     @Test void nativeWiringIsOptionalAsyncAndSoftDependent() throws Exception {
         String config = Files.readString(Path.of("src/main/resources/config.yml"));
         String plugin = Files.readString(Path.of("src/main/resources/plugin.yml"));
@@ -73,6 +91,7 @@ class DiaryBridgeTest {
             "src/main/java/org/enthusia/tags/advancements/NativeAdvancementController.java"));
 
         assertTrue(config.contains("diary-enabled: true"));
+        assertTrue(config.contains("diary-icon-custom-model-data: 815002"));
         assertTrue(plugin.contains("- DiaryKeeper"));
         assertTrue(source.contains("getPlugin(\"DiaryKeeper\")"));
         assertTrue(source.contains("DiaryAdvancementBridge"));
