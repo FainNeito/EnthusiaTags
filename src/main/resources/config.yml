@@ -15,6 +15,9 @@ advancements:
   # Display-only EnthusiaExpress history track. Enabled when EnthusiaExpress is available.
   # Reads mail.db off-thread in read-only mode; historical rows are credited silently.
   express-enabled: true
+  # Display-only DiaryKeeper track. Requires the advancement-evidence DiaryKeeper build.
+  # Existing issuance is credited silently; new diary actions persist provider-owned evidence.
+  diary-enabled: true
   # Optional per-existing-reward frame overrides: TASK, GOAL or CHALLENGE.
   frames: {}
 

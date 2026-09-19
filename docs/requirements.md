@@ -73,3 +73,11 @@ The user explicitly authorized the remaining non-guild WarzoneDuels advancement 
 - REQ-043: WHEN historical mail rows are first observed in a player session THE SYSTEM SHALL restore completed Express advancements silently and celebrate only later threshold crossings once.
 - REQ-044: IF mail.db is unavailable, malformed or temporarily unreadable THE SYSTEM SHALL retain known session progress and retry rather than substituting zero.
 - REQ-045: THE SYSTEM SHALL read EnthusiaExpress SQLite history off the server thread and SHALL use a read-only connection, including compatibility with legacy rows that predate delivery_pending.
+
+## Approved follow-on: DiaryKeeper advancements
+
+- REQ-046: WHEN DiaryKeeper is available THE SYSTEM SHALL append Dear Diary, First Entry, Prolific Writer, Signed Sealed Delivered, Indestructible, Stubborn, Void Walker, Nice Try and Finders Keepers using provider-owned persisted evidence without paying rewards.
+- REQ-047: THE SYSTEM SHALL require one diary edit for First Entry, 25 edits for Prolific Writer, one destruction attempt for Indestructible, 10 destruction attempts for Stubborn, and one matching provider event for each remaining diary action milestone.
+- REQ-048: WHEN upgrading legacy DiaryKeeper data THE SYSTEM SHALL credit Dear Diary from a persisted issuance timestamp while leaving unprovable historical edit, signing, destruction, void-return, container-attempt and pickup counters at zero.
+- REQ-049: WHEN historical diary evidence is first observed in a player session THE SYSTEM SHALL restore completed diary advancements silently and celebrate only later newly observed completions once.
+- REQ-050: IF DiaryKeeper evidence is missing, unreadable or malformed THE SYSTEM SHALL retain known session progress and retry rather than substituting zero or inventing history.

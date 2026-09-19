@@ -41,9 +41,11 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
     private BukkitTask duelTask;
     private BukkitTask commendTask;
     private BukkitTask expressTask;
+    private BukkitTask diaryTask;
     private WarzoneAdvancementBridge duels;
     private CommendAdvancementBridge commend;
     private ExpressAdvancementBridge express;
+    private DiaryAdvancementBridge diary;
     private long nextWarning;
     private boolean registered;
 
@@ -72,6 +74,13 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                 express = new ExpressAdvancementBridge(provider.getDataFolder().toPath().resolve("mail.db"));
                 Bukkit.getOnlinePlayers().forEach(player -> express.beginSession(player.getUniqueId()));
             } else plugin.getLogger().warning("EnthusiaExpress advancements requested but EnthusiaExpress is unavailable; bridge disabled.");
+        }
+        if (plugin.getConfig().getBoolean("advancements.diary-enabled", true)) {
+            var provider = Bukkit.getPluginManager().getPlugin("DiaryKeeper");
+            if (provider != null && provider.isEnabled()) {
+                diary = new DiaryAdvancementBridge(provider.getDataFolder().toPath().resolve("diaries.yml"));
+                Bukkit.getOnlinePlayers().forEach(player -> diary.beginSession(player.getUniqueId()));
+            } else plugin.getLogger().warning("DiaryKeeper advancements requested but DiaryKeeper is unavailable; bridge disabled.");
         }
         rebuild();
         if (duels != null) duelTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, new Runnable() {
@@ -107,6 +116,19 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                     if (System.currentTimeMillis() >= warningAfter) {
                         warningAfter = System.currentTimeMillis() + 60000;
                         plugin.getLogger().warning("EnthusiaExpress mail history unavailable; retaining known advancement progress: "
+                            + ex.getMessage());
+                    }
+                }
+            }
+        }, 20L, 100L);
+        if (diary != null) diaryTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, new Runnable() {
+            private long warningAfter;
+            @Override public void run() {
+                try { diary.refresh(); }
+                catch (Exception ex) {
+                    if (System.currentTimeMillis() >= warningAfter) {
+                        warningAfter = System.currentTimeMillis() + 60000;
+                        plugin.getLogger().warning("DiaryKeeper advancement evidence unavailable; retaining known progress: "
                             + ex.getMessage());
                     }
                 }
@@ -156,6 +178,11 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         if (express != null) {
             nodes.addAll(ExpressAdvancementBridge.nodes(
                 AdvancementLayout.expressBaseY(row, duels != null, commend != null)));
+        }
+        if (diary != null) {
+            nodes.addAll(DiaryAdvancementBridge.nodes(
+                AdvancementLayout.diaryBaseY(
+                    row, duels != null, commend != null, express != null)));
         }
         ItemStack icon = new ItemStack(Material.PAPER);
         var meta = icon.getItemMeta();
@@ -235,6 +262,12 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                     if (!update.celebrate().isEmpty()) pendingCelebrations
                         .computeIfAbsent(player.getUniqueId(), ignored -> new HashSet<>()).addAll(update.celebrate());
                 }
+                if (diary != null) {
+                    var update = diary.observe(player.getUniqueId());
+                    progress.putAll(update.progress());
+                    if (!update.celebrate().isEmpty()) pendingCelebrations
+                        .computeIfAbsent(player.getUniqueId(), ignored -> new HashSet<>()).addAll(update.celebrate());
+                }
                 projection.project("enthusia", player, progress);
                 Set<String> pending = pendingCelebrations.get(player.getUniqueId());
                 if (pending == null) continue;
@@ -260,6 +293,7 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         if (duels != null) duels.beginSession(id);
         if (commend != null) commend.beginSession(id);
         if (express != null) express.beginSession(id);
+        if (diary != null) diary.beginSession(id);
     }
     @EventHandler public void onQuit(PlayerQuitEvent event) {
         UUID id = event.getPlayer().getUniqueId();
@@ -267,6 +301,7 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         if (duels != null) duels.forget(id);
         if (commend != null) commend.forget(id);
         if (express != null) express.forget(id);
+        if (diary != null) diary.forget(id);
         queue.removeIf(id::equals);
     }
     @Override public void close() {
@@ -274,6 +309,7 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         if (duelTask != null) duelTask.cancel();
         if (commendTask != null) commendTask.cancel();
         if (expressTask != null) expressTask.cancel();
+        if (diaryTask != null) diaryTask.cancel();
         rewards.setAdvancementNotifications(null);
         HandlerList.unregisterAll(this);
         try {

@@ -220,3 +220,10 @@ Status: complete locally through verification; live test-server acceptance pendi
 References: REQ-039 through REQ-045; implementation.md Presentation.
 Acceptance: eleven display-only Express advancements use persisted mail history, historical completion is silent, live crossings celebrate once, failed reads retain known progress, SQLite is opened read-only off-thread, pending claims are not counted as delivered, and no provider writes or advancement rewards occur.
 Evidence: ExpressProgressTest, ExpressStatsReaderTest, ExpressBridgeTest, AdvancementNodeOrderTest and AdvancementLayoutTest pass 16 focused tests with zero failures/errors/skips. Historical package/letter sends, packed-item maxima, successful claims, read letters and returned-package collection are derived from existing mail rows; no EnthusiaExpress provider modification is required. Live staging exposed that shade minimization removed the reflectively loaded relocated SQLite driver; ExpressStatsReader now carries a direct JDBC class reference and the verify phase asserts that org/enthusia/tags/libs/sqlite/JDBC.class exists in the shaded artifact. EnthusiaTags clean verify passes 191 tests with zero failures/errors/skips and packages the shaded test JAR.
+
+## T-015 [TDD] DiaryKeeper advancement track
+
+Status: complete locally through verification; live test-server acceptance pending.
+References: REQ-046 through REQ-050; implementation.md Presentation.
+Acceptance: nine display-only diary advancements use durable DiaryKeeper evidence, legacy issuance receives only provable historical credit, live crossings celebrate once, failed reads retain known progress, and no advancement rewards are introduced.
+Evidence: DiaryKeeper 1.0.1 provider changes persist edit/sign/destruction/void/container/pickup evidence in diaries.yml and seed received from existing issuance; its clean verify passes 6 tests. DiaryProgressTest, DiaryStatsReaderTest, DiaryBridgeTest, AdvancementNodeOrderTest and AdvancementLayoutTest pass 17 focused consumer tests. EnthusiaTags clean verify passes 202 tests with zero failures/errors/skips.

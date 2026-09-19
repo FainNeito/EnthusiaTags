@@ -53,6 +53,24 @@ final class AdvancementLayout {
         return naturalBase;
     }
 
+    static int diaryBaseY(
+        int categoryCount,
+        boolean hasWarzone,
+        boolean hasReputation,
+        boolean hasExpress
+    ) {
+        if (hasExpress) {
+            return expressBaseY(categoryCount, hasWarzone, hasReputation) + 7;
+        }
+        if (hasReputation) {
+            return reputationBaseY(categoryCount, hasWarzone) + 7;
+        }
+        if (hasWarzone) {
+            return warzoneBaseY(categoryCount) + 6;
+        }
+        return Math.max(WARZONE_BASE_Y, categoryCount * 4 + 1);
+    }
+
     private static Map<String, Placement> build() {
         Map<String, Placement> map = new HashMap<>();
 
