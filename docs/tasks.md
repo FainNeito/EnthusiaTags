@@ -60,7 +60,7 @@ Evidence:
 - RewardService.claimInternal loads the ledger before delivery but only checks settled fingerprint conflicts inside the action loop. RewardStorage.reserveGoldActionNow rejects mismatches with SQLException; no schema change is needed.
 - NativeAdvancementController.close calls the provider before clearing state; EnthusiaTagsPlugin.onDisable calls this before other services. Retain at-most-once toast policy unchanged.
 - Existing RewardGoldNetworkTest and PresenceLifecycleTest establish org.junit.jupiter.api.Test, org.junit.jupiter.api.io.TempDir, org.junit.jupiter.api.Assertions, sun.misc.Unsafe and reflection isolation conventions. Existing Paper dependency supplies org.bukkit.Bukkit, org.bukkit.Server, org.bukkit.plugin.PluginManager, org.bukkit.plugin.java.JavaPlugin; existing pilot supplies io.github.badgersmc.advancements.pilot.ProjectionService. No new runtime dependencies or domain imports.
-- Red: ../../review-safety-red.log reports the expected GOLD_VERIFICATION_UNAVAILABLE instead of reconciliation and an escaping provider exception (11 tests, 2 failures, no errors). Green: ../../review-safety-green.log passes all 11 focused tests. Full refine: ../../review-safety-full.log passes all 140 tests with zero failures/errors/skips, including LayerRulesTest. JDK 25, offline cached dependencies and temporary Q: path alias; no production data accessed.
+- Red: ../../review-safety-red.log reports the expected GOLD_VERIFICATION_UNAVAILABLE instead of reconciliation and an escaping provider exception (11 tests, 2 failures, no errors). Green: ../../review-safety-green.log passes all 11 focused tests. Full refine: ../../review-safety-full.log passes 140 Tags-only tests (later than T-005; not the three-project aggregate) with zero failures/errors/skips, including LayerRulesTest. JDK 25, offline cached dependencies and temporary Q: path alias; no production data accessed.
 - No domain changes or new implementation imports. Regression fixtures verify persistence, no gold reservation or earlier component ledger mutation, original fingerprint preservation, cleanup and repeat-close behavior. Other review findings and the original test bundle are unchanged by this task.
 
 ## T-001 [TDD] Component-scoped gold reservations and durable withholding
@@ -206,3 +206,16 @@ Status: complete locally; live client visual acceptance pending.
 References: REQ-033; implementation.md Presentation.
 Acceptance: every bundled reward has a fixed non-overlapping coordinate, category paths branch instead of forming long rows, Warzone Duels forms three sub-branches, unknown future rewards retain a deterministic fallback, and no requirements/reward logic changes.
 Evidence: AdvancementLayoutTest covers all bundled reward IDs, coordinate uniqueness, representative parents/bounds, and fallback behavior. WarzoneBridgeTest covers the three-way duel layout. A live test-server startup exposed that the projection API requires parent definitions before their children; AdvancementNodeOrder now topologically orders the full projected graph before registration. Focused layout/order tests pass 12 tests with zero failures/errors/skips; full clean verify passes 167 tests with zero failures/errors/skips and packages the shaded test JAR.
+
+## T-900 [TDD] PR-review correctness and verification cleanup
+
+Status: locally verified; hosted validation pending the updated head.
+References: REQ-901 through REQ-905; implementation.md Presentation, Presence integration, Verification.
+Evidence:
+- Rechecked original CodeRabbit findings against the foundation branch rather than assuming later branches contain the fixes.
+- ReviewRegressionTest initially failed all three cases: repeated hour/minute tokens, combined seconds, and a consumed completion transition. The implementation now passes them; NotificationRetryTest separately verifies failed-delivery retention and persistence retry classification.
+- RoseChatLateBindingTest exercises late enable, duplicate enable, and disable/re-enable using the actual event-registration boundary. Original selection is now explicitly selected in the companion-source test. RoseChat presence ownership continues to suppress Bukkit fallback whenever RoseChat is enabled, because broadcasting a fallback without the per-viewer hook would bypass its audience rules.
+- Renderer API now requires the registered plugin owner. Bootstrap pins the renderer commit/version and checksums the exact RoseChat API source.
+- Eight Node tooling regression tests cover malformed/missing clauses, inline requirements, state shape, shared-lock exclusion, evidence gating, failed atomic rename, concurrent transitions, and Bash delegation. Regression failures were reproduced against the original helpers; the final run passes eight tests.
+- Java 25 clean verify passes 146 Tags tests (zero failures/errors/skips), separately from seven companion-renderer tests and eight Node tests. Generated reduced POM is excluded from this change.
+- Hosted CI checks the exact head, builds pinned companions, and keeps Codacy as a separate strict gate. Absence of a Codacy result remains a failure, not a skipped approval.

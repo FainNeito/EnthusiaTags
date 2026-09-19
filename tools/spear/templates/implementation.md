@@ -89,3 +89,9 @@ Tasks whose full briefing exceeds ~1500 tokens are decomposed further by `/spear
 
 - Per-component code-level docs — owned by each component's own `README.md` or KDoc/JSDoc.
 - CI configuration — owned by `tech-stack.md` §CI and the workflow file itself.
+
+## Architecture test selection
+
+Use LayerRulesTest.java with the existing JUnit harness for Java-only projects.
+Use LayerRulesTest.kt only when Kotlin compilation and Konsist are already declared by the project.
+Do not add an unconfigured Kotlin source or a new framework dependency to a Java-only project.

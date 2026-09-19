@@ -16,7 +16,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class RoseChatPresenceIntegrationTest {
     @Test
     void actualRoseChatContractReplacesOnceAndOriginalLeavesDefaultsIntact(@TempDir Path output) throws Exception {
-        Path source = Path.of("../Enthusia-RoseChat/src/main/java/dev/rosewood/rosechat/api/event/PresenceMessageEvent.java");
+        Path source = Path.of(System.getProperty("rosechat.contract.source",
+            "../Enthusia-RoseChat/src/main/java/dev/rosewood/rosechat/api/event/PresenceMessageEvent.java"));
         assertTrue(java.nio.file.Files.exists(source), "RoseChat needs an explicit per-viewer replacement contract");
         int result = ToolProvider.getSystemJavaCompiler().run(null, null, null,
             "-classpath", System.getProperty("java.class.path"), "-d", output.toString(), source.toString());
@@ -45,7 +46,9 @@ class RoseChatPresenceIntegrationTest {
             apply.invoke(null, cancelled, service);
             assertEquals(List.of("default"), type.getMethod("getLines").invoke(cancelled));
 
-            PresenceLifecycleTest.selections(service).get(id).clear();
+            service.getCosmetics().put("original_quit", new CosmeticDefinition("original_quit", "Original", "quit",
+                CosmeticType.ORIGINAL, null, null, null, null, "MUST NOT REPLACE", "test", 0, 0, 0, 0));
+            PresenceLifecycleTest.selections(service).get(id).put("quit", "original_quit");
             Event original = (Event) constructor.newInstance(subject, viewer, "quit", List.of("default1", "default2"));
             apply.invoke(null, original, service);
             assertEquals(List.of("default1", "default2"), type.getMethod("getLines").invoke(original));

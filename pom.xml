@@ -9,9 +9,9 @@
     <version>2.2.2-pilot.2</version>
 
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <rosechat.contract.source>${project.basedir}/.ci-deps/rosechat/PresenceMessageEvent.java</rosechat.contract.source>
         <loreitems.release.version>1.0.0</loreitems.release.version>
         <loreitems.release.url>https://github.com/wsg138/EnthusiaLoreItems/releases/download/v1.0.0/EnthusiaLoreItems.jar</loreitems.release.url>
         <loreitems.release.sha256>7c862b0ae545d710a33267ad6e19a4ae26d97323e97f40707c1475c9f9ba7063</loreitems.release.sha256>
@@ -33,7 +33,7 @@
         <dependency>
             <groupId>io.github.badgersmc</groupId>
             <artifactId>EnthusiaAdvancements-pilot</artifactId>
-            <version>1.0.0-pilot.1</version>
+            <version>1.0.0-pilot.4</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -71,11 +71,13 @@
             <version>5.11.4</version>
             <scope>test</scope>
         </dependency>
+        <dependency><groupId>org.mockito</groupId><artifactId>mockito-core</artifactId><version>5.20.0</version><scope>test</scope></dependency>
     </dependencies>
 
     <build>
         <finalName>EnthusiaTags</finalName>
         <plugins>
+            <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.13.0</version></plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
@@ -108,6 +110,7 @@
                 <version>3.5.2</version>
                 <configuration>
                     <systemPropertyVariables>
+                        <rosechat.contract.source>${rosechat.contract.source}</rosechat.contract.source>
                         <loreitems.release.jar>${loreitems.release.jar}</loreitems.release.jar>
                         <loreitems.release.sha256>${loreitems.release.sha256}</loreitems.release.sha256>
                     </systemPropertyVariables>
