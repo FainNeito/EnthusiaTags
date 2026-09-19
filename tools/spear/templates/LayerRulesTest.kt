@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 /**
  * SPEAR layer-rule enforcement.
  *
- * Emitted by `/spear:init` on JVM projects (REQ-065). Mirrors the
+ * Emitted only for Kotlin projects that already declare Konsist (REQ-065). Mirrors the
  * three-layer hexagonal discipline SPEAR enforces: domain depends on
  * nothing, application depends only on domain, infrastructure is
  * unconstrained.

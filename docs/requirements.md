@@ -82,3 +82,11 @@ The user explicitly authorized the remaining non-guild WarzoneDuels advancement 
 - REQ-049: WHEN historical diary evidence is first observed in a player session THE SYSTEM SHALL restore completed diary advancements silently and celebrate only later newly observed completions once.
 - REQ-050: IF DiaryKeeper evidence is missing, unreadable or malformed THE SYSTEM SHALL retain known session progress and retry rather than substituting zero or inventing history.
 - REQ-051: WHEN the DiaryKeeper branch is rendered THE SYSTEM SHALL use the supplied journal-and-quill artwork as the Dear Diary advancement icon through PAPER custom-model-data 815002, matching the same Nexo/PAPER mapping path already proven by the Enthusia advancement tab logo.
+
+## PR cleanup safety and verification
+
+- REQ-901: WHEN a live completion is observed THE SYSTEM SHALL recognize its transition once while retaining unacknowledged live evidence across retryable persistence failures.
+- REQ-902: IF the renderer rejects a pending celebration THEN THE SYSTEM SHALL retain that pending work for a later attempt.
+- REQ-903: WHEN RoseChat enables after Tags THE SYSTEM SHALL install its per-viewer presence binding once while preserving RoseChat audience restrictions and defaults when the API is unavailable.
+- REQ-904: WHEN repeated playtime unit tokens are parsed THE SYSTEM SHALL count every occurrence with checked arithmetic and combine seconds before rounding.
+- REQ-905: WHEN local workflow tooling reads or modifies task state THE SYSTEM SHALL reject malformed state, serialize concurrent operations, enforce required evidence, and replace files atomically.

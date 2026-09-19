@@ -46,5 +46,5 @@ Each requirement carries a stable ID. Tasks reference requirements by ID. New re
 ## Authoring rules
 
 1. Every REQ has a single ID, a heading, and exactly one EARS-formatted sentence under a **pattern label** (Ubiquitous / Event-driven / State-driven / Unwanted / Optional).
-2. Use `/spear:spec` to add or revise REQ entries — it runs the EARS validator (`plugins/spear/hooks/lib/ears.mjs`) and assigns the next free ID.
+2. Use `/spear:spec` to add or revise REQ entries — it runs the EARS validator (`tools/spear/ears.mjs`) and assigns the next free ID.
 3. Never reuse an ID. When a requirement is obsolete, strike it through and note the deprecation date; do not renumber.
