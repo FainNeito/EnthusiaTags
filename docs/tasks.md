@@ -186,3 +186,16 @@ Evidence:
 - Exact staged plugin descriptors and publisher checksum were inspected in T-004. Latest clean tests total 153 across Tags (138), pilot renderer (3) and RoseChat (12). No real-server/client or 26.3 validation is implied. Full Kotlin/Nexus EnthusiaAdvancements is explicitly distinguished from the isolated pilot module.
 - SPEAR was followed for each implementation slice. Per user instruction, no commit/push/PR/release/deployment step is performed.
 - Final cross-check: Tags full test suite rerun (`../../tags-docs-final-test.log`) passed all 138 tests. Final ZIP entries were checked against every SHA256 manifest entry; all matched. Generated Maven reduced POM was restored to its pre-build tracked content. Remaining checks are explicitly user-run server/client staging, not missing implementation tasks.
+
+## T-011 [TDD] Remaining non-guild WarzoneDuels event advancements
+
+Status: complete locally through verification; live test-server acceptance remains pending.
+References: REQ-025 through REQ-032; implementation.md Warzone Duels statistics bridge.
+Evidence:
+
+- WarzoneDuels 1.0.3 now persists provider-owned counters for valid challenges sent, successful spoils withdrawals, mutual draws, challenger custom-rules wins, restricted-mobility wins, and low-health wins.
+- Gameplay boundaries are wired in DuelService, SpoilsService, StatsService and DuelAdvancementPolicy; guild-war and spectator-betting achievements remain excluded.
+- WarzoneDuels full verify passes 76 tests with zero failures/errors/skips.
+- EnthusiaTags projects nine WarzoneDuels nodes total, preserves the existing three stable IDs, reads new evidence fields read-only, treats legacy provider rows as zero evidence for new achievements, restores history silently and celebrates only new threshold crossings.
+- Focused EnthusiaTags Warzone tests pass 16 tests; full clean verify passes 159 tests with zero failures/errors/skips.
+- No advancement rewards are paid by this bridge. Test-server deployment and live toast/claim behavior remain staging checks.

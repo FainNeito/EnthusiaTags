@@ -38,3 +38,16 @@ REQ-014 remains the original pilot boundary; the user explicitly authorized Warz
 The existing MONEY action is the server's Vault-backed Raw Gold currency (see RewardMoneyPolicy). Explicit RAW_GOLD and RAW_GOLD_BLOCK item actions also count as gold. Arbitrary reward commands are not parsed as currency: administrators must use typed gold actions for gold payouts; otherwise commands cannot be safely classified. Existing whole-reward IP reservations are conservative evidence for gold only. No historical rewards are removed or replayed.
 
 A network-limited component is durably withheld for that account; changing IP later must not make it claimable again. Missing IP or database failure is retryable, not a permanent rejection. No implicit account whitelist exception is introduced for gold.
+
+## Approved follow-on: Warzone Duels event-backed achievements
+
+The user explicitly authorized the remaining non-guild WarzoneDuels advancement roadmap on 2026-09-18. Guild-war/champion integration remains excluded. Betting achievements remain deferred because the current WarzoneDuels repository has participant wagers but no spectator-betting subsystem.
+
+- REQ-025: WHEN a player sends a valid Warzone Duel challenge THE SYSTEM SHALL complete Welcome to the Thunderdome from a provider-owned durable achievement counter.
+- REQ-026: WHEN a duel winner successfully withdraws at least one captured spoils item THE SYSTEM SHALL complete To the Victor Go the Spoils from a provider-owned durable achievement counter.
+- REQ-027: WHEN every surviving participant agrees to a draw THE SYSTEM SHALL complete A Price for Peace for those agreeing participants from provider-owned durable achievement counters.
+- REQ-028: WHEN a one-versus-one challenger wins a duel using a non-default ruleset THE SYSTEM SHALL complete My House, My Rules for that challenger from a provider-owned durable achievement counter.
+- REQ-029: WHEN a player wins a duel with both Ender Pearls and Wind Charges disabled THE SYSTEM SHALL complete Adapt and Overcome from a provider-owned durable achievement counter.
+- REQ-030: WHEN a player wins a one-versus-one kill result with less than four health points remaining THE SYSTEM SHALL complete Not Even Close from a provider-owned durable achievement counter.
+- REQ-031: THE SYSTEM SHALL project provider-owned WarzoneDuels achievement counters into the Enthusia advancement tree with silent historical reconciliation, live one-time celebration, off-thread reads, monotonic session progress and no reward payout.
+- REQ-032: THE SYSTEM SHALL leave Champion of the Realm, Place Your Bets, Eye for Talent, High Roller and the proposed hidden duel achievements unimplemented until their required guild-war, spectator-betting or missing durable provider evidence is separately approved and available.

@@ -46,13 +46,19 @@ class WarzoneBridgeTest {
     }
     @Test void nodesAreDistinctFromTagsAndHaveRequirementsAndNoInventedRewards() {
         var nodes = WarzoneAdvancementBridge.nodes(8);
-        assertEquals(3, nodes.size());
-        assertEquals("Arena Initiate", nodes.get(0).title());
-        assertEquals("warzone_duels/first_blood", nodes.get(0).key());
-        assertEquals("Arena Win Streak", nodes.get(1).title());
-        assertEquals("warzone_duels/unstoppable", nodes.get(1).key());
-        assertEquals("The Gladiator", nodes.get(2).title());
-        assertEquals(3, nodes.stream().map(n -> n.key()).distinct().count());
+        assertEquals(9, nodes.size());
+        assertEquals("Welcome to the Thunderdome", nodes.get(0).title());
+        assertEquals("warzone_duels/welcome_to_thunderdome", nodes.get(0).key());
+        assertEquals("Arena Initiate", nodes.get(1).title());
+        assertEquals("warzone_duels/first_blood", nodes.get(1).key());
+        assertEquals("To the Victor Go the Spoils", nodes.get(2).title());
+        assertEquals("A Price for Peace", nodes.get(3).title());
+        assertEquals("My House, My Rules", nodes.get(4).title());
+        assertEquals("Adapt and Overcome", nodes.get(5).title());
+        assertEquals("Not Even Close", nodes.get(6).title());
+        assertEquals("Arena Win Streak", nodes.get(7).title());
+        assertEquals("The Gladiator", nodes.get(8).title());
+        assertEquals(9, nodes.stream().map(n -> n.key()).distinct().count());
         for (var node : nodes) {
             assertTrue(node.key().startsWith("warzone_duels/"));
             assertEquals(16, node.y());

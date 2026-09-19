@@ -14,18 +14,37 @@ final class WarzoneStatsReader {
         config.loadFromString(yaml);
         ConfigurationSection players = config.getConfigurationSection("players");
         if (players == null) throw new IllegalArgumentException("Missing players section");
+
         Map<UUID, DuelMilestoneProgress.Stats> result = new HashMap<>();
         for (String key : players.getKeys(false)) {
             UUID id = UUID.fromString(key);
-            if (!id.toString().equalsIgnoreCase(key)) throw new IllegalArgumentException("Invalid player UUID");
+            if (!id.toString().equalsIgnoreCase(key)) {
+                throw new IllegalArgumentException("Invalid player UUID");
+            }
             ConfigurationSection player = players.getConfigurationSection(key);
             if (player == null) throw new IllegalArgumentException("Invalid player record");
-            result.put(id, new DuelMilestoneProgress.Stats(counter(player.get("wins")), counter(player.get("best-win-streak"))));
+            result.put(id, new DuelMilestoneProgress.Stats(
+                counter(player.get("wins")),
+                counter(player.get("best-win-streak")),
+                optionalCounter(player.get("advancements.challenges-sent")),
+                optionalCounter(player.get("advancements.spoils-claims")),
+                optionalCounter(player.get("advancements.mutual-draws")),
+                optionalCounter(player.get("advancements.custom-rules-wins")),
+                optionalCounter(player.get("advancements.restricted-mobility-wins")),
+                optionalCounter(player.get("advancements.low-health-wins"))
+            ));
         }
         return Map.copyOf(result);
     }
+
+    private static int optionalCounter(Object value) {
+        return value == null ? 0 : counter(value);
+    }
+
     private static int counter(Object value) {
-        if (!(value instanceof Integer number) || number < 0) throw new IllegalArgumentException("Invalid or absent duel counter");
+        if (!(value instanceof Integer number) || number < 0) {
+            throw new IllegalArgumentException("Invalid or absent duel counter");
+        }
         return number;
     }
 }
