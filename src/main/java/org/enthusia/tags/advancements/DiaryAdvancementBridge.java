@@ -63,7 +63,7 @@ final class DiaryAdvancementBridge {
 
     private static DiaryMilestoneProgress.Stats emptyStats() {
         return new DiaryMilestoneProgress.Stats(
-            false, 0, false, 0, 0, 0, 0);
+            false, 0, 0, 0, 0, 0);
     }
     static List<ProjectionService.Node> nodes(int baseY) {
         return List.of(
@@ -76,9 +76,6 @@ final class DiaryAdvancementBridge {
             node("prolific_writer", "first_entry", "Prolific Writer",
                 "Write or edit your diary 25 times.",
                 Material.FEATHER, "GOAL", 3, baseY - 1),
-            node("signed_sealed_delivered", "first_entry", "Signed, Sealed, Delivered",
-                "Sign your diary, sealing it permanently.",
-                Material.WRITTEN_BOOK, "CHALLENGE", 3, baseY - 2),
             node("finders_keepers", "dear_diary", "Finders Keepers",
                 "Pick up a diary from the ground.",
                 Material.SPYGLASS, "TASK", 2, baseY),

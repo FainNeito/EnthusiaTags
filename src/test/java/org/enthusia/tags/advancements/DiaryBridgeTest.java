@@ -13,7 +13,7 @@ class DiaryBridgeTest {
     @TempDir Path directory;
     private final UUID player = UUID.randomUUID();
 
-    private void save(Path file, int edits, int destruction, boolean signed) throws Exception {
+    private void save(Path file, int edits, int destruction) throws Exception {
         Files.writeString(file,
             "players:\n  " + player + ":\n" +
             "    id: diary-id\n" +
@@ -21,7 +21,6 @@ class DiaryBridgeTest {
             "    advancements:\n" +
             "      received: true\n" +
             "      edits: " + edits + "\n" +
-            "      signed: " + signed + "\n" +
             "      destructionAttempts: " + destruction + "\n" +
             "      voidReturns: 0\n" +
             "      containerAttempts: 0\n" +
@@ -29,7 +28,7 @@ class DiaryBridgeTest {
     }
     @Test void historicalProgressIsSilentAndLiveCrossingCelebrates() throws Exception {
         Path file = directory.resolve("diaries.yml");
-        save(file, 24, 9, false);
+        save(file, 24, 9);
 
         var bridge = new DiaryAdvancementBridge(file);
         bridge.beginSession(player);
@@ -38,12 +37,11 @@ class DiaryBridgeTest {
         assertEquals(1000, historical.progress().get("diary/dear_diary"));
         assertTrue(historical.celebrate().isEmpty());
 
-        save(file, 25, 10, true);
+        save(file, 25, 10);
         bridge.refresh();
         var live = bridge.observe(player);
         assertTrue(live.celebrate().contains("diary/prolific_writer"));
         assertTrue(live.celebrate().contains("diary/stubborn"));
-        assertTrue(live.celebrate().contains("diary/signed_sealed_delivered"));
 
         Files.writeString(file, "players: [");
         assertThrows(Exception.class, bridge::refresh);
@@ -51,14 +49,13 @@ class DiaryBridgeTest {
     }
     @Test void nodesUseTheDiaryBranchesAndHaveNoRewards() {
         var nodes = DiaryAdvancementBridge.nodes(49);
-        assertEquals(9, nodes.size());
+        assertEquals(8, nodes.size());
         var byKey = nodes.stream().collect(
             java.util.stream.Collectors.toMap(node -> node.key(), node -> node));
 
         assertEquals("Dear Diary...", byKey.get("diary/dear_diary").title());
         assertEquals("diary/dear_diary", byKey.get("diary/first_entry").parentKey());
         assertEquals("diary/first_entry", byKey.get("diary/prolific_writer").parentKey());
-        assertEquals("diary/first_entry", byKey.get("diary/signed_sealed_delivered").parentKey());
         assertEquals("diary/indestructible", byKey.get("diary/stubborn").parentKey());
         assertEquals("diary/dear_diary", byKey.get("diary/void_walker").parentKey());
         assertEquals("diary/dear_diary", byKey.get("diary/nice_try").parentKey());

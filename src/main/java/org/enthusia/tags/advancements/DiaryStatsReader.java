@@ -39,7 +39,7 @@ final class DiaryStatsReader {
         ConfigurationSection evidence = player.getConfigurationSection("advancements");
         if (evidence == null) {
             return new DiaryMilestoneProgress.Stats(
-                issuedAt > 0, 0, false, 0, 0, 0, 0);
+                issuedAt > 0, 0, 0, 0, 0, 0);
         }
 
         boolean received = evidence.contains("received")
@@ -48,7 +48,6 @@ final class DiaryStatsReader {
         return new DiaryMilestoneProgress.Stats(
             received,
             counter(evidence, "edits"),
-            optionalBoolean(evidence, "signed"),
             counter(evidence, "destructionAttempts"),
             counter(evidence, "voidReturns"),
             counter(evidence, "containerAttempts"),
@@ -64,11 +63,6 @@ final class DiaryStatsReader {
         }
         return result;
     }
-    private static boolean optionalBoolean(ConfigurationSection section, String key) {
-        Object value = section.get(key);
-        return value == null ? false : booleanValue(value);
-    }
-
     private static boolean booleanValue(Object value) {
         if (!(value instanceof Boolean result)) {
             throw new IllegalArgumentException("Invalid DiaryKeeper boolean");

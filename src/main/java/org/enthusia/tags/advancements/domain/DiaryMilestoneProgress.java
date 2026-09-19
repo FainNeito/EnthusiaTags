@@ -10,7 +10,6 @@ public final class DiaryMilestoneProgress {
     public record Stats(
         boolean received,
         int edits,
-        boolean signed,
         int destructionAttempts,
         int voidReturns,
         int containerAttempts,
@@ -34,7 +33,6 @@ public final class DiaryMilestoneProgress {
         next.put("diary/dear_diary", stats.received() ? 1000 : 0);
         next.put("diary/first_entry", scaled(stats.edits(), 1));
         next.put("diary/prolific_writer", scaled(stats.edits(), 25));
-        next.put("diary/signed_sealed_delivered", stats.signed() ? 1000 : 0);
         next.put("diary/indestructible", scaled(stats.destructionAttempts(), 1));
         next.put("diary/stubborn", scaled(stats.destructionAttempts(), 10));
         next.put("diary/void_walker", scaled(stats.voidReturns(), 1));

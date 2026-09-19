@@ -19,7 +19,6 @@ class DiaryStatsReaderTest {
                 advancements:
                   received: true
                   edits: 25
-                  signed: true
                   destructionAttempts: 10
                   voidReturns: 1
                   containerAttempts: 1
@@ -28,7 +27,6 @@ class DiaryStatsReaderTest {
         var stats = DiaryStatsReader.parse(yaml).get(PLAYER);
         assertTrue(stats.received());
         assertEquals(25, stats.edits());
-        assertTrue(stats.signed());
         assertEquals(10, stats.destructionAttempts());
         assertEquals(1, stats.voidReturns());
         assertEquals(1, stats.containerAttempts());
@@ -45,7 +43,6 @@ class DiaryStatsReaderTest {
         var stats = DiaryStatsReader.parse(yaml).get(PLAYER);
         assertTrue(stats.received());
         assertEquals(0, stats.edits());
-        assertFalse(stats.signed());
         assertEquals(0, stats.destructionAttempts());
         assertEquals(0, stats.voidReturns());
         assertEquals(0, stats.containerAttempts());
