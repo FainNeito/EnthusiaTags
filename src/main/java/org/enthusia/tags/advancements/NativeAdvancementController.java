@@ -109,7 +109,7 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         var meta = icon.getItemMeta();
         meta.setCustomModelData(plugin.getConfig().getInt("advancements.logo-custom-model-data", 815001));
         icon.setItemMeta(meta);
-        projection.registerTree(plugin, "enthusia", icon, nodes);
+        projection.registerTree(plugin, "enthusia", icon, AdvancementNodeOrder.parentFirst(nodes));
         registered = true;
         definitions = next;
         plugin.getLogger().info("Enthusia native track: " + nodes.size() + " challenges; no reward execution in renderer.");
