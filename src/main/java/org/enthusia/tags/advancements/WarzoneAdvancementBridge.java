@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.bukkit.Material;
 import org.enthusia.tags.advancements.domain.DuelMilestoneProgress;
 
@@ -15,6 +16,7 @@ final class WarzoneAdvancementBridge {
     // Published atomically by the background reader; sessions are main-thread-only.
     private record Snapshot(long readStarted, Map<UUID, DuelMilestoneProgress.Stats> players) {}
     private volatile Snapshot latest;
+    private final AtomicBoolean refreshing = new AtomicBoolean();
     private final Map<UUID, DuelMilestoneProgress> sessions = new HashMap<>();
     private final Map<UUID, Long> sessionStarted = new HashMap<>();
     void beginSession(UUID player) {
@@ -23,11 +25,15 @@ final class WarzoneAdvancementBridge {
     }
     WarzoneAdvancementBridge(Path file) { this.file = file; }
     void refresh() throws Exception {
+        if (!refreshing.compareAndSet(false, true)) return;
         long started = System.nanoTime();
-        try { latest = new Snapshot(started, WarzoneStatsReader.parse(Files.readString(file))); }
-        catch (Exception failure) {
+        try {
+            latest = new Snapshot(started, WarzoneStatsReader.parse(Files.readString(file)));
+        } catch (Exception failure) {
             latest = null;
             throw failure;
+        } finally {
+            refreshing.set(false);
         }
     }
     DuelMilestoneProgress.Update observe(UUID player) {

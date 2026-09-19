@@ -97,6 +97,19 @@ class ImplicitCounterCriteriaTest {
         }
     }
 
+    @Test void persistedCustomCountersDoNotRequirePlaytimeProvider() throws Exception {
+        var service = service();
+        var config = bundled();
+        var available = RewardService.class.getDeclaredMethod("isCriterionAvailable", RewardCriterion.class);
+        available.setAccessible(true);
+        for (var expected : EXISTING) {
+            var criterion = parse(service,
+                config.getConfigurationSection("rewards." + expected.id() + ".criteria")).getFirst();
+            assertEquals(RewardSourceType.CUSTOM_COUNTER, criterion.getSourceType());
+            assertEquals(true, available.invoke(service, criterion), expected.id());
+        }
+    }
+
     @Test void existingSavedProgressAndClaimsAreReadWithoutMutation(@TempDir Path directory) throws Exception {
         UUID playerId = UUID.randomUUID();
         var counters = Map.of("max_consecutive_active", 721L, "underground_active", 1801L, "max_ping_ms", 151L);

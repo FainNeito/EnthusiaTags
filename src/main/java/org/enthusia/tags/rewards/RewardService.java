@@ -2118,6 +2118,7 @@ public final class RewardService {
             return naturalBlockTrackingAvailable;
         }
         return switch (criterion.getSourceType()) {
+            case CUSTOM_COUNTER -> true;
             case VAULT_BALANCE -> vaultHook.isAvailable();
             case BALTOP -> baltopPlugin != null;
             case PLAYTIME -> playtimeHook.isAvailable() || config.allowPlaceholderPlaytimeFallback();

@@ -3,6 +3,7 @@ package org.enthusia.tags.advancements;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.*;
@@ -44,6 +45,26 @@ class WarzoneBridgeTest {
         bridge.refresh();
         assertTrue(bridge.observe(player).celebrate().contains("warzone_duels/first_blood"));
     }
+    @Test void overlappingRefreshAttemptCannotReplaceCurrentSnapshot() throws Exception {
+        Path file = directory.resolve("stats.yml");
+        save(file, 1, 1);
+        var bridge = new WarzoneAdvancementBridge(file);
+        bridge.refresh();
+        assertEquals(20, bridge.observe(player).progress().get("warzone_duels/gladiator"));
+
+        var field = WarzoneAdvancementBridge.class.getDeclaredField("refreshing");
+        field.setAccessible(true);
+        var refreshing = (AtomicBoolean) field.get(bridge);
+        refreshing.set(true);
+        save(file, 50, 5);
+        bridge.refresh();
+        assertEquals(20, bridge.observe(player).progress().get("warzone_duels/gladiator"));
+
+        refreshing.set(false);
+        bridge.refresh();
+        assertEquals(1000, bridge.observe(player).progress().get("warzone_duels/gladiator"));
+    }
+
     @Test void nodesAreDistinctFromTagsAndHaveRequirementsAndNoInventedRewards() {
         var nodes = WarzoneAdvancementBridge.nodes(8);
         assertEquals(9, nodes.size());
