@@ -199,3 +199,10 @@ Evidence:
 - EnthusiaTags projects nine WarzoneDuels nodes total, preserves the existing three stable IDs, reads new evidence fields read-only, treats legacy provider rows as zero evidence for new achievements, restores history silently and celebrates only new threshold crossings.
 - Focused EnthusiaTags Warzone tests pass 16 tests; full clean verify passes 159 tests with zero failures/errors/skips.
 - No advancement rewards are paid by this bridge. Test-server deployment and live toast/claim behavior remain staging checks.
+
+## T-012 [TDD] Branched native advancement layout
+
+Status: complete locally; live client visual acceptance pending.
+References: REQ-033; implementation.md Presentation.
+Acceptance: every bundled reward has a fixed non-overlapping coordinate, category paths branch instead of forming long rows, Warzone Duels forms three sub-branches, unknown future rewards retain a deterministic fallback, and no requirements/reward logic changes.
+Evidence: AdvancementLayoutTest covers all bundled reward IDs, coordinate uniqueness, representative parents/bounds, and fallback behavior. WarzoneBridgeTest covers the three-way duel layout. Focused layout suite passes 10 tests with zero failures/errors/skips; full clean verify passes 165 tests with zero failures/errors/skips and packages the shaded test JAR.

@@ -65,24 +65,34 @@ class WarzoneBridgeTest {
         assertEquals(1000, bridge.observe(player).progress().get("warzone_duels/gladiator"));
     }
 
-    @Test void nodesAreDistinctFromTagsAndHaveRequirementsAndNoInventedRewards() {
-        var nodes = WarzoneAdvancementBridge.nodes(8);
+    @Test void nodesAreDistinctBranchedAndHaveRequirementsAndNoInventedRewards() {
+        var nodes = WarzoneAdvancementBridge.nodes(29);
         assertEquals(9, nodes.size());
-        assertEquals("Welcome to the Thunderdome", nodes.get(0).title());
-        assertEquals("warzone_duels/welcome_to_thunderdome", nodes.get(0).key());
-        assertEquals("Arena Initiate", nodes.get(1).title());
-        assertEquals("warzone_duels/first_blood", nodes.get(1).key());
-        assertEquals("To the Victor Go the Spoils", nodes.get(2).title());
-        assertEquals("A Price for Peace", nodes.get(3).title());
-        assertEquals("My House, My Rules", nodes.get(4).title());
-        assertEquals("Adapt and Overcome", nodes.get(5).title());
-        assertEquals("Not Even Close", nodes.get(6).title());
-        assertEquals("Arena Win Streak", nodes.get(7).title());
-        assertEquals("The Gladiator", nodes.get(8).title());
+        var byKey = nodes.stream().collect(java.util.stream.Collectors.toMap(n -> n.key(), n -> n));
+
+        assertEquals("Welcome to the Thunderdome",
+            byKey.get("warzone_duels/welcome_to_thunderdome").title());
+        assertEquals("Arena Initiate", byKey.get("warzone_duels/first_blood").title());
+        assertEquals(29, byKey.get("warzone_duels/first_blood").y());
+
+        assertEquals(28, byKey.get("warzone_duels/unstoppable").y());
+        assertEquals(28, byKey.get("warzone_duels/gladiator").y());
+        assertEquals(29, byKey.get("warzone_duels/victor_spoils").y());
+        assertEquals(29, byKey.get("warzone_duels/price_for_peace").y());
+        assertEquals(30, byKey.get("warzone_duels/my_house_my_rules").y());
+        assertEquals(30, byKey.get("warzone_duels/adapt_and_overcome").y());
+        assertEquals(30, byKey.get("warzone_duels/not_even_close").y());
+
+        assertEquals("warzone_duels/first_blood",
+            byKey.get("warzone_duels/unstoppable").parentKey());
+        assertEquals("warzone_duels/first_blood",
+            byKey.get("warzone_duels/victor_spoils").parentKey());
+        assertEquals("warzone_duels/first_blood",
+            byKey.get("warzone_duels/my_house_my_rules").parentKey());
+
         assertEquals(9, nodes.stream().map(n -> n.key()).distinct().count());
         for (var node : nodes) {
             assertTrue(node.key().startsWith("warzone_duels/"));
-            assertEquals(16, node.y());
             assertTrue(node.description().stream().anyMatch(s -> s.contains("Requirements:")));
             assertTrue(node.description().stream().anyMatch(s -> s.contains("Rewards: None")));
         }

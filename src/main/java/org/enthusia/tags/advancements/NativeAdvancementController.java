@@ -88,18 +88,23 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         for (RewardDefinition reward : next.values()) categories.computeIfAbsent(reward.getCategory(), ignored -> new ArrayList<>()).add(reward);
         int row = 0;
         for (List<RewardDefinition> group : categories.values()) {
-            String parent = null;
+            String fallbackParentId = null;
             for (int index = 0; index < group.size(); index++) {
                 RewardDefinition reward = group.get(index);
                 String frame = plugin.getConfig().getString("advancements.frames." + reward.getId(), "TASK").toUpperCase(Locale.ROOT);
                 if (!List.of("TASK", "GOAL", "CHALLENGE").contains(frame)) frame = "TASK";
+                var placement = AdvancementLayout.placement(
+                    reward.getId(), fallbackParentId, index + 1, row * 4 + 1);
+                String parent = placement.parentId() == null ? null : key(placement.parentId());
                 nodes.add(new ProjectionService.Node(key(reward.getId()), parent, color(reward.getName()),
-                    description(reward), reward.getIcon(), frame, index + 1, row * 2));
-                parent = key(reward.getId());
+                    description(reward), reward.getIcon(), frame, placement.x(), placement.y()));
+                fallbackParentId = reward.getId();
             }
             row++;
         }
-        if (duels != null) nodes.addAll(WarzoneAdvancementBridge.nodes(row));
+        if (duels != null) {
+            nodes.addAll(WarzoneAdvancementBridge.nodes(AdvancementLayout.warzoneBaseY(row)));
+        }
         ItemStack icon = new ItemStack(Material.PAPER);
         var meta = icon.getItemMeta();
         meta.setCustomModelData(plugin.getConfig().getInt("advancements.logo-custom-model-data", 815001));

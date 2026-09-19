@@ -51,3 +51,7 @@ The user explicitly authorized the remaining non-guild WarzoneDuels advancement 
 - REQ-030: WHEN a player wins a one-versus-one kill result with less than four health points remaining THE SYSTEM SHALL complete Not Even Close from a provider-owned durable achievement counter.
 - REQ-031: THE SYSTEM SHALL project provider-owned WarzoneDuels achievement counters into the Enthusia advancement tree with silent historical reconciliation, live one-time celebration, off-thread reads, monotonic session progress and no reward payout.
 - REQ-032: THE SYSTEM SHALL leave Champion of the Realm, Place Your Bets, Eye for Talent, High Roller and the proposed hidden duel achievements unimplemented until their required guild-war, spectator-betting or missing durable provider evidence is separately approved and available.
+
+## Advancement presentation layout
+
+- REQ-033: WHEN the native Enthusia advancement tree is rendered THE SYSTEM SHALL place all bundled challenge nodes in fixed compact category branches, preserve existing challenge identifiers and requirements, keep future unknown rewards on a deterministic fallback layout, and present Warzone Duels as three branches for mastery, spoils/peace, and special-condition victories.
