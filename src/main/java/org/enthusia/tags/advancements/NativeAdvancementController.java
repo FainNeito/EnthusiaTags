@@ -180,12 +180,12 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                 AdvancementLayout.expressBaseY(row, duels != null, commend != null)));
         }
         if (diary != null) {
-            int diaryIconCustomModelData = plugin.getConfig().getInt(
-                "advancements.diary-icon-custom-model-data", 815002);
+            String diaryIconItemModel = plugin.getConfig().getString(
+                "advancements.diary-icon-item-model", "enthusia:journal_quill");
             nodes.addAll(DiaryAdvancementBridge.nodes(
                 AdvancementLayout.diaryBaseY(
                     row, duels != null, commend != null, express != null),
-                diaryIconCustomModelData));
+                diaryIconItemModel));
         }
         ItemStack icon = new ItemStack(Material.PAPER);
         var meta = icon.getItemMeta();

@@ -65,11 +65,11 @@ final class DiaryAdvancementBridge {
         return new DiaryMilestoneProgress.Stats(
             false, 0, 0, 0, 0, 0);
     }
-    static List<ProjectionService.Node> nodes(int baseY, int diaryIconCustomModelData) {
+    static List<ProjectionService.Node> nodes(int baseY, String diaryIconItemModel) {
         return List.of(
             node("dear_diary", null, "Dear Diary...",
                 "Receive your personal diary for the first time.",
-                Material.WRITABLE_BOOK, diaryIconCustomModelData, "TASK", 1, baseY),
+                Material.WRITABLE_BOOK, diaryIconItemModel, "TASK", 1, baseY),
             node("first_entry", "dear_diary", "First Entry",
                 "Write or edit your diary once.",
                 Material.INK_SAC, "TASK", 2, baseY - 1),
@@ -98,12 +98,19 @@ final class DiaryAdvancementBridge {
         String id, String parent, String title, String requirement,
         Material icon, String frame, int x, int y
     ) {
-        return node(id, parent, title, requirement, icon, null, frame, x, y);
+        return new ProjectionService.Node(
+            "diary/" + id,
+            parent == null ? null : "diary/" + parent,
+            title,
+            List.of("§7DiaryKeeper", "§7Requirements:", "§f" + requirement,
+                "§7Progress is read from DiaryKeeper.",
+                "§7Rewards: None (advancement only)."),
+            icon, frame, x, y);
     }
 
     private static ProjectionService.Node node(
         String id, String parent, String title, String requirement,
-        Material icon, Integer customModelData, String frame, int x, int y
+        Material icon, String itemModel, String frame, int x, int y
     ) {
         return new ProjectionService.Node(
             "diary/" + id,
@@ -112,6 +119,6 @@ final class DiaryAdvancementBridge {
             List.of("§7DiaryKeeper", "§7Requirements:", "§f" + requirement,
                 "§7Progress is read from DiaryKeeper.",
                 "§7Rewards: None (advancement only)."),
-            icon, customModelData, frame, x, y);
+            icon, itemModel, frame, x, y);
     }
 }

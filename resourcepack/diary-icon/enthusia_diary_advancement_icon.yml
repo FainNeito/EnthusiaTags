@@ -1,8 +1,11 @@
-# Custom icon used by the Dear Diary advancement.
-# Keep this custom-model-data synchronized with EnthusiaTags config.yml.
+# Optional hidden Nexo item definition for the Diary advancement icon.
+# The advancement itself directly sets the 1.21.4+ item_model component.
 enthusia_diary_advancement_icon:
   itemname: Diary
   material: WRITABLE_BOOK
+  excludeFromInventory: true
+  excludeFromCommands: true
   Pack:
     model: enthusia:item/journal_quill
-    custom_model_data: 815002
+  Components:
+    item_model: enthusia:journal_quill
