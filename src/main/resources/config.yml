@@ -7,8 +7,11 @@ advancements:
   logo-custom-model-data: 815001
   players-per-tick: 25
   # Optional display-only statistics track. Requires WarzoneDuels; restart after changing.
-  # Adds 1 win, best streak 5, and 50 wins. Existing records are credited silently.
+  # Adds the display-only Warzone Duels advancement branch. Existing records are credited silently.
   warzone-duels-enabled: false
+  # Display-only reputation track. Enabled when EnthusiaCommend is available.
+  # Historical provider evidence is credited silently; this never pays rewards.
+  commendation-enabled: true
   # Optional per-existing-reward frame overrides: TASK, GOAL or CHALLENGE.
   frames: {}
 

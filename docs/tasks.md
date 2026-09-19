@@ -206,3 +206,10 @@ Status: complete locally; live client visual acceptance pending.
 References: REQ-033; implementation.md Presentation.
 Acceptance: every bundled reward has a fixed non-overlapping coordinate, category paths branch instead of forming long rows, Warzone Duels forms three sub-branches, unknown future rewards retain a deterministic fallback, and no requirements/reward logic changes.
 Evidence: AdvancementLayoutTest covers all bundled reward IDs, coordinate uniqueness, representative parents/bounds, and fallback behavior. WarzoneBridgeTest covers the three-way duel layout. A live test-server startup exposed that the projection API requires parent definitions before their children; AdvancementNodeOrder now topologically orders the full projected graph before registration. Focused layout/order tests pass 12 tests with zero failures/errors/skips; full clean verify passes 167 tests with zero failures/errors/skips and packages the shaded test JAR.
+
+## T-013 [TDD] EnthusiaCommend reputation advancement track
+
+Status: complete locally through verification; live test-server acceptance pending.
+References: REQ-034 through REQ-038; implementation.md Presentation.
+Acceptance: ten display-only reputation advancements use durable EnthusiaCommend evidence, historical completion is silent, live crossings celebrate once, missing reads retain known progress, positive category milestones are tracked at +5, and no negative-behavior category achievements or rewards are introduced.
+Evidence: EnthusiaCommend feature branch persists positive-receipt, overall high/low-water, redemption, and positive-category high-water evidence in data.yml; its clean verify passes 178 tests. ReputationProgressTest, CommendStatsReaderTest, CommendBridgeTest, AdvancementNodeOrderTest and AdvancementLayoutTest pass 20 focused tests. EnthusiaTags clean verify passes 181 tests with zero failures/errors/skips.

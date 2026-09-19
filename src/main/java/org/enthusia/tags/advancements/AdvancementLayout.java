@@ -32,6 +32,12 @@ final class AdvancementLayout {
         return Math.max(WARZONE_BASE_Y, categoryCount * 4 + 1);
     }
 
+    static int reputationBaseY(int categoryCount, boolean hasWarzone) {
+        int naturalBase = Math.max(WARZONE_BASE_Y, categoryCount * 4 + 1);
+        return hasWarzone ? Math.max(naturalBase + 6, warzoneBaseY(categoryCount) + 6)
+            : naturalBase;
+    }
+
     private static Map<String, Placement> build() {
         Map<String, Placement> map = new HashMap<>();
 
