@@ -23,7 +23,7 @@ final class ExpressStatsReader {
         if (database == null || !Files.isRegularFile(database)) {
             throw new IllegalArgumentException("EnthusiaExpress mail.db is unavailable");
         }
-        Class.forName("org.sqlite.JDBC");
+        Class.forName(org.sqlite.JDBC.class.getName());
         String url = "jdbc:sqlite:" + database.toUri() + "?mode=ro";
         try (Connection connection = DriverManager.getConnection(url)) {
             Set<String> columns = columns(connection);
