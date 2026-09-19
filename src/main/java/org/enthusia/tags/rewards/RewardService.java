@@ -1827,7 +1827,8 @@ public final class RewardService {
                 continue;
             }
             int progress = verifiedAdvancementProgress(player, reward, snapshot);
-            boolean liveCompletion = baseline.isLiveCompletion(rewardId, progress);
+            boolean liveCompletion = baseline.isLiveCompletion(rewardId, progress)
+                || baseline.hasPendingLiveCompletion(rewardId);
             if (progress != 1000) {
                 continue;
             }
@@ -1855,6 +1856,7 @@ public final class RewardService {
                     if (advancementNotifications != null && plugin.getConfig().getBoolean("advancements.enabled", true))
                         advancementNotifications.accept(live, celebrations);
                     else sendPersistedUnlocks(live, celebrations);
+                    celebrations.forEach(reward -> baseline.acknowledge(reward.getId().toLowerCase(Locale.ROOT)));
                 });
             });
         }
@@ -2048,20 +2050,22 @@ public final class RewardService {
         long minutes = 0L;
         boolean matched = false;
         Matcher hours = HOURS_PATTERN.matcher(raw);
-        if (hours.find()) {
+        while (hours.find()) {
             minutes = Math.addExact(minutes, Math.multiplyExact(Long.parseLong(hours.group(1)), 60L));
             matched = true;
         }
         Matcher mins = MINUTES_PATTERN.matcher(raw);
-        if (mins.find()) {
+        while (mins.find()) {
             minutes = Math.addExact(minutes, Long.parseLong(mins.group(1)));
             matched = true;
         }
         Matcher secs = SECONDS_PATTERN.matcher(raw);
-        if (secs.find()) {
-            minutes = Math.addExact(minutes, Long.parseLong(secs.group(1)) / 60L);
+        long seconds = 0L;
+        while (secs.find()) {
+            seconds = Math.addExact(seconds, Long.parseLong(secs.group(1)));
             matched = true;
         }
+        minutes = Math.addExact(minutes, seconds / 60L);
         return matched ? minutes : -1L;
     }
 

@@ -26,3 +26,11 @@ Users: existing and new Enthusia players, including alternate accounts; server a
 The existing MONEY action is the server's Vault-backed Raw Gold currency (see RewardMoneyPolicy). Explicit RAW_GOLD and RAW_GOLD_BLOCK item actions also count as gold. Arbitrary reward commands are not parsed as currency: administrators must use typed gold actions for gold payouts; otherwise commands cannot be safely classified. Existing whole-reward IP reservations are conservative evidence for gold only. No historical rewards are removed or replayed.
 
 A network-limited component is durably withheld for that account; changing IP later must not make it claimable again. Missing IP or database failure is retryable, not a permanent rejection. No implicit account whitelist exception is introduced for gold.
+
+## PR cleanup safety and verification
+
+- REQ-901: WHEN a live completion is observed THE SYSTEM SHALL recognize its transition once while retaining unacknowledged live evidence across retryable persistence failures.
+- REQ-902: IF the renderer rejects a pending celebration THEN THE SYSTEM SHALL retain that pending work for a later attempt.
+- REQ-903: WHEN RoseChat enables after Tags THE SYSTEM SHALL install its per-viewer presence binding once while preserving RoseChat audience restrictions and defaults when the API is unavailable.
+- REQ-904: WHEN repeated playtime unit tokens are parsed THE SYSTEM SHALL count every occurrence with checked arithmetic and combine seconds before rounding.
+- REQ-905: WHEN local workflow tooling reads or modifies task state THE SYSTEM SHALL reject malformed state, serialize concurrent operations, enforce required evidence, and replace files atomically.

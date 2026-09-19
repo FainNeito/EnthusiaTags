@@ -21,14 +21,17 @@ jobs:
       - uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
           cache: maven
 
       - name: Bootstrap pinned production LoreItems release
         run: bash tools/bootstrap_loreitems_release.sh
 
+      - name: Bootstrap pinned companion sources
+        run: python3 tools/ci/bootstrap_companions.py
+
       - name: Test and package
-        run: mvn --batch-mode --no-transfer-progress clean test package
+        run: mvn --batch-mode --no-transfer-progress clean verify
 
       - name: Update rolling prerelease
         env:
