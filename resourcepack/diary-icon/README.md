@@ -2,13 +2,15 @@
 
 Source artwork: `journal_quill.aseprite`, exported losslessly at 16x16.
 
-The advancement now uses Minecraft's 1.21.4+ `item_model` component directly:
-`enthusia:journal_quill`.
+The icon uses PAPER custom-model-data 815002. This intentionally shares the same
+Nexo/PAPER pipeline as the already-working Enthusia tab logo at 815001.
 
-For Nexo, place `Enthusia-Diary-Icon-Nexo-Assets.zip` in:
-`plugins/Nexo/pack/external_packs/`
+Nexo install:
+1. Add `enthusia_diary_advancement_icon.yml` to the Nexo item configs.
+2. Put `Enthusia-Diary-Icon-Nexo-Assets.zip` in `plugins/Nexo/pack/external_packs/`.
+3. Rebuild Nexo's resource pack and make clients accept the rebuilt pack.
 
-Then rebuild/reload Nexo's resource pack and have clients accept the updated pack.
-The ZIP includes the required `assets/enthusia/items/journal_quill.json` item-model
-declaration, baked model, and texture. The YAML file is optional and only defines
-a hidden Nexo item pointing at the same item model.
+If the old client-side `Enthusia-Advancements-Logo-26.2.zip` is still enabled,
+remove/replace it. Its PAPER definition intentionally mapped 815002 back to vanilla
+paper and can override the new diary mapping. The replacement
+`Enthusia-Advancements-Icons-26.2.zip` contains both the logo and diary mappings.

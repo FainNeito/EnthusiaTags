@@ -18,8 +18,9 @@ advancements:
   # Display-only DiaryKeeper track. Requires the advancement-evidence DiaryKeeper build.
   # Existing issuance is credited silently; new diary actions persist provider-owned evidence.
   diary-enabled: true
-  # 1.21.4+ item-model used by the Dear Diary advancement icon.
-  diary-icon-item-model: "enthusia:journal_quill"
+  # PAPER custom model used by the Dear Diary advancement icon.
+  # PAPER is intentional: it shares Nexo's already-working paper item mapping with the Enthusia tab logo.
+  diary-icon-custom-model-data: 815002
   # Optional per-existing-reward frame overrides: TASK, GOAL or CHALLENGE.
   frames: {}
 

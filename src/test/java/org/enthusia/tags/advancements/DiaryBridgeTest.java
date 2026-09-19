@@ -48,14 +48,14 @@ class DiaryBridgeTest {
         assertEquals(live.progress(), bridge.observe(player).progress());
     }
     @Test void nodesUseTheDiaryBranchesAndHaveNoRewards() {
-        var nodes = DiaryAdvancementBridge.nodes(49, "enthusia:journal_quill");
+        var nodes = DiaryAdvancementBridge.nodes(49, 815002);
         assertEquals(8, nodes.size());
         var byKey = nodes.stream().collect(
             java.util.stream.Collectors.toMap(node -> node.key(), node -> node));
 
         assertEquals("Dear Diary...", byKey.get("diary/dear_diary").title());
-        assertEquals(org.bukkit.Material.WRITABLE_BOOK, byKey.get("diary/dear_diary").icon());
-        assertEquals("enthusia:journal_quill", byKey.get("diary/dear_diary").itemModel());
+        assertEquals(org.bukkit.Material.PAPER, byKey.get("diary/dear_diary").icon());
+        assertEquals(815002, byKey.get("diary/dear_diary").customModelData());
         assertEquals("diary/dear_diary", byKey.get("diary/first_entry").parentKey());
         assertEquals("diary/first_entry", byKey.get("diary/prolific_writer").parentKey());
         assertEquals("diary/indestructible", byKey.get("diary/stubborn").parentKey());
@@ -68,21 +68,24 @@ class DiaryBridgeTest {
             assertTrue(node.description().stream().anyMatch(s -> s.contains("Rewards: None")));
         }
     }
-    @Test void customDiaryIconAssetsMatchConfiguredItemModel() throws Exception {
+    @Test void customDiaryIconAssetsMatchConfiguredPaperMapping() throws Exception {
         Path root = Path.of("resourcepack/diary-icon");
         String nexo = Files.readString(root.resolve("enthusia_diary_advancement_icon.yml"));
-        String itemModel = Files.readString(root.resolve(
-            "external_pack/assets/enthusia/items/journal_quill.json"));
         String model = Files.readString(root.resolve(
             "external_pack/assets/enthusia/models/item/journal_quill.json"));
         byte[] texture = Files.readAllBytes(root.resolve(
             "external_pack/assets/enthusia/textures/item/journal_quill.png"));
+        String directPaperMapping = Files.readString(Path.of(
+            "resource-pack/assets/minecraft/items/paper.json"));
 
-        assertTrue(nexo.contains("material: WRITABLE_BOOK"));
-        assertTrue(nexo.contains("item_model: enthusia:journal_quill"));
-        assertTrue(itemModel.contains("\"type\": \"minecraft:model\""));
-        assertTrue(itemModel.contains("\"model\": \"enthusia:item/journal_quill\""));
+        assertTrue(nexo.contains("material: PAPER"));
+        assertTrue(nexo.contains("custom_model_data: 815002"));
+        assertTrue(nexo.contains("model: enthusia:item/journal_quill"));
         assertTrue(model.contains("\"layer0\": \"enthusia:item/journal_quill\""));
+        assertTrue(directPaperMapping.contains(
+            "\"threshold\": 815002, \"model\": { \"type\": \"minecraft:model\", \"model\": \"enthusia:item/journal_quill\" }"));
+        assertFalse(directPaperMapping.contains(
+            "\"threshold\": 815002, \"model\": { \"type\": \"minecraft:model\", \"model\": \"minecraft:item/paper\" }"));
         assertTrue(texture.length > 8);
         assertArrayEquals(new byte[]{(byte) 0x89, 'P', 'N', 'G'}, java.util.Arrays.copyOf(texture, 4));
     }
@@ -94,7 +97,7 @@ class DiaryBridgeTest {
             "src/main/java/org/enthusia/tags/advancements/NativeAdvancementController.java"));
 
         assertTrue(config.contains("diary-enabled: true"));
-        assertTrue(config.contains("diary-icon-item-model: \"enthusia:journal_quill\""));
+        assertTrue(config.contains("diary-icon-custom-model-data: 815002"));
         assertTrue(plugin.contains("- DiaryKeeper"));
         assertTrue(source.contains("getPlugin(\"DiaryKeeper\")"));
         assertTrue(source.contains("DiaryAdvancementBridge"));
