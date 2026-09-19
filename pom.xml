@@ -10,6 +10,8 @@
 
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
+        <!-- Match verified local builds: isolate javac from Maven's in-process compiler. -->
+        <maven.compiler.fork>true</maven.compiler.fork>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <rosechat.contract.source>${project.basedir}/.ci-deps/rosechat/PresenceMessageEvent.java</rosechat.contract.source>
         <loreitems.release.version>1.0.0</loreitems.release.version>
