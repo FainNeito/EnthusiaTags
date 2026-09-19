@@ -63,3 +63,13 @@ The user explicitly authorized the remaining non-guild WarzoneDuels advancement 
 - REQ-036: THE SYSTEM SHALL treat +10 and +20 as the overall positive milestones, -10 and -25 as the overall negative milestones, and recovery from -12-or-lower back to zero-or-higher as Redemption Arc.
 - REQ-037: WHEN historical reputation evidence is first observed for a session THE SYSTEM SHALL restore completed reputation advancements silently and celebrate only later newly observed completions once.
 - REQ-038: IF reputation evidence is missing, unreadable or malformed THE SYSTEM SHALL retain known session progress and retry rather than substituting zero or inferring historical category peaks.
+
+## Approved follow-on: EnthusiaExpress mail-history advancements
+
+- REQ-039: WHEN EnthusiaExpress is available THE SYSTEM SHALL append display-only mail advancements using its persisted mail.db history without modifying the provider database or paying rewards.
+- REQ-040: THE SYSTEM SHALL recognize First Class at one sent package, Care Package at a package containing at least 64 packed items, Frequent Shipper at 10 sent packages, and Postal Legend at 50 sent packages.
+- REQ-041: THE SYSTEM SHALL recognize Pen Pal at one sent letter, Correspondent at 10 sent letters, Read All About It at one read received letter, and Avid Reader at 10 read received letters.
+- REQ-042: THE SYSTEM SHALL recognize You've Got Mail at one successfully delivered claimed package, Parcel Collector at 10 such claims, and Return to Sender when the original sender successfully collects a returned package.
+- REQ-043: WHEN historical mail rows are first observed in a player session THE SYSTEM SHALL restore completed Express advancements silently and celebrate only later threshold crossings once.
+- REQ-044: IF mail.db is unavailable, malformed or temporarily unreadable THE SYSTEM SHALL retain known session progress and retry rather than substituting zero.
+- REQ-045: THE SYSTEM SHALL read EnthusiaExpress SQLite history off the server thread and SHALL use a read-only connection, including compatibility with legacy rows that predate delivery_pending.

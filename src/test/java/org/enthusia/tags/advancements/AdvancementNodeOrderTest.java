@@ -42,6 +42,7 @@ class AdvancementNodeOrderTest {
         }
         nodes.addAll(WarzoneAdvancementBridge.nodes(29));
         nodes.addAll(CommendAdvancementBridge.nodes(35));
+        nodes.addAll(ExpressAdvancementBridge.nodes(42));
         Collections.reverse(nodes);
 
         var ordered = AdvancementNodeOrder.parentFirst(nodes);
