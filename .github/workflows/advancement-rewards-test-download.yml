@@ -1,0 +1,25 @@
+name: Package advancement rewards test downloads
+on:
+  push:
+    branches:
+      - test-jars-advancement-rewards-20260920-bc6cae86
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      - name: Verify exact test binaries
+        run: |
+          echo "bc6cae86ed388f369c043758571053b64fe8895b1fa526532ddcad1bb1f1ff85  .test-artifacts/advancement-rewards-test.2/EnthusiaTags-2.2.2-rewards-gui-test.2.jar" | sha256sum -c -
+          echo "cab9d863af9ba945f11b12facdb6c3bd85cafd4f86828d91c66fdff753b1c465  .test-artifacts/advancement-rewards-test.2/EnthusiaAdvancements-1.0.0-pilot.5.jar" | sha256sum -c -
+      - name: Upload test bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: EnthusiaTags-Advancement-Rewards-Test-2
+          path: .test-artifacts/advancement-rewards-test.2/
+          if-no-files-found: error
+          retention-days: 14
