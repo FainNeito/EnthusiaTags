@@ -3,7 +3,12 @@ package org.enthusia.tags.advancements;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.enthusia.tags.advancements.domain.DuelMilestoneProgress;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.*;
@@ -47,22 +52,32 @@ class WarzoneBridgeTest {
     }
     @Test void overlappingRefreshAttemptCannotReplaceCurrentSnapshot() throws Exception {
         Path file = directory.resolve("stats.yml");
-        save(file, 1, 1);
-        var bridge = new WarzoneAdvancementBridge(file);
+        var entered = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
+        var reads = new AtomicInteger();
+        var bridge = new WarzoneAdvancementBridge(file, source -> {
+            assertEquals(file, source);
+            if (reads.incrementAndGet() == 1) return Map.of(player, new DuelMilestoneProgress.Stats(1, 1));
+            entered.countDown();
+            assertTrue(release.await(5, TimeUnit.SECONDS));
+            return Map.of(player, new DuelMilestoneProgress.Stats(50, 5));
+        });
         bridge.refresh();
         assertEquals(20, bridge.observe(player).progress().get("warzone_duels/gladiator"));
-
-        var field = WarzoneAdvancementBridge.class.getDeclaredField("refreshing");
-        field.setAccessible(true);
-        var refreshing = (AtomicBoolean) field.get(bridge);
-        refreshing.set(true);
-        save(file, 50, 5);
-        bridge.refresh();
-        assertEquals(20, bridge.observe(player).progress().get("warzone_duels/gladiator"));
-
-        refreshing.set(false);
-        bridge.refresh();
-        assertEquals(1000, bridge.observe(player).progress().get("warzone_duels/gladiator"));
+        var executor = Executors.newSingleThreadExecutor();
+        try {
+            var pending = executor.submit(() -> { bridge.refresh(); return null; });
+            assertTrue(entered.await(5, TimeUnit.SECONDS));
+            bridge.refresh();
+            assertEquals(2, reads.get(), "An overlapping refresh must not call the reader again");
+            assertEquals(20, bridge.observe(player).progress().get("warzone_duels/gladiator"));
+            release.countDown();
+            pending.get(5, TimeUnit.SECONDS);
+            assertEquals(1000, bridge.observe(player).progress().get("warzone_duels/gladiator"));
+        } finally {
+            release.countDown();
+            executor.shutdownNow();
+        }
     }
 
     @Test void nodesAreDistinctBranchedAndHaveRequirementsAndNoInventedRewards() {

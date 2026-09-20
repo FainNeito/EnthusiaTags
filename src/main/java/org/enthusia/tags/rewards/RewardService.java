@@ -54,18 +54,12 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.lang.reflect.Method;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @SuppressWarnings({"PMD.UseConcurrentHashMap", "PMD.NullAssignment", "PMD.AvoidInstantiatingObjectsInLoops"})
 public final class RewardService {
     private static final String REWARD_UNLOCK_NOTIFIED_PREFIX = "reward-unlocked:";
     private static final int MAX_UNLOCK_CHECKS_PER_RUN = 25;
     private static final int MAX_LORE_ITEM_FINALIZATIONS_PER_SWEEP = 50;
-    private static final Pattern HOURS_PATTERN = Pattern.compile("(?i)(\\d+)\\s*h");
-    private static final Pattern MINUTES_PATTERN = Pattern.compile("(?i)(\\d+)\\s*m");
-    private static final Pattern SECONDS_PATTERN = Pattern.compile("(?i)(\\d+)\\s*s");
-    private static final Pattern NON_DIGIT_PATTERN = Pattern.compile("[^0-9]");
     private static final String COMMAND_SYNC_ALL = "syncall";
     private static final String COMMAND_SYNC = "sync";
     private static final String COMMAND_DEBUG = "debug";
@@ -132,6 +126,13 @@ public final class RewardService {
         this.playerLookup = new PlayerLookup(plugin);
         this.loreItemRewardRuntime = plugin instanceof EnthusiaTagsPlugin tagsPlugin
             ? tagsPlugin.getLoreItemRewardRuntime() : null;
+    }
+
+    /** Package-local storage injection keeps orchestration independently testable. */
+    RewardService(JavaPlugin plugin, TagService tagService, Messages messages,
+                  PerformanceMonitor performanceMonitor, RewardStorage storage) {
+        this(plugin, tagService, messages, performanceMonitor);
+        this.storage = java.util.Objects.requireNonNull(storage, "storage");
     }
 
     public void enable() {
@@ -481,7 +482,7 @@ public final class RewardService {
         future.whenComplete((result, throwable) -> activeOperations.remove(future));
     }
 
-    private RewardClaimResult claimInternal(UUID playerId, String playerName, RewardDefinition reward,
+    RewardClaimResult claimInternal(UUID playerId, String playerName, RewardDefinition reward,
                                             String ipAddress) {
         RewardPlayerState state = getLoadedState(playerId);
         if (state == null || !state.isLoaded()) return RewardClaimResult.LOADING;
@@ -1986,28 +1987,9 @@ public final class RewardService {
         }
         String resolved = tagService.getPlaceholderRegistry().apply(player, placeholder);
         resolved = placeholderApiHook.apply(player, resolved);
-        long parsed = parsePlaytimeMinutes(resolved, placeholder);
+        long parsed = PlaytimeTextParser.parse(resolved, placeholder);
         if (parsed < 0) throw new PlaytimeHook.ProgressUnavailableException();
         return parsed;
-    }
-
-    private long parsePlaytimeMinutes(String resolved, String placeholder) {
-        if (resolved == null) {
-            return -1L;
-        }
-        String raw = resolved.trim();
-        if (raw.isEmpty()) {
-            return -1L;
-        }
-        try {
-            if (raw.matches("(?i)(?:\\d+\\s*[hms]\\s*)+")) {
-                return parseTokenizedPlaytimeMinutes(raw);
-            }
-            if (!raw.matches("(?:\\d+|\\d{1,3}(?:,\\d{3})+)")) return -1L;
-            return parseNumericPlaytimeMinutes(raw, placeholder);
-        } catch (ArithmeticException | NumberFormatException invalid) {
-            return -1L;
-        }
     }
 
     private void sendUnlockNotification(Player player, RewardDefinition reward, boolean playSound) {
@@ -2046,47 +2028,6 @@ public final class RewardService {
             (float) plugin.getConfig().getDouble("rewards.unlock-sound.pitch", 1.15D));
     }
 
-    private long parseTokenizedPlaytimeMinutes(String raw) {
-        long minutes = 0L;
-        boolean matched = false;
-        Matcher hours = HOURS_PATTERN.matcher(raw);
-        while (hours.find()) {
-            minutes = Math.addExact(minutes, Math.multiplyExact(Long.parseLong(hours.group(1)), 60L));
-            matched = true;
-        }
-        Matcher mins = MINUTES_PATTERN.matcher(raw);
-        while (mins.find()) {
-            minutes = Math.addExact(minutes, Long.parseLong(mins.group(1)));
-            matched = true;
-        }
-        Matcher secs = SECONDS_PATTERN.matcher(raw);
-        long seconds = 0L;
-        while (secs.find()) {
-            seconds = Math.addExact(seconds, Long.parseLong(secs.group(1)));
-            matched = true;
-        }
-        minutes = Math.addExact(minutes, seconds / 60L);
-        return matched ? minutes : -1L;
-    }
-
-    private long parseNumericPlaytimeMinutes(String raw, String placeholder) {
-        String digits = NON_DIGIT_PATTERN.matcher(raw).replaceAll("");
-        if (digits.isEmpty()) {
-            return -1L;
-        }
-
-        try {
-            long value = Long.parseLong(digits);
-            String token = placeholder == null ? "" : placeholder.toLowerCase(Locale.ROOT);
-            if (token.contains("%playtime_") && !token.contains("formatted")) {
-                return value / 60L;
-            }
-            return value;
-        } catch (NumberFormatException ex) {
-            return -1L;
-        }
-    }
-
     private boolean isInBaltopTop3(UUID playerId) {
         Plugin plugin = baltopPlugin;
         Method method = baltopMethod;
@@ -2113,7 +2054,7 @@ public final class RewardService {
         };
     }
 
-    private boolean isCriterionAvailable(RewardCriterion criterion) {
+    boolean isCriterionAvailable(RewardCriterion criterion) {
         if (criterion == null || !criterion.isValid()) {
             return false;
         }
@@ -2893,7 +2834,7 @@ public final class RewardService {
         rewards = java.util.Collections.unmodifiableMap(loadedRewards);
     }
 
-    private List<RewardCriterion> loadCriteria(ConfigurationSection section) {
+    List<RewardCriterion> loadCriteria(ConfigurationSection section) {
         List<RewardCriterion> criteria = new ArrayList<>();
         if (section == null) {
             return criteria;

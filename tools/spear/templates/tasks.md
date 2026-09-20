@@ -50,7 +50,7 @@ Tasks are ordered to honour state-machine and architectural dependencies. Indepe
 
 1. Every task has exactly ONE tag (`TDD`, `DOC`, or `INFRA`).
 2. `References:` cites at least one REQ-ID from `requirements.md`. If the REQ doesn't exist, run `/spear:spec` first.
-3. `Evidence:` starts empty (`\ \``). It must be filled before any skill past `spec-done` will run (REQ-030). Each line is a verified source (e.g. `context7:react@19/useEffect`, `src/domain/Order.kt:42`, `docs/implementation.md#3.1`).
+3. The Evidence field starts empty. It must be filled before any skill past `spec-done` will run (REQ-030). Each line is a verified source, such as `context7:react@19/useEffect`, `src/domain/Order.kt:42`, or `docs/implementation.md#3.1`.
 4. Task size ceiling: ~1500 tokens of full briefing. If larger, split.
 5. A task MUST be achievable by a single SPEAR cycle (`spec → prove → engine → arch → refine` for TDD; `spec → arch → refine` for DOC/INFRA).
 6. Mark state as work proceeds: `[~]` when entering `spec`; `[x]` only when `/spear:refine` has cleared state to `idle`.

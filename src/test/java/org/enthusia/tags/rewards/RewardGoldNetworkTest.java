@@ -4,22 +4,31 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.logging.Logger;
+import org.bukkit.plugin.java.JavaPlugin;
 import java.util.concurrent.TimeUnit;
 import org.enthusia.tags.advancements.domain.GoldRewardPolicy;
 import org.enthusia.tags.PerformanceMonitor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class RewardGoldNetworkTest {
-    public static class TestPlugin extends org.bukkit.plugin.java.JavaPlugin {
-        @Override public java.util.logging.Logger getLogger() {
-            return java.util.logging.Logger.getLogger("reward-conflict-test");
-        }
-    }
     private static final String ADDRESS = "192.0.2.10";
     private static final RewardAction GOLD = new RewardAction("gold", RewardActionType.MONEY,
         "", 100D, "Gold", null, 0, null, java.util.List.of(), true);
+
+    private RewardService claimService(RewardStorage storage, UUID player) {
+        JavaPlugin plugin = mock(JavaPlugin.class);
+        when(plugin.getLogger()).thenReturn(Logger.getLogger("reward-conflict-test"));
+        RewardService service = spy(new RewardService(plugin, null, null,
+            new PerformanceMonitor(null), storage));
+        doReturn(true).when(service).isAvailable();
+        service.preloadPlayerBlocking(player);
+        return service;
+    }
 
     private RewardStorage open(Path directory) throws Exception {
         RewardStorage storage = new RewardStorage(directory.resolve("rewards.db").toFile(),
@@ -50,28 +59,12 @@ class RewardGoldNetworkTest {
                 RewardStatus.CLAIM_PENDING, null, null);
             storage.saveActionLedgerNow(player, "reward", GOLD, "old-definition",
                 RewardStatus.DELIVERY_FAILED, null, "Prior definite failure");
-            var unsafeField = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-            unsafeField.setAccessible(true);
-            TestPlugin plugin = (TestPlugin) ((sun.misc.Unsafe) unsafeField.get(null)).allocateInstance(TestPlugin.class);
-            RewardService service = new RewardService(plugin, null, null, new PerformanceMonitor(null));
-            var storageField = RewardService.class.getDeclaredField("storage");
-            storageField.setAccessible(true);
-            storageField.set(service, storage);
-            var statesField = RewardService.class.getDeclaredField("playerStates");
-            statesField.setAccessible(true);
-            @SuppressWarnings("unchecked")
-            var states = (java.util.Map<UUID, RewardPlayerState>) statesField.get(service);
-            RewardPlayerState state = new RewardPlayerState();
-            state.hydrate(storage.loadNow(player));
-            states.put(player, state);
-            var claim = RewardService.class.getDeclaredMethod("claimInternal", UUID.class, String.class,
-                RewardDefinition.class, String.class);
-            claim.setAccessible(true);
+            RewardService service = claimService(storage, player);
             for (var actions : java.util.List.of(java.util.List.of(GOLD), java.util.List.of(earlier, GOLD))) {
                 RewardDefinition reward = new RewardDefinition("reward", "Existing", java.util.List.of(),
                     null, java.util.List.of(), actions, "playtime");
                 assertEquals(RewardClaimResult.RECONCILIATION_REQUIRED,
-                    claim.invoke(service, player, "Tester", reward, ADDRESS));
+                    service.claimInternal(player, "Tester", reward, ADDRESS));
                 RewardPlayerState persisted = new RewardPlayerState();
                 persisted.hydrate(storage.loadNow(player));
                 assertEquals(RewardStatus.REQUIRES_RECONCILIATION.name(), persisted.getState("reward-delivery:reward"));
@@ -144,7 +137,7 @@ class RewardGoldNetworkTest {
 
     private boolean reserve(RewardStorage storage, UUID player) {
         try { return storage.reserveGoldActionNow(player, "reward", GOLD, "fingerprint", ADDRESS); }
-        catch (SQLException ex) { throw new RuntimeException(ex); }
+        catch (SQLException ex) { throw new CompletionException(ex); }
     }
 
     @Test
@@ -154,25 +147,12 @@ class RewardGoldNetworkTest {
         UUID alt = UUID.randomUUID();
         try {
             storage.reserveIpClaimNow(main, "reward", ADDRESS);
-            RewardService service = new RewardService(null, null, null, new PerformanceMonitor(null));
-            var storageField = RewardService.class.getDeclaredField("storage");
-            storageField.setAccessible(true);
-            storageField.set(service, storage);
-            var statesField = RewardService.class.getDeclaredField("playerStates");
-            statesField.setAccessible(true);
-            @SuppressWarnings("unchecked")
-            var states = (java.util.Map<UUID, RewardPlayerState>) statesField.get(service);
-            RewardPlayerState state = new RewardPlayerState();
-            state.hydrate(storage.loadNow(alt));
-            states.put(alt, state);
+            RewardService service = claimService(storage, alt);
             RewardDefinition reward = new RewardDefinition("reward", "Existing challenge", java.util.List.of(),
                 null, java.util.List.of(), java.util.List.of(GOLD), "playtime");
-            var claim = RewardService.class.getDeclaredMethod("claimInternal", UUID.class, String.class,
-                RewardDefinition.class, String.class);
-            claim.setAccessible(true);
-            assertEquals(RewardClaimResult.SUCCESS_GOLD_WITHHELD, claim.invoke(service, alt, "Alt", reward, ADDRESS));
+            assertEquals(RewardClaimResult.SUCCESS_GOLD_WITHHELD, service.claimInternal(alt, "Alt", reward, ADDRESS));
             assertTrue(storage.loadNow(alt).claims().contains("reward"));
-            assertEquals(RewardClaimResult.ALREADY_CLAIMED, claim.invoke(service, alt, "Alt", reward, "192.0.2.99"));
+            assertEquals(RewardClaimResult.ALREADY_CLAIMED, service.claimInternal(alt, "Alt", reward, "192.0.2.99"));
             assertEquals(RewardStatus.WITHHELD_NETWORK_LIMIT,
                 storage.loadActionLedgerNow(alt, "reward").get("gold").status());
         } finally { storage.close(); }

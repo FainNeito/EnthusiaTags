@@ -2,12 +2,28 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
+// String splitting keeps malformed long conditions linear-time instead of regex backtracking.
+export function isEarsClause(clause) {
+  const clean = clause.replace(/\s+/g, ' ').trim();
+  const response = 'THE SYSTEM SHALL ';
+  if (clean.startsWith(response)) return clean.length > response.length;
+  if (clean.startsWith('WHERE ')) return clean.length > 'WHERE '.length;
+  const trigger = ['WHEN ', 'WHILE ', 'IF '].find(prefix => clean.startsWith(prefix));
+  if (!trigger) return false;
+  const remainder = clean.slice(trigger.length);
+  const separator = ' ' + response;
+  const split = remainder.indexOf(separator);
+  if (split < 1) return false;
+  const condition = remainder.slice(0, split).replace(/(?:^| )THEN$/, '').trim();
+  const result = remainder.slice(split + separator.length).trim();
+  return condition.length > 0 && result.length > 0;
+}
 export function validate(text, filename) {
   const errors=[]; let pending=null;
   const fail=(entry,reason)=>errors.push({id:entry.id,file:filename,line:entry.line,reason});
   const check=(entry,clause)=>{
     const clean=clause.replace(/^\*\*(Ubiquitous|Event-driven|State-driven|Unwanted|Feature)\.\*\*\s*/,'').trim();
-    if(!/^(?:THE SYSTEM SHALL\s+\S|WHEN\s+.+\s+THE SYSTEM SHALL\s+\S|WHILE\s+.+\s+THE SYSTEM SHALL\s+\S|IF\s+.+\s+(?:THEN\s+)?THE SYSTEM SHALL\s+\S|WHERE\s+\S)/.test(clean))
+    if(!isEarsClause(clean))
       fail(entry,'Clause does not match a supported EARS pattern or has an empty response');
   };
   text.split(/\r?\n/).forEach((line,index)=>{
@@ -26,7 +42,7 @@ export function validate(text, filename) {
 }
 if(process.argv[1] && import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href) {
   try {
-    if(!process.argv[2]) throw Error('Usage: node ears.mjs <path>');
+    if(!process.argv[2]) throw Error('Usage: node ears.mjs PATH');
     const result=validate(fs.readFileSync(process.argv[2],'utf8'),process.argv[2]);
     for(const e of result.errors) console.error(e.file+':'+e.line+': '+e.id+': '+e.reason);
     process.exitCode=result.ok?0:1;

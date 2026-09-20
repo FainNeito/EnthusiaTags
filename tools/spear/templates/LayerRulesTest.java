@@ -1,4 +1,4 @@
-package __BASE_PACKAGE__.architecture;
+package base_package.architecture;
 import java.nio.file.*;
 import java.util.*;
 import java.util.regex.*;
@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /** Java/JUnit template. Substitute the base package and adapt paths to the documented layer map. */
 class LayerRulesTest {
     @Test void layerImportsRespectBoundaries() throws Exception {
-        String base="__BASE_PACKAGE__";
+        String base="base_package";
         Path source=Path.of("src/main/java",base.replace('.','/'));
         List<String> errors=new ArrayList<>();
         Pattern imports=Pattern.compile("(?m)^import\\s+(?:static\\s+)?([\\w.]+)");
