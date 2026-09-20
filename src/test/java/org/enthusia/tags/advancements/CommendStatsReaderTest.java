@@ -60,6 +60,28 @@ class CommendStatsReaderTest {
             () -> result.put(PLAYER, null));
     }
 
+    @Test void versionNineCannotHidePresentWrongShapedEvidence() {
+        for (String value : new String[]{"[]", "[item]", "42", "broken", "false"}) {
+            assertThrows(IllegalArgumentException.class, () -> CommendStatsReader.parse(
+                "dataVersion: 9\nadvancementEvidence: " + value + "\n"), value);
+        }
+    }
+
+    @Test void presentWrongShapedCategoryMaxIsNotMissingHistory() {
+        for (String value : new String[]{"[]", "[item]", "42", "broken", "false"}) {
+            String yaml = record("    positiveReceived: true\n    maxOverall: 20\n"
+                + "    minOverall: -25\n    recoveredFromSevere: true\n    categoryMax: " + value + "\n");
+            assertThrows(IllegalArgumentException.class, () -> CommendStatsReader.parse(yaml), value);
+        }
+    }
+
+    @Test void emptyCategoryMaxIsStillAValidZeroHistory() throws Exception {
+        var stats = CommendStatsReader.parse(record("    positiveReceived: false\n    maxOverall: 0\n"
+            + "    minOverall: 0\n    recoveredFromSevere: false\n    categoryMax: {}\n")).get(PLAYER);
+        assertEquals(0, stats.kindMax());
+        assertEquals(0, stats.goodStallMax());
+    }
+
     @Test void missingOrMalformedEvidenceFailsClosed() {
         for (String input : new String[]{
             "",

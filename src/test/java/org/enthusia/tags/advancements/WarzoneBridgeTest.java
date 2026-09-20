@@ -110,6 +110,22 @@ class WarzoneBridgeTest {
         assertEquals(1000, result.progress().get("warzone_duels/gladiator"));
         assertTrue(result.celebrate().isEmpty(), "First fresh read is historical, never a replayed toast");
     }
+    @Test void malformedSectionCannotSeedAnArtificialLiveBaseline() throws Exception {
+        Path file = directory.resolve("shape.yml");
+        Files.writeString(file, "players:\n  " + player
+            + ":\n    wins: 50\n    best-win-streak: 5\n    advancements: []\n");
+        var bridge = new WarzoneAdvancementBridge(file);
+        bridge.beginSession(player);
+        assertThrows(IllegalArgumentException.class, bridge::refresh);
+        assertTrue(bridge.observe(player).progress().isEmpty());
+        Files.writeString(file, "players:\n  " + player
+            + ":\n    wins: 50\n    best-win-streak: 5\n    advancements:\n      challenges-sent: 1\n");
+        bridge.refresh();
+        var restored = bridge.observe(player);
+        assertEquals(1000, restored.progress().get("warzone_duels/welcome_to_thunderdome"));
+        assertTrue(restored.celebrate().isEmpty(), "The first valid snapshot remains historical");
+    }
+
     @Test void nativeWiringIsOptInAsyncAndClosesWithController() throws Exception {
         String config = Files.readString(Path.of("src/main/resources/config.yml"));
         String source = Files.readString(Path.of("src/main/java/org/enthusia/tags/advancements/NativeAdvancementController.java"));
