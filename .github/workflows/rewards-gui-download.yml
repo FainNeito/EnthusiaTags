@@ -1,0 +1,25 @@
+name: Package rewards GUI test downloads
+on:
+  push:
+    branches: ['test-jars-rewards-gui-20260920-41402850']
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Verify previously tested binary checksums (no rebuild)
+        working-directory: .test-artifacts/rewards-gui
+        run: |
+          echo '41402850c2fc5e4b067b9daa54120f2bd8ecb2e983ff59b3c48ccfc891e21462  EnthusiaTags-2.2.2-rewards-gui-test.1.jar' | sha256sum -c -
+          echo 'cab9d863af9ba945f11b12facdb6c3bd85cafd4f86828d91c66fdff753b1c465  EnthusiaAdvancements-1.0.0-pilot.5.jar' | sha256sum -c -
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: EnthusiaTags-Rewards-GUI-Test
+          path: .test-artifacts/rewards-gui/*
+          if-no-files-found: error
+          retention-days: 14
