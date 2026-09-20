@@ -90,6 +90,9 @@ final class ExpressStatsReader {
         Map<UUID, MutableStats> players,
         boolean hasDeliveryPending
     ) throws SQLException {
+        // recipient_uuid is the current mailbox owner. MailRepository.expire rewrites it
+        // to sender_uuid before a normal return can become RETURN_CLAIMED; see the
+        // pinned provider contract in docs/express-history-contract.md.
         String delivered = hasDeliveryPending ? " AND delivery_pending=0" : "";
         String sql = """
             SELECT recipient_uuid,

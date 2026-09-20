@@ -53,6 +53,46 @@ class ExpressStatsReaderTest {
         assertEquals(1, ExpressStatsReader.read(database).get(recipient).claimedPackages());
     }
 
+    @Test void returnLifecycleCreditsTheOriginalSenderOnlyAfterDelivery() throws Exception {
+        Path database = directory.resolve("return-lifecycle.db");
+        createCurrentSchema(database);
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + database);
+             var statement = connection.createStatement()) {
+            insert(connection, sender, recipient, "PACKAGE", "UNCLAIMED", 8, 1, 0);
+            // MailRepository.expire rewrites recipient_uuid to the original sender on return.
+            assertEquals(1, statement.executeUpdate(
+                "UPDATE mail SET recipient_uuid=COALESCE(sender_uuid,recipient_uuid), status='RETURNED'"
+                    + " WHERE type='PACKAGE' AND status='UNCLAIMED'"));
+            assertEquals(0, ExpressStatsReader.read(database).get(sender).returnedClaims());
+            assertEquals(1, statement.executeUpdate(
+                "UPDATE mail SET status='RETURN_CLAIMED', unread=0, delivery_pending=1 WHERE status='RETURNED'"));
+            assertEquals(0, ExpressStatsReader.read(database).get(sender).returnedClaims());
+            assertEquals(1, statement.executeUpdate(
+                "UPDATE mail SET delivery_pending=0 WHERE status='RETURN_CLAIMED'"));
+        }
+        byte[] before = Files.readAllBytes(database);
+        var completed = ExpressStatsReader.read(database);
+        assertEquals(1, completed.get(sender).returnedClaims());
+        assertEquals(0, completed.get(sender).claimedPackages());
+        assertNull(completed.get(recipient), "Original recipient is no longer the owner of the return row");
+        assertArrayEquals(before, Files.readAllBytes(database), "Reading evidence must not mutate mail.db");
+    }
+
+    @Test void legacyReturnLifecycleAlsoCreditsTheCurrentOwner() throws Exception {
+        Path database = directory.resolve("legacy-return.db");
+        createLegacySchema(database);
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + database);
+             var statement = connection.createStatement()) {
+            insertLegacy(connection, sender, recipient, "PACKAGE", "UNCLAIMED", 12, 1);
+            statement.executeUpdate("UPDATE mail SET recipient_uuid=sender_uuid, status='RETURNED' WHERE status='UNCLAIMED'");
+            assertEquals(0, ExpressStatsReader.read(database).get(sender).returnedClaims());
+            statement.executeUpdate("UPDATE mail SET status='RETURN_CLAIMED', unread=0 WHERE status='RETURNED'");
+        }
+        var completed = ExpressStatsReader.read(database);
+        assertEquals(1, completed.get(sender).returnedClaims());
+        assertNull(completed.get(recipient));
+    }
+
     @Test void missingOrInvalidDatabaseFailsClosed() throws Exception {
         assertThrows(Exception.class,
             () -> ExpressStatsReader.read(directory.resolve("missing.db")));
