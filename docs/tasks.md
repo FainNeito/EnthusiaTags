@@ -212,7 +212,7 @@ Evidence: AdvancementLayoutTest covers all bundled reward IDs, coordinate unique
 Status: complete locally through verification; live test-server acceptance pending.
 References: REQ-034 through REQ-038; implementation.md Presentation.
 Acceptance: ten display-only reputation advancements use durable EnthusiaCommend evidence, historical completion is silent, live crossings celebrate once, missing reads retain known progress, positive category milestones are tracked at +5, and no negative-behavior category achievements or rewards are introduced.
-Evidence: EnthusiaCommend feature branch persists positive-receipt, overall high/low-water, redemption, and positive-category high-water evidence in data.yml; its clean verify passes 178 tests. ReputationProgressTest, CommendStatsReaderTest, CommendBridgeTest, AdvancementNodeOrderTest and AdvancementLayoutTest pass 20 focused tests. EnthusiaTags clean verify passes 181 tests with zero failures/errors/skips.
+Evidence: EnthusiaCommend feature branch persists positive-receipt, overall high/low-water, redemption, and positive-category high-water evidence in data.yml; its clean verify passes 178 tests. ReputationProgressTest, CommendStatsReaderTest, CommendBridgeTest, AdvancementNodeOrderTest and AdvancementLayoutTest pass 20 focused tests. Historical original implementation verification at 368fff7 passed 181 EnthusiaTags tests with zero failures/errors/skips. Later foundation-sync and review-follow-up totals are identified separately in docs/pr-stack-verification.md.
 
 ## T-900 [TDD] PR-review correctness and verification cleanup
 

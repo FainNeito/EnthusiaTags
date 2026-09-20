@@ -14,6 +14,9 @@ final class CommendStatsReader {
         YamlConfiguration config = new YamlConfiguration();
         config.loadFromString(yaml);
         ConfigurationSection evidence = config.getConfigurationSection("advancementEvidence");
+        if (evidence == null && config.contains("advancementEvidence")) {
+            throw new IllegalArgumentException("Invalid advancementEvidence section");
+        }
         if (evidence == null) {
             Object version = config.get("dataVersion");
             if (version instanceof Integer value && value >= 9) {
@@ -43,6 +46,9 @@ final class CommendStatsReader {
         boolean recovered = bool(player.get("recoveredFromSevere"));
 
         ConfigurationSection categories = player.getConfigurationSection("categoryMax");
+        if (categories == null && player.contains("categoryMax")) {
+            throw new IllegalArgumentException("Invalid categoryMax section");
+        }
         return new ReputationMilestoneProgress.Stats(
             positiveReceived,
             maxOverall,
