@@ -37,7 +37,7 @@ jobs:
         run: mvn --batch-mode --no-transfer-progress clean verify
 
       - name: Exercise read-only SQLite using the final shaded jar
-        run: java --class-path target/EnthusiaTags.jar tools/ci/SQLiteArtifactProbe.java
+        run: java --class-path target/EnthusiaTags.jar tools/ci/org/enthusia/tools/SQLiteArtifactProbe.java
 
       - name: Update rolling prerelease
         env:
