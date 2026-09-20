@@ -27,3 +27,7 @@ round2-express-verify.log passed clean verify with 207 Java tests, zero failures
 ## Diary foundation-sync history
 
 The earlier 0caba9f run passed 209 Java tests and eight separate Node tests. This branch retains the exact owner-aware renderer pilot.5 dependency and the existing deferred icon code without further icon changes. Latest parser/contract follow-up validation is recorded below after the clean build.
+
+## Latest combined review follow-up
+
+round2-diary-consumer-verify.log passed clean verification with 219 Java tests, zero failures/errors/skips. This includes the synchronized Warzone and Commendation shape checks and Express lifecycle fixtures, with final shaded SQLite-driver verification. Eight Node tooling tests and EARS validation are checked separately before push. No Diary requirement, icon asset, renderer pin, server installation, or player data was changed by this synchronization. Hosted checks remain exact-head evidence, separate from live icon acceptance and Codacy.
