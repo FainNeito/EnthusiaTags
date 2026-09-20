@@ -1,0 +1,1767 @@
+diff --git a/docs/rewards-gui-test.md b/docs/rewards-gui-test.md
+new file mode 100644
+index 0000000..f8c6a30
+--- /dev/null
++++ b/docs/rewards-gui-test.md
+@@ -0,0 +1,11 @@
++# Rewards browser test build
++
++Isolated detached worktree based on a690322. Existing PR branches and their working trees are not modified. Diary's uncommitted work in another checkout is deliberately not incorporated.
++
++Scope: five-row dashboard; six-row category/ready browser with seven category shortcuts, group/filter/sort controls, 21 reward slots, conditional pagination, readable non-italic lore and time units, and one-click claims that retain the current view. No claim-all and no resource pack requirements.
++
++Constraints: reward IDs, criteria, action definitions, gold/IP policy, databases and the core claim path remain authoritative and unchanged. Unknown progress must not display as zero. Inventory buttons are resolved against a server-side holder; bottom-inventory items, dragging, hotbar swaps and rapid repeated clicks must not trigger claims. Reopening after an asynchronous completion is forbidden when the player has closed or changed menus.
++
++Verification: model, item renderer, and click/claim lifecycle regression tests; full clean Java 25 verification; isolated final-JAR SQLite read-only test. Live GUI appearance/behavior remains for user acceptance. No PRs, merges or server deployment.
++
++Completed local verification: 255 Java tests passed (including 22 GUI tests), zero failures/errors/skips; the final shaded JAR printed SHADED_SQLITE_READ_ONLY_OK. Test version 2.2.2-rewards-gui-test.1. The matching unchanged renderer is pilot.5. No live GUI/server acceptance is claimed.
+diff --git a/pom.xml b/pom.xml
+index 4641c81..2dcf70d 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -6,7 +6,7 @@
+ 
+     <groupId>org.enthusia</groupId>
+     <artifactId>EnthusiaTags</artifactId>
+-    <version>2.2.2-pilot.2</version>
++    <version>2.2.2-rewards-gui-test.1</version>
+ 
+     <properties>
+         <maven.compiler.release>25</maven.compiler.release>
+diff --git a/src/main/java/org/enthusia/tags/EnthusiaTagsPlugin.java b/src/main/java/org/enthusia/tags/EnthusiaTagsPlugin.java
+index 6338194..a9d61e9 100644
+--- a/src/main/java/org/enthusia/tags/EnthusiaTagsPlugin.java
++++ b/src/main/java/org/enthusia/tags/EnthusiaTagsPlugin.java
+@@ -178,6 +178,7 @@ public final class EnthusiaTagsPlugin extends JavaPlugin {
+         RewardsCommand rewardsCommand = new RewardsCommand(rewardService, tagService, messages, this);
+         if (rewardService.isAvailable()) {
+             Bukkit.getPluginManager().registerEvents(new RewardListener(rewardService, rewardsCommand.getRewardMenu()), this);
++            rewardsCommand.getRewardMenu().startRefresh();
+             Bukkit.getPluginManager().registerEvents(rewardTracker, this);
+             if (naturalBlockTracker != null) {
+                 Bukkit.getPluginManager().registerEvents(naturalBlockTracker, this);
+diff --git a/src/main/java/org/enthusia/tags/rewards/RewardListener.java b/src/main/java/org/enthusia/tags/rewards/RewardListener.java
+index cc66907..1a6897c 100644
+--- a/src/main/java/org/enthusia/tags/rewards/RewardListener.java
++++ b/src/main/java/org/enthusia/tags/rewards/RewardListener.java
+@@ -1,129 +1,97 @@
+ package org.enthusia.tags.rewards;
+ 
+-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
++import java.util.Locale;
++import java.util.UUID;
+ import org.bukkit.entity.Player;
+ import org.bukkit.event.EventHandler;
+ import org.bukkit.event.Listener;
++import org.bukkit.event.inventory.ClickType;
+ import org.bukkit.event.inventory.InventoryClickEvent;
+ import org.bukkit.event.inventory.InventoryCloseEvent;
+-import org.bukkit.inventory.InventoryHolder;
+-import org.bukkit.inventory.ItemStack;
+-import org.bukkit.inventory.meta.ItemMeta;
+-import org.bukkit.persistence.PersistentDataContainer;
+-import org.bukkit.persistence.PersistentDataType;
+-
+-import java.util.Locale;
+-import java.util.UUID;
++import org.bukkit.event.inventory.InventoryDragEvent;
++import org.bukkit.inventory.Inventory;
+ 
++/** Controls the browser, but delegates every claim/recovery to the existing RewardService. */
+ public final class RewardListener implements Listener {
+-    private final RewardService rewardService;
+-    private final RewardMenu rewardMenu;
+-
+-    public RewardListener(RewardService rewardService, RewardMenu rewardMenu) {
+-        this.rewardService = rewardService;
+-        this.rewardMenu = rewardMenu;
+-    }
+-
++    private final RewardService service;
++    private final RewardMenu menu;
++    public RewardListener(RewardService service, RewardMenu menu) { this.service = service; this.menu = menu; }
+     @EventHandler
+     public void onInventoryClose(InventoryCloseEvent event) {
+-        if (event.getPlayer() instanceof Player player) {
+-            rewardService.retryQueuedItems(player);
+-        }
++        // Retain the established retry mechanism for already-claimed queued items.
++        if(event.getPlayer() instanceof Player player) service.retryQueuedItems(player);
++    }
++    @EventHandler
++    public void onInventoryDrag(InventoryDragEvent event) {
++        if(owned(event.getView().getTopInventory()) != null) event.setCancelled(true);
+     }
+-
+     @EventHandler
+     public void onInventoryClick(InventoryClickEvent event) {
+-        InventoryHolder holder = event.getView().getTopInventory().getHolder();
+-        if (!(holder instanceof RewardMenuHolder rewardHolder)) {
+-            return;
+-        }
++        Inventory top = event.getView().getTopInventory();
++        RewardMenuHolder holder = owned(top);
++        if(holder == null) return;
+         event.setCancelled(true);
+-        if (!(event.getWhoClicked() instanceof Player player)) {
+-            return;
+-        }
+-        ItemStack clicked = event.getCurrentItem();
+-        if (clicked == null || !clicked.hasItemMeta()) {
+-            return;
+-        }
+-        ItemMeta meta = clicked.getItemMeta();
+-        PersistentDataContainer data = meta.getPersistentDataContainer();
+-        if (data.has(rewardMenu.getBackKey(), PersistentDataType.BYTE)) {
+-            player.openInventory(rewardMenu.create(player));
+-            return;
+-        }
+-        if (data.has(rewardMenu.getNextKey(), PersistentDataType.BYTE)) {
+-            if (rewardHolder.getCategory() == null) {
+-                return;
+-            }
+-            int next = rewardHolder.getPage() + 1;
+-            player.openInventory(rewardMenu.createCategory(player, rewardHolder.getCategory(), next));
+-            return;
+-        }
+-        if (data.has(rewardMenu.getPrevKey(), PersistentDataType.BYTE)) {
+-            if (rewardHolder.getCategory() == null) {
+-                return;
+-            }
+-            int prev = Math.max(0, rewardHolder.getPage() - 1);
+-            player.openInventory(rewardMenu.createCategory(player, rewardHolder.getCategory(), prev));
+-            return;
+-        }
+-        String categoryId = data.get(rewardMenu.getCategoryKey(), PersistentDataType.STRING);
+-        if (categoryId != null && !categoryId.isBlank()) {
+-            player.openInventory(rewardMenu.createCategory(player, categoryId));
+-            return;
+-        }
+-        String rewardId = data.get(rewardMenu.getRewardKey(), PersistentDataType.STRING);
+-        if (rewardId == null) {
+-            return;
+-        }
+-        RewardDefinition reward = rewardService.getRewards().get(rewardId.toLowerCase(Locale.ROOT));
+-        if (reward == null) {
+-            return;
++        if(!(event.getWhoClicked() instanceof Player player)) return;
++        // Never interpret a player's own item, a shift-transfer, an offhand swap or a double-click as a GUI button.
++        if(event.getClickedInventory() != top || event.getRawSlot() < 0 || event.getRawSlot() >= top.getSize()) return;
++        if(event.getClick() != ClickType.LEFT && event.getClick() != ClickType.RIGHT) return;
++        RewardMenuAction action = holder.action(event.getRawSlot());
++        if(action == null || (action.type() == RewardMenuAction.Type.CLAIM && event.getClick() != ClickType.LEFT)) return;
++        if(!holder.schedule()) return;
++        boolean reverse = event.getClick() == ClickType.RIGHT;
++        try {
++            menu.nextTick(() -> {
++                holder.unschedule();
++                if(!player.isOnline() || player.getOpenInventory().getTopInventory() != top) return;
++                handle(player,holder,action,reverse);
++            });
++        } catch(RuntimeException error) { holder.unschedule(); throw error; }
++    }
++    private RewardMenuHolder owned(Inventory top) {
++        return top.getHolder() instanceof RewardMenuHolder holder && holder.getRewardService() == service ? holder : null;
++    }
++    private void handle(Player player, RewardMenuHolder holder, RewardMenuAction action, boolean reverse) {
++        RewardMenuState state = holder.state();
++        switch(action.type()) {
++            case CATEGORY -> menu.navigate(player,holder,RewardMenuState.category(action.value()));
++            case BACK -> menu.navigate(player,holder,RewardMenuState.dashboard());
++            case READY -> menu.navigate(player,holder,RewardMenuState.ready());
++            case FILTER -> menu.navigate(player,holder,state.withFilter(state.filter().cycle(reverse)));
++            case SORT -> menu.navigate(player,holder,state.withSort(state.sort().cycle(reverse)));
++            case GROUP -> menu.navigate(player,holder,state.withGroup(state.group().cycle(reverse)));
++            case PREVIOUS -> { if(state.page() > 0) menu.navigate(player,holder,state.withPage(state.page()-1)); }
++            case NEXT -> { if(state.page()+1 < holder.pageCount()) menu.navigate(player,holder,state.withPage(state.page()+1)); }
++            case CLOSE -> player.closeInventory();
++            case REFRESH -> { holder.clearNotices(); menu.refresh(player,holder,false); }
++            case CLAIM -> claim(player,holder,action.value());
+         }
+-        UUID playerId = player.getUniqueId();
+-        rewardService.claimAsync(player, reward).whenComplete((result, throwable) ->
+-            rewardService.runForOnlinePlayer(playerId, currentPlayer -> {
+-                if (throwable != null) {
+-                    currentPlayer.sendMessage(LegacyComponentSerializer.legacyAmpersand()
+-                        .deserialize(rewardService.getMessage("rewards-delivery-failed")));
+-                    return;
+-                }
+-                sendClaimResult(currentPlayer, result);
+-            }));
+     }
+-
+-    private void sendClaimResult(Player player, RewardClaimResult result) {
+-        switch (result) {
+-            case SUCCESS -> {
+-                player.sendMessage(LegacyComponentSerializer.legacyAmpersand()
+-                    .deserialize(rewardService.getMessage("rewards-claimed")));
+-                player.openInventory(rewardMenu.create(player));
+-            }
+-            case SUCCESS_GOLD_WITHHELD -> {
+-                player.sendMessage(LegacyComponentSerializer.legacyAmpersand()
+-                    .deserialize(rewardService.getMessage("rewards-gold-withheld")));
+-                player.openInventory(rewardMenu.create(player));
+-            }
+-            case GOLD_VERIFICATION_UNAVAILABLE -> player.sendMessage(LegacyComponentSerializer.legacyAmpersand()
+-                .deserialize(rewardService.getMessage("rewards-gold-verification-unavailable")));
+-            case LOADING -> player.sendMessage(LegacyComponentSerializer.legacyAmpersand()
+-                .deserialize(rewardService.getMessage("rewards-loading")));
+-            case ALREADY_CLAIMED -> player.sendMessage(LegacyComponentSerializer.legacyAmpersand()
+-                .deserialize(rewardService.getMessage("rewards-already-claimed")));
+-            case NOT_READY -> player.sendMessage(LegacyComponentSerializer.legacyAmpersand()
+-                .deserialize(rewardService.getMessage("rewards-not-ready")));
+-            case IP_ALREADY_CLAIMED -> player.sendMessage(LegacyComponentSerializer.legacyAmpersand()
+-                .deserialize(rewardService.getMessage("rewards-ip-already-claimed")));
+-            case DELIVERY_FAILED -> player.sendMessage(LegacyComponentSerializer.legacyAmpersand()
+-                .deserialize(rewardService.getMessage("rewards-delivery-failed")));
+-            case ITEM_QUEUED -> player.sendMessage(LegacyComponentSerializer.legacyAmpersand()
+-                .deserialize(rewardService.getMessage("rewards-item-queued")));
+-            case RECONCILIATION_REQUIRED -> player.sendMessage(LegacyComponentSerializer.legacyAmpersand()
+-                .deserialize(rewardService.getMessage("rewards-reconciliation-required")));
+-            case CLAIM_IN_PROGRESS -> player.sendMessage(LegacyComponentSerializer.legacyAmpersand()
+-                .deserialize(rewardService.getMessage("rewards-claim-in-progress")));
+-            case SERVICE_UNAVAILABLE -> player.sendMessage(LegacyComponentSerializer.legacyAmpersand()
+-                .deserialize(rewardService.getMessage("rewards-service-unavailable")));
++    private void claim(Player player, RewardMenuHolder holder, String id) {
++        RewardDefinition reward = service.getRewards().get(id.toLowerCase(Locale.ROOT));
++        if(reward == null) { menu.refresh(player,holder,false); return; }
++        UUID playerId = player.getUniqueId();
++        if(!menu.beginClaim(playerId,id)) return;
++        holder.clearNotice(id);
++        try {
++            menu.refresh(player,holder,true);
++            service.claimAsync(player,reward).whenComplete((result,error) -> {
++                // This release is unconditional, even when the player disconnects or the service is stopping.
++                menu.endClaim(playerId,id);
++                RewardClaimResult outcome = error != null || result == null ? RewardClaimResult.DELIVERY_FAILED : result;
++                service.runForOnlinePlayer(playerId,current -> {
++                    current.sendMessage(RewardMenuText.component(service.getMessage(RewardMenuText.resultMessageKey(outcome))));
++                    // Do not reopen a closed GUI or switch someone away from a different inventory.
++                    if(current.getOpenInventory().getTopInventory() == holder.getInventory()) {
++                        holder.notice(id,outcome);
++                        menu.refresh(current,holder,true);
++                    }
++                });
++            });
++        } catch(RuntimeException error) {
++            menu.endClaim(playerId,id);
++            holder.notice(id,RewardClaimResult.DELIVERY_FAILED);
++            player.sendMessage(RewardMenuText.component(service.getMessage("rewards-delivery-failed")));
++            menu.refresh(player,holder,true);
+         }
+     }
+ }
+diff --git a/src/main/java/org/enthusia/tags/rewards/RewardMenu.java b/src/main/java/org/enthusia/tags/rewards/RewardMenu.java
+index 1078702..adb457a 100644
+--- a/src/main/java/org/enthusia/tags/rewards/RewardMenu.java
++++ b/src/main/java/org/enthusia/tags/rewards/RewardMenu.java
+@@ -1,312 +1,229 @@
+ package org.enthusia.tags.rewards;
+ 
+-import net.kyori.adventure.text.Component;
+-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
++import java.util.ArrayList;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Locale;
++import java.util.Map;
++import java.util.Set;
++import java.util.UUID;
++import java.util.concurrent.ConcurrentHashMap;
+ import org.bukkit.Bukkit;
++import org.bukkit.Material;
+ import org.bukkit.NamespacedKey;
+-import org.bukkit.enchantments.Enchantment;
+ import org.bukkit.entity.Player;
+-import org.bukkit.inventory.ItemFlag;
+ import org.bukkit.inventory.Inventory;
+ import org.bukkit.inventory.ItemStack;
+-import org.bukkit.inventory.meta.ItemMeta;
+ import org.bukkit.persistence.PersistentDataType;
++import org.bukkit.plugin.Plugin;
++import org.bukkit.scheduler.BukkitTask;
+ import org.enthusia.tags.TagService;
+-
+-import java.math.BigDecimal;
+-import java.util.ArrayList;
+-import java.util.List;
+-import java.util.Locale;
+-import java.util.Map;
++import static org.enthusia.tags.rewards.RewardMenuAction.Type.*;
+ 
+ public final class RewardMenu {
+-    private final RewardService rewardService;
+-    private final TagService tagService;
+-    private final NamespacedKey rewardKey;
+-    private final NamespacedKey categoryKey;
+-    private final NamespacedKey backKey;
+-    private final NamespacedKey nextKey;
+-    private final NamespacedKey prevKey;
+-
+-    public RewardMenu(RewardService rewardService, TagService tagService) {
+-        this.rewardService = rewardService;
+-        this.tagService = tagService;
+-        this.rewardKey = new NamespacedKey(tagService.getPlugin(), "reward_id");
+-        this.categoryKey = new NamespacedKey(tagService.getPlugin(), "reward_category");
+-        this.backKey = new NamespacedKey(tagService.getPlugin(), "reward_back");
+-        this.nextKey = new NamespacedKey(tagService.getPlugin(), "reward_next");
+-        this.prevKey = new NamespacedKey(tagService.getPlugin(), "reward_prev");
+-    }
+-
+-    public Inventory create(Player player) {
+-        RewardMenuHolder holder = new RewardMenuHolder(rewardService);
+-        Component title = LegacyComponentSerializer.legacyAmpersand()
+-            .deserialize(rewardService.getMessage("rewards-gui-title"));
+-        Inventory inventory = Bukkit.createInventory(holder, 27, title);
+-        holder.setInventory(inventory);
+-
+-        int slot = 10;
+-        Map<String, RewardCategory> categories = rewardService.getConfig().categories();
+-        for (RewardCategory category : categories.values()) {
+-            if (slot >= 17) {
+-                break;
+-            }
+-            inventory.setItem(slot++, createCategoryItem(category));
+-        }
+-        return inventory;
+-    }
+-
+-    public Inventory createCategory(Player player, String categoryId) {
+-        return createCategory(player, categoryId, 0);
+-    }
+-
++    private final RewardService service;
++    private final Plugin plugin;
++    private final RewardMenuItems items;
++    private final NamespacedKey rewardKey, categoryKey, backKey, nextKey, prevKey;
++    private final Set<ClaimKey> inFlight = ConcurrentHashMap.newKeySet();
++    private BukkitTask refreshTask;
++    private long warningAfter;
++    private record ClaimKey(UUID player, String reward) {}
++    private record Snapshot(List<RewardCategory> categories, List<RewardMenuModel.Entry> entries) {}
++    public RewardMenu(RewardService service, TagService tags) {
++        this.service = service; this.plugin = tags.getPlugin(); this.items = new RewardMenuItems(service, tags);
++        rewardKey = new NamespacedKey(plugin,"reward_id"); categoryKey = new NamespacedKey(plugin,"reward_category");
++        backKey = new NamespacedKey(plugin,"reward_back"); nextKey = new NamespacedKey(plugin,"reward_next"); prevKey = new NamespacedKey(plugin,"reward_prev");
++    }
++    public Inventory create(Player player) { return create(player, RewardMenuState.dashboard()); }
++    public Inventory createCategory(Player player, String category) { return create(player, RewardMenuState.category(category)); }
++    public Inventory createCategory(Player player, String category, int page) { return create(player, RewardMenuState.category(category).withPage(page)); }
+     public Inventory createFocused(Player player, RewardDefinition target) {
++        Snapshot snapshot = snapshot(player);
++        RewardMenuState state = RewardMenuState.category(target.getCategory()).focus(target.getId());
++        List<RewardMenuModel.Entry> selected = RewardMenuModel.select(snapshot.entries(), state);
+         int index = 0;
+-        for (RewardDefinition reward : rewardService.getRewards().values()) {
+-            if (!reward.getCategory().equalsIgnoreCase(target.getCategory())) continue;
+-            if (reward.getId().equalsIgnoreCase(target.getId())) {
+-                return createCategory(player, target.getCategory(), index / 45, target.getId());
+-            }
+-            index++;
+-        }
+-        return create(player);
+-    }
+-
+-    public Inventory createCategory(Player player, String categoryId, int page) {
+-        return createCategory(player, categoryId, page, null);
+-    }
+-
+-    private Inventory createCategory(Player player, String categoryId, int page, String focusedRewardId) {
+-        RewardMenuHolder holder = new RewardMenuHolder(rewardService, categoryId, page);
+-        RewardCategory category = rewardService.getConfig().categories().get(categoryId);
+-        String titleText = category == null
+-            ? rewardService.getMessage("rewards-gui-title")
+-            : rewardService.getMessage("rewards-category-title").replace("{category}", category.name());
+-        Component title = LegacyComponentSerializer.legacyAmpersand().deserialize(titleText);
+-        Inventory inventory = Bukkit.createInventory(holder, 54, title);
++        while (index < selected.size() && !selected.get(index).id().equalsIgnoreCase(target.getId())) index++;
++        return create(player, state.withPage(index < selected.size() ? index / 21 : 0), snapshot);
++    }
++    public Inventory create(Player player, RewardMenuState state) { return create(player, state, snapshot(player)); }
++    private Inventory create(Player player, RewardMenuState state, Snapshot snapshot) {
++        RewardMenuHolder holder = new RewardMenuHolder(service, state);
++        Inventory inventory = Bukkit.createInventory(holder, state.view() == RewardMenuState.View.DASHBOARD ? 45 : 54,
++            RewardMenuText.component("&6Enthusia &8• &fRewards"));
+         holder.setInventory(inventory);
+-
+-        List<RewardDefinition> list = new ArrayList<>();
+-        for (RewardDefinition reward : rewardService.getRewards().values()) {
+-            if (!reward.getCategory().equalsIgnoreCase(categoryId)) {
+-                continue;
+-            }
+-            list.add(reward);
+-        }
+-        int pageSize = 45;
+-        int start = Math.max(0, page) * pageSize;
+-        int end = Math.min(list.size(), start + pageSize);
+-        int slot = 0;
+-        long renderStart = System.nanoTime();
+-        RewardService.ProgressSnapshot snapshot = rewardService.getProgressSnapshot(player);
+-        for (int i = start; i < end; i++) {
+-            inventory.setItem(slot++, createRewardItem(player, list.get(i), snapshot,
+-                list.get(i).getId().equalsIgnoreCase(focusedRewardId == null ? "" : focusedRewardId)));
+-        }
+-        if (tagService.getPlugin() instanceof org.enthusia.tags.EnthusiaTagsPlugin plugin) {
+-            plugin.getPerformanceMonitor().add("rewards.gui.items-rendered", end - start);
+-            plugin.getPerformanceMonitor().recordDurationMillis("rewards.gui.render",
+-                java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - renderStart));
+-        }
+-        inventory.setItem(45, createPrevItem());
+-        inventory.setItem(49, createBackItem());
+-        inventory.setItem(53, createNextItem());
++        render(player, holder, snapshot, false);
+         return inventory;
+     }
+-
+-    public NamespacedKey getRewardKey() {
+-        return rewardKey;
+-    }
+-
+-    public NamespacedKey getCategoryKey() {
+-        return categoryKey;
+-    }
+-
+-    public NamespacedKey getBackKey() {
+-        return backKey;
+-    }
+-
+-    public NamespacedKey getNextKey() {
+-        return nextKey;
+-    }
+-
+-    public NamespacedKey getPrevKey() {
+-        return prevKey;
+-    }
+-
+-    private ItemStack createRewardItem(Player player, RewardDefinition reward, RewardService.ProgressSnapshot snapshot,
+-                                       boolean focused) {
+-        ItemStack stack = new ItemStack(reward.getIcon());
+-        ItemMeta meta = stack.getItemMeta();
+-        meta.displayName(LegacyComponentSerializer.legacyAmpersand().deserialize(reward.getName()));
+-
+-        List<Component> lore = new ArrayList<>();
+-        for (String line : reward.getDescription()) {
+-            lore.add(LegacyComponentSerializer.legacyAmpersand().deserialize(line));
+-        }
+-
+-        RewardEvaluation evaluation = rewardService.evaluate(player, reward, snapshot);
+-        boolean claimed = evaluation.status() == RewardStatus.CLAIMED;
+-        boolean complete = evaluation.claimable();
+-        if (focused) {
+-            lore.add(LegacyComponentSerializer.legacyAmpersand()
+-                .deserialize(rewardService.getMessage("rewards-status-focused")));
+-            meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+-            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+-        }
+-        if (claimed) {
+-            lore.add(LegacyComponentSerializer.legacyAmpersand()
+-                .deserialize(rewardService.getMessage("rewards-status-claimed")));
+-        } else if (evaluation.status() == RewardStatus.ITEM_QUEUED) {
+-            lore.add(LegacyComponentSerializer.legacyAmpersand()
+-                .deserialize(rewardService.getMessage("rewards-status-queued")));
+-        } else if (evaluation.status() == RewardStatus.REQUIRES_RECONCILIATION) {
+-            lore.add(LegacyComponentSerializer.legacyAmpersand()
+-                .deserialize(rewardService.getMessage("rewards-status-reconciliation")));
+-        } else if (evaluation.status() == RewardStatus.DELIVERY_FAILED) {
+-            lore.add(LegacyComponentSerializer.legacyAmpersand()
+-                .deserialize(rewardService.getMessage("rewards-status-retryable")));
+-        } else if (evaluation.status() == RewardStatus.CLAIM_PENDING) {
+-            lore.add(LegacyComponentSerializer.legacyAmpersand()
+-                .deserialize(rewardService.getMessage("rewards-status-pending")));
+-        } else if (complete) {
+-            lore.add(LegacyComponentSerializer.legacyAmpersand()
+-                .deserialize(rewardService.getMessage("rewards-status-claimable")));
+-            meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+-            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+-        } else {
+-            lore.add(LegacyComponentSerializer.legacyAmpersand()
+-                .deserialize(rewardService.getMessage("rewards-status-locked")));
++    /** Called outside inventory-click processing, on the main thread. */
++    public void navigate(Player player, RewardMenuHolder holder, RewardMenuState next) {
++        int size = next.view() == RewardMenuState.View.DASHBOARD ? 45 : 54;
++        if (holder.getInventory().getSize() != size) { player.openInventory(create(player,next)); return; }
++        holder.state(next); holder.clearNotices(); render(player,holder,snapshot(player),false);
++    }
++    public void refresh(Player player, RewardMenuHolder holder, boolean preserveSlots) {
++        if (holder.getRewardService() != service) return;
++        render(player,holder,snapshot(player),preserveSlots);
++    }
++    public void nextTick(Runnable work) { Bukkit.getScheduler().runTask(plugin,work); }
++    public void startRefresh() {
++        if (refreshTask != null) return;
++        refreshTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
++            for (Player player : Bukkit.getOnlinePlayers()) {
++                if (player.getOpenInventory().getTopInventory().getHolder() instanceof RewardMenuHolder holder
++                    && holder.getRewardService() == service) {
++                    try { refresh(player,holder,true); }
++                    catch (RuntimeException error) { warn(error); }
++                }
++            }
++        },40L,40L);
++    }
++    public boolean beginClaim(UUID player, String id) { return inFlight.add(new ClaimKey(player,id.toLowerCase(Locale.ROOT))); }
++    public void endClaim(UUID player, String id) { inFlight.remove(new ClaimKey(player,id.toLowerCase(Locale.ROOT))); }
++    public boolean claiming(UUID player, String id) { return inFlight.contains(new ClaimKey(player,id.toLowerCase(Locale.ROOT))); }
++    private Snapshot snapshot(Player player) {
++        var categories = new LinkedHashMap<String,RewardCategory>();
++        var configured = service.getConfig().categories();
++        for (String id : List.of("playtime","mining","combat","deaths","economy","exploration","misc")) {
++            if (configured.containsKey(id)) categories.put(id,configured.get(id));
+         }
+-
+-        lore.add(LegacyComponentSerializer.legacyAmpersand()
+-            .deserialize(rewardService.getMessage("rewards-progress-title")));
+-        for (RewardCriterion criterion : reward.getCriteria()) {
+-            long progress = rewardService.getProgress(player, criterion, snapshot);
+-            boolean done = progress >= criterion.getAmount();
+-            String line = rewardService.getMessage("rewards-progress-line")
+-                .replace("{label}", criterion.getLabel())
+-                .replace("{color}", done ? "&a" : "&c")
+-                .replace("{progress}", rewardService.formatProgress(progress, criterion));
+-            lore.add(LegacyComponentSerializer.legacyAmpersand().deserialize(line));
++        configured.values().stream().sorted(java.util.Comparator.comparing(RewardCategory::id))
++            .forEach(c -> categories.putIfAbsent(c.id().toLowerCase(Locale.ROOT),c));
++        Map<String,RewardDefinition> rewards = service.getRewards();
++        for (RewardDefinition reward : rewards.values()) {
++            String category = reward.getCategory().toLowerCase(Locale.ROOT);
++            categories.putIfAbsent(category,new RewardCategory(category,RewardMenuText.titleCase(category),Material.PAPER));
+         }
+-
+-        if (!reward.getActions().isEmpty()) {
+-            lore.add(LegacyComponentSerializer.legacyAmpersand()
+-                .deserialize(rewardService.getMessage("rewards-rewards-title")));
+-            for (RewardAction action : reward.getActions()) {
+-                lore.add(LegacyComponentSerializer.legacyAmpersand()
+-                    .deserialize(formatActionLine(action)));
+-            }
+-            if (reward.getActions().stream().anyMatch(RewardAction::isGoldNetworkLimited)) {
+-                lore.add(LegacyComponentSerializer.legacyAmpersand()
+-                    .deserialize(rewardService.getMessage("rewards-gold-policy")));
++        var ids = new ArrayList<>(categories.keySet());
++        var progress = service.getProgressSnapshot(player);
++        var rows = new ArrayList<RewardMenuModel.Entry>();
++        int index = 0;
++        for (RewardDefinition reward : rewards.values()) {
++            RewardEvaluation evaluation;
++            var readings = new ArrayList<RewardMenuModel.Reading>();
++            try {
++                evaluation = service.evaluate(player,reward,progress);
++                for (RewardCriterion criterion : reward.getCriteria()) readings.add(new RewardMenuModel.Reading(
++                    criterion,service.getVerifiedMenuProgress(player,criterion,progress)));
++            } catch (RuntimeException error) {
++                warn(error); evaluation = new RewardEvaluation(RewardStatus.LOCKED,Map.of(),false,false,"Progress unavailable");
++                readings.clear();
+             }
++            rows.add(new RewardMenuModel.Entry(reward,evaluation,readings,index++,ids.indexOf(reward.getCategory().toLowerCase(Locale.ROOT))));
++        }
++        return new Snapshot(List.copyOf(categories.values()),List.copyOf(rows));
++    }
++    private void render(Player player, RewardMenuHolder holder, Snapshot snapshot, boolean preserveSlots) {
++        long start = System.nanoTime();
++        Inventory inventory = holder.getInventory();
++        inventory.clear(); holder.clearActions();
++        frame(inventory);
++        if (holder.state().view() == RewardMenuState.View.DASHBOARD) dashboard(holder,snapshot);
++        else browser(player,holder,snapshot,preserveSlots);
++        if (plugin instanceof org.enthusia.tags.EnthusiaTagsPlugin tags) {
++            tags.getPerformanceMonitor().add("rewards.gui.items-rendered",holder.visibleRewards().size());
++            tags.getPerformanceMonitor().recordDurationMillis("rewards.gui.render",java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-start));
+         }
+-
+-        meta.lore(lore);
+-        meta.getPersistentDataContainer().set(rewardKey, PersistentDataType.STRING, reward.getId().toLowerCase(Locale.ROOT));
+-        stack.setItemMeta(meta);
+-        return stack;
+-    }
+-
+-    private String formatActionLine(RewardAction action) {
+-        return switch (action.getType()) {
+-            case TAG -> {
+-                String tagName = action.getValue();
+-                var tag = tagService.getRegistry().get(action.getValue());
+-                if (tag != null) {
+-                    tagName = tag.getDisplayName();
+-                }
+-                yield rewardService.getMessage("rewards-rewards-line-tag")
+-                    .replace("{tag}", tagName);
+-            }
+-            case MONEY -> rewardService.getMessage("rewards-rewards-line-money")
+-                .replace("{amount}", formatAmount(action.getAmount()));
+-            case ITEM -> rewardService.getMessage("rewards-rewards-line-item")
+-                .replace("{amount}", String.valueOf(action.getItemAmount()))
+-                .replace("{item}", itemDisplayName(action));
+-            case COMMAND -> rewardService.getMessage("rewards-rewards-line-unlock")
+-                .replace("{unlock}", actionLabel(action, "rewards-rewards-unlock-default"));
+-            case LORE_ITEM -> rewardService.getMessage("rewards-rewards-line-lore-item")
+-                .replace("{item}", actionLabel(action, "rewards-rewards-lore-item-default"));
+-        };
+     }
+-
+-    private String itemDisplayName(RewardAction action) {
+-        if (action.getDisplayName() != null && !action.getDisplayName().isBlank()) {
+-            return action.getDisplayName();
++    private void frame(Inventory inventory) {
++        ItemStack border = RewardMenuItems.item(Material.GRAY_STAINED_GLASS_PANE," ");
++        for(int slot=0;slot<inventory.getSize();slot++) {
++            int row=slot/9, column=slot%9;
++            if(row==0 || row==inventory.getSize()/9-1 || column==0 || column==8 || (inventory.getSize()==54 && row==1))
++                inventory.setItem(slot,border);
+         }
+-        if (action.getMaterial() == null) {
+-            return rewardService.getMessage("rewards-rewards-item-default");
++        ItemStack accent = RewardMenuItems.item(Material.ORANGE_STAINED_GLASS_PANE," ");
++        inventory.setItem(0,accent); inventory.setItem(8,accent);
++    }
++    private void dashboard(RewardMenuHolder holder, Snapshot snapshot) {
++        var summary = RewardMenuModel.summary(snapshot.entries());
++        put(holder,4,items.summary("Your Progress",summary,true),REFRESH);
++        var page = RewardMenuModel.page(snapshot.categories(),holder.getPage(),7);
++        holder.page(List.of(),page.count(),page.index());
++        for(int i=0;i<page.entries().size();i++) {
++            RewardCategory category = page.entries().get(i);
++            putCategory(holder,RewardMenuModel.DASHBOARD_SLOTS.get(i),category,summaryFor(snapshot,category.id()),false);
+         }
+-        return titleCase(action.getMaterial().name());
+-    }
+-
+-    private String actionLabel(RewardAction action, String fallbackKey) {
+-        if (action.getLabel() != null && !action.getLabel().isBlank()) {
+-            return action.getLabel();
++        if(snapshot.categories().isEmpty()) holder.getInventory().setItem(22,RewardMenuItems.item(Material.PAPER,"&fNo rewards configured","&7There are no reward categories to browse."));
++        holder.getInventory().setItem(36,RewardMenuItems.item(Material.BOOK,"&fHow Rewards Work",
++            "&7Browse a category and complete its requirements.","&7Ready rewards glow and show a claim prompt.","&7Click each reward to claim it once.","","&7Browsing never starts a new reward claim.","&7Some item deliveries may need inventory space."));
++        if(page.hasPrevious()) put(holder,38,RewardMenuItems.item(Material.ARROW,"&fPrevious Categories"),PREVIOUS);
++        if(page.hasNext()) put(holder,42,RewardMenuItems.item(Material.ARROW,"&fNext Categories"),NEXT);
++        putReady(holder,40,summary.ready());
++        put(holder,44,RewardMenuItems.item(Material.BARRIER,"&cClose"),CLOSE);
++    }
++    private void browser(Player player, RewardMenuHolder holder, Snapshot snapshot, boolean preserveSlots) {
++        RewardMenuState state = holder.state();
++        int active=0;
++        for(int i=0;i<snapshot.categories().size();i++) if(snapshot.categories().get(i).id().equalsIgnoreCase(state.category())) active=i;
++        var tabs = RewardMenuModel.page(snapshot.categories(),active/7,7);
++        put(holder,0,RewardMenuItems.item(Material.BOOK,"&fAll Categories","&eClick for the rewards dashboard"),BACK);
++        for(int i=0;i<tabs.entries().size();i++) {
++            RewardCategory category=tabs.entries().get(i);
++            putCategory(holder,i+1,category,summaryFor(snapshot,category.id()),category.id().equalsIgnoreCase(state.category()));
+         }
+-        return rewardService.getMessage(fallbackKey);
+-    }
+-
+-    private String formatAmount(double amount) {
+-        return BigDecimal.valueOf(amount).stripTrailingZeros().toPlainString();
+-    }
+-
+-    private String titleCase(String value) {
+-        String[] words = value.toLowerCase(Locale.ROOT).split("_");
+-        StringBuilder result = new StringBuilder();
+-        for (String word : words) {
+-            if (word.isBlank()) {
+-                continue;
+-            }
+-            if (result.length() > 0) {
+-                result.append(' ');
+-            }
+-            result.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
++        String name = state.view()==RewardMenuState.View.READY ? "Ready to Claim" : snapshot.categories().stream()
++            .filter(c->c.id().equalsIgnoreCase(state.category())).findFirst().map(RewardMenuText::categoryName).orElse("Rewards");
++        var groupRows = snapshot.entries().stream().filter(e->state.category()==null || e.reward().getCategory().equalsIgnoreCase(state.category())).toList();
++        put(holder,10,items.summary(name,RewardMenuModel.summary(groupRows),true),REFRESH);
++        if("playtime".equals(state.category())) put(holder,12,choice(Material.BOOK,"Group",state.group().label(),
++            java.util.Arrays.stream(RewardMenuState.Group.values()).map(RewardMenuState.Group::label).toList()),GROUP);
++        putReady(holder,13,RewardMenuModel.summary(snapshot.entries()).ready());
++        if(state.view()!=RewardMenuState.View.READY) put(holder,15,choice(Material.HOPPER,"Filter",state.filter().label(),
++            java.util.Arrays.stream(RewardMenuState.Filter.values()).map(RewardMenuState.Filter::label).toList()),FILTER);
++        else holder.getInventory().setItem(15,RewardMenuItems.item(Material.HOPPER,"&aFilter: Ready to Claim","&7Only eligible, unclaimed rewards.","&7Open a category to use other filters."));
++        put(holder,16,choice(Material.COMPARATOR,"Sort",state.sort().label(),
++            java.util.Arrays.stream(RewardMenuState.Sort.values()).map(RewardMenuState.Sort::label).toList()),SORT);
++        if(!preserveSlots) {
++            var selected=RewardMenuModel.select(snapshot.entries(),state);
++            var page=RewardMenuModel.page(selected,state.page(),21);
++            holder.page(page.entries().stream().map(RewardMenuModel.Entry::id).toList(),page.count(),page.index());
+         }
+-        return result.toString();
+-    }
+-
+-    private ItemStack createCategoryItem(RewardCategory category) {
+-        ItemStack stack = new ItemStack(category.icon() == null ? org.bukkit.Material.PAPER : category.icon());
+-        ItemMeta meta = stack.getItemMeta();
+-        String name = rewardService.getMessage("rewards-category-title")
+-            .replace("{category}", category.name());
+-        meta.displayName(LegacyComponentSerializer.legacyAmpersand().deserialize(name));
+-        meta.getPersistentDataContainer().set(categoryKey, PersistentDataType.STRING, category.id());
+-        stack.setItemMeta(meta);
+-        return stack;
+-    }
+-
+-    private ItemStack createBackItem() {
+-        ItemStack stack = new ItemStack(org.bukkit.Material.BARRIER);
+-        ItemMeta meta = stack.getItemMeta();
+-        meta.displayName(LegacyComponentSerializer.legacyAmpersand()
+-            .deserialize(rewardService.getMessage("rewards-back")));
+-        meta.getPersistentDataContainer().set(backKey, PersistentDataType.BYTE, (byte) 1);
+-        stack.setItemMeta(meta);
+-        return stack;
+-    }
+-
+-    private ItemStack createNextItem() {
+-        ItemStack stack = new ItemStack(org.bukkit.Material.ARROW);
+-        ItemMeta meta = stack.getItemMeta();
+-        meta.displayName(LegacyComponentSerializer.legacyAmpersand()
+-            .deserialize(rewardService.getMessage("rewards-next")));
+-        meta.getPersistentDataContainer().set(nextKey, PersistentDataType.BYTE, (byte) 1);
+-        stack.setItemMeta(meta);
+-        return stack;
+-    }
+-
+-    private ItemStack createPrevItem() {
+-        ItemStack stack = new ItemStack(org.bukkit.Material.ARROW);
+-        ItemMeta meta = stack.getItemMeta();
+-        meta.displayName(LegacyComponentSerializer.legacyAmpersand()
+-            .deserialize(rewardService.getMessage("rewards-prev")));
+-        meta.getPersistentDataContainer().set(prevKey, PersistentDataType.BYTE, (byte) 1);
+-        stack.setItemMeta(meta);
+-        return stack;
+-    }
++        var byId=new LinkedHashMap<String,RewardMenuModel.Entry>(); snapshot.entries().forEach(e->byId.put(e.id(),e));
++        for(int i=0;i<holder.visibleRewards().size();i++) {
++            String id=holder.visibleRewards().get(i); var row=byId.get(id); if(row==null) continue;
++            ItemStack item=items.reward(row,claiming(player.getUniqueId(),id),id.equalsIgnoreCase(state.focusedReward()),holder.notice(id));
++            var meta=item.getItemMeta(); meta.getPersistentDataContainer().set(rewardKey,PersistentDataType.STRING,id); item.setItemMeta(meta);
++            put(holder,RewardMenuModel.REWARD_SLOTS.get(i),item,new RewardMenuAction(CLAIM,id));
++        }
++        if(holder.visibleRewards().isEmpty()) holder.getInventory().setItem(31,RewardMenuItems.item(Material.PAPER,
++            state.view()==RewardMenuState.View.READY ? "&fNo rewards ready to claim" : "&fNo matching rewards",
++            "&7Try another filter or category.","&7Click the summary to refresh."));
++        put(holder,45,RewardMenuItems.item(Material.BOOK,"&fBack to Categories"),BACK);
++        if(holder.getPage()>0) put(holder,47,RewardMenuItems.item(Material.ARROW,"&fPrevious Page"),PREVIOUS);
++        put(holder,49,RewardMenuItems.item(Material.PAPER,"&fPage "+(holder.getPage()+1)+" / "+holder.pageCount(),
++            "&7Items stay in place while progress updates.","&eClick to refresh the list."),REFRESH);
++        if(holder.getPage()+1<holder.pageCount()) put(holder,51,RewardMenuItems.item(Material.ARROW,"&fNext Page"),NEXT);
++        put(holder,53,RewardMenuItems.item(Material.BARRIER,"&cClose"),CLOSE);
++    }
++    private RewardMenuModel.Summary summaryFor(Snapshot snapshot,String category) {
++        return RewardMenuModel.summary(snapshot.entries().stream().filter(e->e.reward().getCategory().equalsIgnoreCase(category)).toList());
++    }
++    private ItemStack choice(Material material,String title,String selected,List<String> options) {
++        var lore=new ArrayList<String>();
++        for(String option:options) lore.add((option.equals(selected)?"&6› ":"&7  ")+option);
++        lore.add("");lore.add("&eLeft-click: next");lore.add("&7Right-click: previous");
++        return RewardMenuItems.item(material,"&f"+title+": &6"+selected,lore,false);
++    }
++    private void putReady(RewardMenuHolder holder,int slot,int count) {
++        put(holder,slot,RewardMenuItems.item(Material.CHEST,"&aReady to Claim &7("+count+")",
++            List.of("&7Eligible rewards from every category.","&7Each reward is claimed individually.","","&eClick to browse"),count>0),READY);
++    }
++    private void putCategory(RewardMenuHolder holder,int slot,RewardCategory category,RewardMenuModel.Summary summary,boolean selected) {
++        ItemStack item=items.category(category,summary,selected);
++        var meta=item.getItemMeta();meta.getPersistentDataContainer().set(categoryKey,PersistentDataType.STRING,category.id());item.setItemMeta(meta);
++        put(holder,slot,item,new RewardMenuAction(CATEGORY,category.id()));
++    }
++    private void put(RewardMenuHolder holder,int slot,ItemStack item,RewardMenuAction.Type type) { put(holder,slot,item,new RewardMenuAction(type)); }
++    private void put(RewardMenuHolder holder,int slot,ItemStack item,RewardMenuAction action) { holder.getInventory().setItem(slot,item);holder.action(slot,action); }
++    private void warn(RuntimeException error) {
++        if(System.currentTimeMillis()<warningAfter)return;
++        warningAfter=System.currentTimeMillis()+60000;
++        plugin.getLogger().warning("Rewards GUI could not refresh verified progress: "+error.getClass().getSimpleName()+": "+error.getMessage());
++    }
++    public NamespacedKey getRewardKey(){return rewardKey;}
++    public NamespacedKey getCategoryKey(){return categoryKey;}
++    public NamespacedKey getBackKey(){return backKey;}
++    public NamespacedKey getNextKey(){return nextKey;}
++    public NamespacedKey getPrevKey(){return prevKey;}
+ }
+diff --git a/src/main/java/org/enthusia/tags/rewards/RewardMenuAction.java b/src/main/java/org/enthusia/tags/rewards/RewardMenuAction.java
+new file mode 100644
+index 0000000..05de654
+--- /dev/null
++++ b/src/main/java/org/enthusia/tags/rewards/RewardMenuAction.java
+@@ -0,0 +1,7 @@
++package org.enthusia.tags.rewards;
++
++/** Actions are kept in the server-side holder, not accepted from player item metadata. */
++public record RewardMenuAction(Type type, String value) {
++    public enum Type { CATEGORY, BACK, READY, FILTER, SORT, GROUP, PREVIOUS, NEXT, CLOSE, REFRESH, CLAIM }
++    public RewardMenuAction(Type type) { this(type, ""); }
++}
+diff --git a/src/main/java/org/enthusia/tags/rewards/RewardMenuHolder.java b/src/main/java/org/enthusia/tags/rewards/RewardMenuHolder.java
+index 13008ef..9b602be 100644
+--- a/src/main/java/org/enthusia/tags/rewards/RewardMenuHolder.java
++++ b/src/main/java/org/enthusia/tags/rewards/RewardMenuHolder.java
+@@ -1,42 +1,44 @@
+ package org.enthusia.tags.rewards;
+ 
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
+ import org.bukkit.inventory.Inventory;
+ import org.bukkit.inventory.InventoryHolder;
+ 
+ public final class RewardMenuHolder implements InventoryHolder {
+     private final RewardService rewardService;
+-    private final String category;
+-    private final int page;
++    private RewardMenuState state;
+     private Inventory inventory;
+-
+-    public RewardMenuHolder(RewardService rewardService) {
+-        this(rewardService, null, 0);
+-    }
+-
+-    public RewardMenuHolder(RewardService rewardService, String category, int page) {
+-        this.rewardService = rewardService;
+-        this.category = category;
+-        this.page = page;
+-    }
+-
+-    public RewardService getRewardService() {
+-        return rewardService;
+-    }
+-
+-    public String getCategory() {
+-        return category;
+-    }
+-
+-    public int getPage() {
+-        return page;
++    private final Map<Integer, RewardMenuAction> actions = new LinkedHashMap<>();
++    private final Map<String, RewardClaimResult> notices = new LinkedHashMap<>();
++    private List<String> visibleRewards = List.of();
++    private int pageCount = 1;
++    private boolean scheduled;
++    public RewardMenuHolder(RewardService service) { this(service, RewardMenuState.dashboard()); }
++    public RewardMenuHolder(RewardService service, String category, int page) {
++        this(service, category == null ? RewardMenuState.dashboard().withPage(page) : RewardMenuState.category(category).withPage(page));
+     }
+-
+-    public void setInventory(Inventory inventory) {
+-        this.inventory = inventory;
+-    }
+-
+-    @Override
+-    public Inventory getInventory() {
+-        return inventory;
++    public RewardMenuHolder(RewardService service, RewardMenuState state) { this.rewardService = service; this.state = state; }
++    public RewardService getRewardService() { return rewardService; }
++    public String getCategory() { return state.category(); }
++    public int getPage() { return state.page(); }
++    public RewardMenuState state() { return state; }
++    public void state(RewardMenuState state) { this.state = state; }
++    public int pageCount() { return pageCount; }
++    public List<String> visibleRewards() { return visibleRewards; }
++    public void page(List<String> ids, int pages, int selectedPage) {
++        visibleRewards = List.copyOf(ids); pageCount = Math.max(1, pages); state = state.withPage(selectedPage);
+     }
++    public void clearActions() { actions.clear(); }
++    public void action(int slot, RewardMenuAction action) { actions.put(slot, action); }
++    public RewardMenuAction action(int slot) { return actions.get(slot); }
++    public boolean schedule() { if (scheduled) return false; scheduled = true; return true; }
++    public void unschedule() { scheduled = false; }
++    public RewardClaimResult notice(String id) { return notices.get(id); }
++    public void notice(String id, RewardClaimResult result) { notices.put(id, result); }
++    public void clearNotices() { notices.clear(); }
++    public void clearNotice(String id) { notices.remove(id); }
++    public void setInventory(Inventory value) { inventory = value; }
++    @Override public Inventory getInventory() { return inventory; }
+ }
+diff --git a/src/main/java/org/enthusia/tags/rewards/RewardMenuItems.java b/src/main/java/org/enthusia/tags/rewards/RewardMenuItems.java
+new file mode 100644
+index 0000000..d29d4a9
+--- /dev/null
++++ b/src/main/java/org/enthusia/tags/rewards/RewardMenuItems.java
+@@ -0,0 +1,148 @@
++package org.enthusia.tags.rewards;
++
++import java.util.ArrayList;
++import java.util.List;
++import org.bukkit.Material;
++import org.bukkit.inventory.ItemFlag;
++import org.bukkit.inventory.ItemStack;
++import org.enthusia.tags.TagService;
++
++/** Vanilla items only. No model IDs, custom textures or resource-pack dependency. */
++final class RewardMenuItems {
++    private final RewardService service;
++    private final TagService tags;
++    RewardMenuItems(RewardService service, TagService tags) { this.service = service; this.tags = tags; }
++    static ItemStack item(Material material, String name, List<String> lines, boolean glint) {
++        ItemStack item = new ItemStack(material == null || material == Material.AIR || material == Material.CAVE_AIR
++            || material == Material.VOID_AIR ? Material.PAPER : material);
++        var meta = item.getItemMeta();
++        meta.displayName(RewardMenuText.component(name));
++        meta.lore(lines.stream().map(RewardMenuText::component).toList());
++        meta.setEnchantmentGlintOverride(glint);
++        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
++        item.setItemMeta(meta);
++        return item;
++    }
++    static ItemStack item(Material material, String name, String... lines) { return item(material, name, List.of(lines), false); }
++    ItemStack category(RewardCategory category, RewardMenuModel.Summary summary, boolean selected) {
++        List<String> lore = new ArrayList<>();
++        lore.add("&7" + categoryDescription(category.id()));
++        lore.add("");
++        lore.add("&7Claimed: &f" + summary.claimed() + " &7/ &f" + summary.total());
++        lore.add("&7Ready to claim: &a" + summary.ready());
++        if (summary.attention() > 0) lore.add("&7Pending / needs attention: &6" + summary.attention());
++        if (summary.unavailable() > 0) lore.add("&7Temporarily unavailable: &6" + summary.unavailable());
++        lore.add("");
++        lore.add(selected ? "&6Selected category" : "&eClick to browse");
++        return item(category.icon(), (selected ? "&6" : "&f") + RewardMenuText.categoryName(category), lore, false);
++    }
++    private String categoryDescription(String id) {
++        return switch(id.toLowerCase(java.util.Locale.ROOT)) {
++            case "playtime" -> "Rewards for time spent on Enthusia.";
++            case "mining" -> "Gather resources and reach mining milestones.";
++            case "combat" -> "Complete combat challenges.";
++            case "deaths" -> "Milestones from your less fortunate moments.";
++            case "economy" -> "Build your wealth and economic progress.";
++            case "exploration" -> "Explore the world and travel farther.";
++            default -> "Browse additional server challenges.";
++        };
++    }
++    ItemStack summary(String title, RewardMenuModel.Summary summary, boolean refresh) {
++        List<String> lore = new ArrayList<>();
++        lore.add("&7Claimed: &f" + summary.claimed() + " &7/ &f" + summary.total());
++        lore.add("&7Ready to claim: &a" + summary.ready());
++        if (summary.attention() > 0) lore.add("&7Pending / needs attention: &6" + summary.attention());
++        if (summary.unavailable() > 0) lore.add("&7Temporarily unavailable: &6" + summary.unavailable());
++        lore.add("");
++        lore.add("&7Claimed completion");
++        lore.add(RewardMenuText.bar(summary.total() == 0 ? 0 : (double) summary.claimed() / summary.total()));
++        lore.add("");
++        lore.add(refresh ? "&eClick to refresh this view" : "&7Completed requirements do not auto-claim.");
++        return item(Material.BOOK, "&6" + title, lore, false);
++    }
++    ItemStack reward(RewardMenuModel.Entry row, boolean claiming, boolean focused, RewardClaimResult notice) {
++        RewardDefinition definition = row.reward();
++        List<String> lore = new ArrayList<>();
++        if (row.group() != RewardMenuState.Group.ALL) lore.add("&7" + row.group().label());
++        for (String line : definition.getDescription()) {
++            for (String wrapped : RewardMenuText.wrap(line, 40)) lore.add("&7" + wrapped);
++        }
++        lore.add("");
++        addProgress(lore, row);
++        lore.add("");
++        if (definition.getActions().isEmpty()) lore.add("&7Reward: &fRecognition only");
++        else if (definition.getActions().size() == 1) lore.add("&7Reward: &f" + action(definition.getActions().getFirst(), definition));
++        else {
++            lore.add("&7Rewards");
++            for (RewardAction action : definition.getActions()) lore.add("&f  " + action(action, definition));
++        }
++        if (definition.getActions().stream().anyMatch(RewardAction::isGoldNetworkLimited)) {
++            for (String line : RewardMenuText.wrap(service.getMessage("rewards-gold-policy"), 40)) lore.add("&7" + line);
++        }
++        lore.add("");
++        addStatus(lore, row.displayState(), claiming);
++        String last = RewardMenuText.notice(notice);
++        if (!last.isBlank() && !claiming) for (String line : RewardMenuText.wrap(last,40)) lore.add("&6" + line);
++        if (focused) lore.add("&7Opened from your advancement");
++        return item(definition.getIcon(), (row.claimed() ? "&7" : "&f") + RewardMenuText.plain(definition.getName()), lore, row.ready() && !claiming);
++    }
++    private void addProgress(List<String> lore, RewardMenuModel.Entry row) {
++        if (row.claimed()) { lore.add("&aRequirements completed"); return; }
++        if (row.evaluation().previouslyUnlocked() && row.reward().getCompletionMode() == RewardCompletionMode.LATCHED) {
++            lore.add("&aRequirements completed previously");
++            if (!row.progressKnown()) { lore.add("&7Current progress temporarily unavailable"); return; }
++        }
++        if (row.readings().isEmpty()) { lore.add("&6Progress temporarily unavailable"); return; }
++        boolean single = row.readings().size() == 1;
++        if (!single) lore.add("&7Requirements");
++        for (RewardMenuModel.Reading reading : row.readings()) {
++            RewardCriterion criterion = reading.criterion();
++            String label = single ? "Progress" : RewardMenuText.criterionLabel(criterion);
++            if (reading.value().isEmpty()) {
++                lore.add("&7" + label + ": &6Temporarily unavailable");
++                continue;
++            }
++            long current = reading.value().getAsLong();
++            long goal = criterion.getAmount();
++            if (criterion.getType() == RewardCriterionType.BALTOP_TOP3) {
++                lore.add("&7" + (single ? RewardMenuText.criterionLabel(criterion) : label) + ": "
++                    + (current >= goal ? "&aReached" : "&fNot reached"));
++            } else {
++                lore.add("&7" + label + ": &f" + RewardMenuText.value(Math.min(current, Math.max(0,goal)), criterion)
++                    + " &7/ &f" + RewardMenuText.value(goal, criterion));
++            }
++            if (single && goal > 0) lore.add(RewardMenuText.bar(Math.min(1, (double) current / goal)));
++        }
++    }
++    private static void addStatus(List<String> lore, RewardMenuModel.DisplayState state, boolean claiming) {
++        if (claiming) { lore.add("&6Claiming..."); lore.add("&7Please wait; your claim is being processed."); return; }
++        switch(state) {
++            case CLAIMED -> lore.add("&7Claimed ✓");
++            case READY -> { lore.add("&aREADY TO CLAIM"); lore.add("&eClick to claim"); }
++            case NOT_STARTED -> lore.add("&7Not started");
++            case IN_PROGRESS -> lore.add("&6In progress");
++            case UNAVAILABLE -> { lore.add("&6Temporarily unavailable"); lore.add("&7Refresh once the provider is ready."); }
++            case PENDING -> { lore.add("&6Delivery pending"); lore.add("&eClick to check / recover delivery"); }
++            case QUEUED -> { lore.add("&6Item delivery queued"); lore.add("&7Free inventory space."); lore.add("&eClick to retry item delivery"); }
++            case RETRY -> { lore.add("&6Delivery failed"); lore.add("&eClick to retry safely"); }
++            case REVIEW -> { lore.add("&cDelivery needs review"); lore.add("&7Contact staff; do not repeat the claim."); }
++            case WITHHELD -> { lore.add("&6Gold withheld by network policy"); lore.add("&7Other reward components remain separate."); }
++        }
++    }
++    private String action(RewardAction action, RewardDefinition reward) {
++        return switch(action.getType()) {
++            case MONEY -> RewardMenuText.money(action.getAmount());
++            case ITEM -> action.getItemAmount() + " × " + (action.getDisplayName() != null && !action.getDisplayName().isBlank()
++                ? RewardMenuText.plain(action.getDisplayName())
++                : action.getMaterial() == null ? "Item" : RewardMenuText.titleCase(action.getMaterial().name()));
++            case TAG -> {
++                var definition = tags.getRegistry().get(action.getValue());
++                yield "Tag: " + RewardMenuText.plain(definition == null ? action.getValue() : definition.getDisplayName());
++            }
++            case COMMAND -> "Unlock: " + (action.getLabel() != null && !action.getLabel().isBlank()
++                ? RewardMenuText.plain(action.getLabel()) : RewardMenuText.plain(reward.getName()));
++            case LORE_ITEM -> action.getLabel() != null && !action.getLabel().isBlank()
++                ? RewardMenuText.plain(action.getLabel()) : "Special item";
++        };
++    }
++}
+diff --git a/src/main/java/org/enthusia/tags/rewards/RewardMenuModel.java b/src/main/java/org/enthusia/tags/rewards/RewardMenuModel.java
+new file mode 100644
+index 0000000..b683f0c
+--- /dev/null
++++ b/src/main/java/org/enthusia/tags/rewards/RewardMenuModel.java
+@@ -0,0 +1,111 @@
++package org.enthusia.tags.rewards;
++
++import java.util.ArrayList;
++import java.util.Comparator;
++import java.util.List;
++import java.util.OptionalLong;
++
++/** Pure presentation rules; RewardService remains the sole authority for claiming. */
++public final class RewardMenuModel {
++    private RewardMenuModel() {}
++    public static final List<Integer> REWARD_SLOTS = List.of(19,20,21,22,23,24,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43);
++    public static final List<Integer> DASHBOARD_SLOTS = List.of(10,12,14,16,20,22,24);
++    public enum DisplayState { NOT_STARTED, IN_PROGRESS, READY, CLAIMED, PENDING, QUEUED, RETRY, REVIEW, WITHHELD, UNAVAILABLE }
++    public record Reading(RewardCriterion criterion, OptionalLong value) {
++        public Reading { if (criterion == null || value == null) throw new IllegalArgumentException("Missing progress reading"); }
++    }
++    public record Entry(RewardDefinition reward, RewardEvaluation evaluation, List<Reading> readings,
++                        int order, int categoryOrder) {
++        public Entry { readings = List.copyOf(readings); }
++        public String id() { return reward.getId().toLowerCase(java.util.Locale.ROOT); }
++        public boolean claimed() { return evaluation.status() == RewardStatus.CLAIMED; }
++        public boolean ready() { return evaluation.status() == RewardStatus.UNLOCKED && evaluation.claimable(); }
++        public boolean progressKnown() {
++            return !readings.isEmpty() && readings.stream().allMatch(r -> r.criterion().isValid()
++                && r.criterion().getAmount() > 0 && r.value().isPresent() && r.value().getAsLong() >= 0);
++        }
++        public double fraction() {
++            if (claimed() || ready()) return 1;
++            if (!progressKnown()) return -1;
++            return readings.stream().mapToDouble(r -> Math.min(1, (double) r.value().getAsLong() / r.criterion().getAmount())).min().orElse(-1);
++        }
++        public DisplayState displayState() {
++            return switch (evaluation.status()) {
++                case CLAIMED -> DisplayState.CLAIMED;
++                case CLAIM_PENDING -> DisplayState.PENDING;
++                case ITEM_QUEUED -> DisplayState.QUEUED;
++                case DELIVERY_FAILED -> DisplayState.RETRY;
++                case REQUIRES_RECONCILIATION -> DisplayState.REVIEW;
++                case WITHHELD_NETWORK_LIMIT -> DisplayState.WITHHELD;
++                case UNLOCKED -> evaluation.claimable() ? DisplayState.READY : DisplayState.UNAVAILABLE;
++                case LOCKED -> lockedState();
++            };
++        }
++        private DisplayState lockedState() {
++            if (!progressKnown() || (!evaluation.diagnosticReason().isBlank()
++                && !evaluation.diagnosticReason().equals("Requirements not reached"))) return DisplayState.UNAVAILABLE;
++            return readings.stream().anyMatch(r -> r.value().orElse(0) > 0) ? DisplayState.IN_PROGRESS : DisplayState.NOT_STARTED;
++        }
++        public RewardMenuState.Group group() { return groupFor(reward); }
++    }
++    public record Summary(int total, int claimed, int ready, int unavailable, int attention) {
++        public int earned() { return claimed + ready; }
++    }
++    public record Page<T>(int index, int count, List<T> entries) {
++        public Page { entries = List.copyOf(entries); }
++        public boolean hasPrevious() { return index > 0; }
++        public boolean hasNext() { return index + 1 < count; }
++    }
++    public static <T> Page<T> page(List<T> values, int requested, int size) {
++        if (size <= 0) throw new IllegalArgumentException("Invalid page size");
++        int count = Math.max(1, (int) ((values.size() + (long) size - 1) / size));
++        int index = Math.max(0, Math.min(count - 1, requested));
++        int start = index * size;
++        return new Page<>(index, count, values.subList(start, (int) Math.min(values.size(), start + (long) size)));
++    }
++    public static Summary summary(List<Entry> rows) {
++        int claimed=0, ready=0, unavailable=0, attention=0;
++        for (Entry row : rows) {
++            if (row.claimed()) claimed++;
++            if (row.ready()) ready++;
++            if (row.displayState() == DisplayState.UNAVAILABLE) unavailable++;
++            if (switch(row.displayState()) { case PENDING, QUEUED, RETRY, REVIEW, WITHHELD -> true; default -> false; }) attention++;
++        }
++        return new Summary(rows.size(), claimed, ready, unavailable, attention);
++    }
++    public static List<Entry> select(List<Entry> rows, RewardMenuState state) {
++        List<Entry> selected = new ArrayList<>();
++        for (Entry row : rows) {
++            if (state.view() == RewardMenuState.View.CATEGORY && !row.reward().getCategory().equalsIgnoreCase(state.category())) continue;
++            if (!matches(row, state.filter())) continue;
++            if (state.group() != RewardMenuState.Group.ALL && row.group() != state.group()) continue;
++            selected.add(row);
++        }
++        Comparator<Entry> fallback = Comparator.comparingInt(Entry::categoryOrder)
++            .thenComparingInt(e -> "playtime".equalsIgnoreCase(e.reward().getCategory()) ? e.group().ordinal() : 0)
++            .thenComparingLong(e -> "playtime".equalsIgnoreCase(e.reward().getCategory()) && e.reward().getCriteria().size() == 1
++                ? e.reward().getCriteria().getFirst().getAmount() : e.order())
++            .thenComparingInt(Entry::order).thenComparing(Entry::id);
++        Comparator<Entry> comparator = switch(state.sort()) {
++            case PROGRESSION -> fallback;
++            case NAME -> Comparator.comparing((Entry e) -> RewardMenuText.plain(e.reward().getName()), String.CASE_INSENSITIVE_ORDER).thenComparing(fallback);
++            case CLOSEST -> Comparator.comparing(Entry::claimed)
++                .thenComparing(Comparator.comparingDouble(Entry::fraction).reversed()).thenComparing(fallback);
++        };
++        selected.sort(comparator);
++        return List.copyOf(selected);
++    }
++    private static boolean matches(Entry row, RewardMenuState.Filter filter) {
++        return switch(filter) { case ALL -> true; case READY -> row.ready(); case UNCLAIMED -> !row.claimed(); case CLAIMED -> row.claimed(); };
++    }
++    public static RewardMenuState.Group groupFor(RewardDefinition reward) {
++        if (!"playtime".equalsIgnoreCase(reward.getCategory())) return RewardMenuState.Group.ALL;
++        if (reward.getActions().stream().anyMatch(a -> a.getType() == RewardActionType.COMMAND)) return RewardMenuState.Group.ACCESS;
++        if (reward.getCriteria().size() != 1) return RewardMenuState.Group.SPECIAL;
++        return switch (reward.getCriteria().getFirst().getType()) {
++            case PLAYTIME_TOTAL_MINUTES -> RewardMenuState.Group.TOTAL;
++            case PLAYTIME_ACTIVE_MINUTES -> RewardMenuState.Group.ACTIVE;
++            default -> RewardMenuState.Group.SPECIAL;
++        };
++    }
++}
+diff --git a/src/main/java/org/enthusia/tags/rewards/RewardMenuState.java b/src/main/java/org/enthusia/tags/rewards/RewardMenuState.java
+new file mode 100644
+index 0000000..7dab5df
+--- /dev/null
++++ b/src/main/java/org/enthusia/tags/rewards/RewardMenuState.java
+@@ -0,0 +1,47 @@
++package org.enthusia.tags.rewards;
++
++import java.util.Locale;
++
++/** Browser state only. Never alters reward definitions or saved completion. */
++public record RewardMenuState(View view, String category, int page, Filter filter,
++                              Sort sort, Group group, String focusedReward) {
++    public enum View { DASHBOARD, CATEGORY, READY }
++    public enum Filter {
++        ALL("All"), READY("Ready to Claim"), UNCLAIMED("Unclaimed"), CLAIMED("Claimed");
++        private final String label;
++        Filter(String label) { this.label = label; }
++        public String label() { return label; }
++        public Filter cycle(boolean reverse) { return values()[Math.floorMod(ordinal() + (reverse ? -1 : 1), values().length)]; }
++    }
++    public enum Sort {
++        PROGRESSION("Progression"), CLOSEST("Closest to Completion"), NAME("Name");
++        private final String label;
++        Sort(String label) { this.label = label; }
++        public String label() { return label; }
++        public Sort cycle(boolean reverse) { return values()[Math.floorMod(ordinal() + (reverse ? -1 : 1), values().length)]; }
++    }
++    public enum Group {
++        ALL("All Playtime"), TOTAL("Total Playtime"), ACTIVE("Active Playtime"), ACCESS("Access Unlocks"), SPECIAL("Special Challenges");
++        private final String label;
++        Group(String label) { this.label = label; }
++        public String label() { return label; }
++        public Group cycle(boolean reverse) { return values()[Math.floorMod(ordinal() + (reverse ? -1 : 1), values().length)]; }
++    }
++    public RewardMenuState {
++        if (view == null || filter == null || sort == null || group == null) throw new IllegalArgumentException("Missing browser state");
++        category = category == null ? null : category.toLowerCase(Locale.ROOT);
++        focusedReward = focusedReward == null ? null : focusedReward.toLowerCase(Locale.ROOT);
++        page = Math.max(0, page);
++        if (view == View.CATEGORY && (category == null || category.isBlank())) throw new IllegalArgumentException("Missing category");
++        if (view == View.READY) filter = Filter.READY;
++        if (!"playtime".equals(category)) group = Group.ALL;
++    }
++    public static RewardMenuState dashboard() { return new RewardMenuState(View.DASHBOARD, null, 0, Filter.ALL, Sort.PROGRESSION, Group.ALL, null); }
++    public static RewardMenuState category(String id) { return new RewardMenuState(View.CATEGORY, id, 0, Filter.ALL, Sort.PROGRESSION, Group.ALL, null); }
++    public static RewardMenuState ready() { return new RewardMenuState(View.READY, null, 0, Filter.READY, Sort.PROGRESSION, Group.ALL, null); }
++    public RewardMenuState withPage(int value) { return new RewardMenuState(view, category, value, filter, sort, group, focusedReward); }
++    public RewardMenuState withFilter(Filter value) { return new RewardMenuState(view, category, 0, value, sort, group, null); }
++    public RewardMenuState withSort(Sort value) { return new RewardMenuState(view, category, 0, filter, value, group, null); }
++    public RewardMenuState withGroup(Group value) { return new RewardMenuState(view, category, 0, filter, sort, value, null); }
++    public RewardMenuState focus(String id) { return new RewardMenuState(view, category, page, filter, sort, group, id); }
++}
+diff --git a/src/main/java/org/enthusia/tags/rewards/RewardMenuText.java b/src/main/java/org/enthusia/tags/rewards/RewardMenuText.java
+new file mode 100644
+index 0000000..b7310f9
+--- /dev/null
++++ b/src/main/java/org/enthusia/tags/rewards/RewardMenuText.java
+@@ -0,0 +1,127 @@
++package org.enthusia.tags.rewards;
++
++import java.math.BigDecimal;
++import java.text.NumberFormat;
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Locale;
++import net.kyori.adventure.text.Component;
++import net.kyori.adventure.text.format.TextDecoration;
++import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
++import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
++
++/** Formatting is display-only: stored counters and their units are never changed. */
++public final class RewardMenuText {
++    private RewardMenuText() {}
++    public static String plain(String value) {
++        if (value == null) return "";
++        return PlainTextComponentSerializer.plainText().serialize(
++            LegacyComponentSerializer.legacyAmpersand().deserialize(value.replace('§','&')));
++    }
++    public static Component component(String value) {
++        return withoutItalics(LegacyComponentSerializer.legacyAmpersand().deserialize(value.replace('§','&')));
++    }
++    private static Component withoutItalics(Component value) {
++        return value.decoration(TextDecoration.ITALIC, false)
++            .children(value.children().stream().map(RewardMenuText::withoutItalics).toList());
++    }
++    public static String number(long value) { return NumberFormat.getIntegerInstance(Locale.US).format(value); }
++    public static String money(double value) {
++        var format = NumberFormat.getNumberInstance(Locale.US);
++        format.setMaximumFractionDigits(Math.max(0, Math.min(8, BigDecimal.valueOf(value).stripTrailingZeros().scale())));
++        return "$" + format.format(value);
++    }
++    public static String duration(long minutes) {
++        return number(Math.max(0, minutes) / 60) + "h " + String.format(Locale.ROOT, "%02d", Math.max(0, minutes) % 60) + "m";
++    }
++    public static boolean time(RewardCriterion criterion) {
++        return switch(criterion.getType()) {
++            case PLAYTIME_ACTIVE_MINUTES, PLAYTIME_AFK_MINUTES, PLAYTIME_TOTAL_MINUTES,
++                PLAYTIME_CONSECUTIVE_ACTIVE_MINUTES, UNDERGROUND_ACTIVE_MINUTES -> true;
++            default -> false;
++        };
++    }
++    public static String value(long amount, RewardCriterion criterion) {
++        if (time(criterion)) return duration(amount);
++        if (criterion.getType() == RewardCriterionType.BALANCE_AT_LEAST) return "$" + number(amount);
++        if (criterion.getType() == RewardCriterionType.PING_MS_AT_LEAST) return number(amount) + " ms";
++        return number(amount);
++    }
++    public static String criterionLabel(RewardCriterion criterion) {
++        return switch (criterion.getType()) {
++            case PLAYTIME_ACTIVE_MINUTES -> "Active playtime";
++            case PLAYTIME_AFK_MINUTES -> "AFK playtime";
++            case PLAYTIME_TOTAL_MINUTES -> "Total playtime";
++            case PLAYTIME_CONSECUTIVE_ACTIVE_MINUTES -> "Consecutive active time";
++            case UNDERGROUND_ACTIVE_MINUTES -> "Underground active time";
++            default -> plain(criterion.getLabel());
++        };
++    }
++    public static int percent(double fraction) {
++        if (fraction < 0 || !Double.isFinite(fraction)) return 0;
++        return Math.min(100, Math.max(0, (int) Math.floor(fraction * 100)));
++    }
++    public static String bar(double fraction) {
++        int filled = Math.min(10, percent(fraction) / 10);
++        return "&6" + "■".repeat(filled) + "&8" + "□".repeat(10 - filled) + " &7" + percent(fraction) + "%";
++    }
++    public static String categoryName(RewardCategory category) {
++        if ("misc".equalsIgnoreCase(category.id()) && plain(category.name()).equalsIgnoreCase("Misc")) return "General";
++        return plain(category.name());
++    }
++    public static String titleCase(String value) {
++        StringBuilder result = new StringBuilder();
++        for (String word : value.toLowerCase(Locale.ROOT).split("[_ ]+")) {
++            if (word.isBlank()) continue;
++            if (!result.isEmpty()) result.append(' ');
++            result.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
++        }
++        return result.toString();
++    }
++    public static List<String> wrap(String value, int width) {
++        List<String> result = new ArrayList<>();
++        for (String paragraph : plain(value).split("\n", -1)) {
++            if (paragraph.isBlank()) { result.add(""); continue; }
++            StringBuilder line = new StringBuilder();
++            for (String word : paragraph.split("\s+")) {
++                if (!line.isEmpty() && line.length() + word.length() + 1 > width) { result.add(line.toString()); line.setLength(0); }
++                if (!line.isEmpty()) line.append(' ');
++                line.append(word);
++            }
++            if (!line.isEmpty()) result.add(line.toString());
++        }
++        return List.copyOf(result);
++    }
++    public static String resultMessageKey(RewardClaimResult result) {
++        return switch (result) {
++            case SUCCESS -> "rewards-claimed";
++            case SUCCESS_GOLD_WITHHELD -> "rewards-gold-withheld";
++            case GOLD_VERIFICATION_UNAVAILABLE -> "rewards-gold-verification-unavailable";
++            case LOADING -> "rewards-loading";
++            case ALREADY_CLAIMED -> "rewards-already-claimed";
++            case NOT_READY -> "rewards-not-ready";
++            case IP_ALREADY_CLAIMED -> "rewards-ip-already-claimed";
++            case DELIVERY_FAILED -> "rewards-delivery-failed";
++            case ITEM_QUEUED -> "rewards-item-queued";
++            case RECONCILIATION_REQUIRED -> "rewards-reconciliation-required";
++            case CLAIM_IN_PROGRESS -> "rewards-claim-in-progress";
++            case SERVICE_UNAVAILABLE -> "rewards-service-unavailable";
++        };
++    }
++    public static String notice(RewardClaimResult result) {
++        if (result == null) return "";
++        return switch(result) {
++            case SUCCESS, ALREADY_CLAIMED -> "";
++            case SUCCESS_GOLD_WITHHELD -> "Gold portion withheld by network policy.";
++            case GOLD_VERIFICATION_UNAVAILABLE -> "Gold verification unavailable; try later.";
++            case LOADING -> "Your reward data is still loading.";
++            case NOT_READY -> "Requirements are not currently met.";
++            case IP_ALREADY_CLAIMED -> "Network claim restriction applies.";
++            case DELIVERY_FAILED -> "Delivery failed; retry safely.";
++            case ITEM_QUEUED -> "Item delivery queued; free inventory space.";
++            case RECONCILIATION_REQUIRED -> "Delivery needs staff review.";
++            case CLAIM_IN_PROGRESS -> "A claim is already in progress.";
++            case SERVICE_UNAVAILABLE -> "Reward service temporarily unavailable.";
++        };
++    }
++}
+diff --git a/src/main/java/org/enthusia/tags/rewards/RewardService.java b/src/main/java/org/enthusia/tags/rewards/RewardService.java
+index 74dc892..16a6c27 100644
+--- a/src/main/java/org/enthusia/tags/rewards/RewardService.java
++++ b/src/main/java/org/enthusia/tags/rewards/RewardService.java
+@@ -1026,6 +1026,17 @@ public final class RewardService {
+         };
+     }
+ 
++    /** Read-only GUI view; unavailable or stale readings must not appear as authoritative zero. */
++    java.util.OptionalLong getVerifiedMenuProgress(Player player, RewardCriterion criterion, ProgressSnapshot snapshot) {
++        if (!isAvailable() || criterion == null || !criterion.isValid() || snapshot == null)
++            return java.util.OptionalLong.empty();
++        RewardPlayerState state = getLoadedState(player.getUniqueId());
++        if (state == null || !state.isLoaded() || !isCriterionAvailable(criterion)) return java.util.OptionalLong.empty();
++        long value = getProgress(player, criterion, snapshot);
++        if (value < 0 || snapshot.unavailableCriteria().contains(criterionCacheKey(criterion))) return java.util.OptionalLong.empty();
++        return java.util.OptionalLong.of(value);
++    }
++
+     public String formatProgress(Player player, RewardCriterion criterion) {
+         long current = getProgress(player, criterion);
+         long goal = criterion.getAmount();
+diff --git a/src/main/resources/plugin.yml b/src/main/resources/plugin.yml
+index 8dd8983..3770dd6 100644
+--- a/src/main/resources/plugin.yml
++++ b/src/main/resources/plugin.yml
+@@ -1,6 +1,6 @@
+ name: EnthusiaTags
+ main: org.enthusia.tags.EnthusiaTagsPlugin
+-version: 2.2.2-pilot.2
++version: 2.2.2-rewards-gui-test.1
+ api-version: '26.2'
+ author: Enthusia
+ softdepend:
+diff --git a/src/test/java/org/enthusia/tags/rewards/RewardBrowserModelTest.java b/src/test/java/org/enthusia/tags/rewards/RewardBrowserModelTest.java
+new file mode 100644
+index 0000000..88eb7b4
+--- /dev/null
++++ b/src/test/java/org/enthusia/tags/rewards/RewardBrowserModelTest.java
+@@ -0,0 +1,68 @@
++package org.enthusia.tags.rewards;
++
++import java.util.*;
++import org.bukkit.Material;
++import org.junit.jupiter.api.Test;
++import static org.junit.jupiter.api.Assertions.*;
++
++class RewardBrowserModelTest {
++    private RewardMenuModel.Entry entry(String id, String category, long goal, long value,
++                                       RewardCriterionType type, RewardStatus status, boolean claimable, int index) {
++        var criterion = new RewardCriterion(type, goal, null, "counter", 56, "Progress");
++        var reward = new RewardDefinition(id, id, List.of(), Material.CLOCK, List.of(criterion), List.of(), category);
++        var evaluation = new RewardEvaluation(status, Map.of(), status == RewardStatus.CLAIMED, claimable, "Requirements not reached");
++        return new RewardMenuModel.Entry(reward, evaluation,
++            List.of(new RewardMenuModel.Reading(criterion, value < 0 ? OptionalLong.empty() : OptionalLong.of(value))), index, 0);
++    }
++    @Test void claimsAndAvailabilityRemainDistinct() {
++        var unknown = entry("x", "playtime", 60, -1, RewardCriterionType.PLAYTIME_ACTIVE_MINUTES, RewardStatus.LOCKED, false, 0);
++        assertEquals(RewardMenuModel.DisplayState.UNAVAILABLE, unknown.displayState());
++        assertEquals(-1, unknown.fraction());
++        var ready = entry("r", "playtime", 60, 60, RewardCriterionType.PLAYTIME_ACTIVE_MINUTES, RewardStatus.UNLOCKED, true, 1);
++        var claimed = entry("c", "playtime", 60, 0, RewardCriterionType.PLAYTIME_ACTIVE_MINUTES, RewardStatus.CLAIMED, false, 2);
++        var list = List.of(unknown, ready, claimed);
++        var summary = RewardMenuModel.summary(list);
++        assertEquals(3, summary.total()); assertEquals(1, summary.ready()); assertEquals(1, summary.claimed());
++        assertEquals(List.of(ready), RewardMenuModel.select(list, RewardMenuState.ready()));
++        assertEquals(List.of(unknown, ready), RewardMenuModel.select(list,
++            RewardMenuState.category("playtime").withFilter(RewardMenuState.Filter.UNCLAIMED)));
++    }
++    @Test void progressionGroupsThenOrdersTimeThresholdsWithoutStatusShuffle() {
++        var longTime=entry("long", "playtime", 600, 0, RewardCriterionType.PLAYTIME_ACTIVE_MINUTES, RewardStatus.LOCKED, false, 0);
++        var shortTime=entry("short", "playtime", 60, 60, RewardCriterionType.PLAYTIME_ACTIVE_MINUTES, RewardStatus.CLAIMED, false, 1);
++        var total=entry("total", "playtime", 60, 1, RewardCriterionType.PLAYTIME_TOTAL_MINUTES, RewardStatus.LOCKED, false, 2);
++        var underground=entry("deep", "playtime", 1800, 0, RewardCriterionType.UNDERGROUND_ACTIVE_MINUTES, RewardStatus.LOCKED, false, 3);
++        assertEquals(List.of(total, shortTime, longTime, underground), RewardMenuModel.select(List.of(longTime, shortTime, underground, total), RewardMenuState.category("playtime")));
++        assertEquals(List.of(shortTime, longTime), RewardMenuModel.select(List.of(longTime, total, shortTime, underground), RewardMenuState.category("playtime").withGroup(RewardMenuState.Group.ACTIVE)));
++    }
++    @Test void paginationClampsEmptyNegativeAndOverflowRequests() {
++        var rows = new ArrayList<RewardMenuModel.Entry>();
++        for(int i=0;i<43;i++) rows.add(entry("r"+i,"mining",100,i,RewardCriterionType.CUSTOM_COUNTER,RewardStatus.LOCKED,false,i));
++        assertEquals(21, RewardMenuModel.page(rows,0,21).entries().size());
++        assertEquals(1, RewardMenuModel.page(rows,Integer.MAX_VALUE,21).entries().size());
++        assertEquals(2, RewardMenuModel.page(rows,Integer.MAX_VALUE,21).index());
++        assertEquals(0, RewardMenuModel.page(rows,-1,21).index());
++        assertEquals(1, RewardMenuModel.page(List.of(),999,21).count());
++        assertTrue(RewardMenuModel.page(List.of(),999,21).entries().isEmpty());
++    }
++    @Test void closestPlacesUnavailableAndClaimedAfterUsefulWork() {
++        var unknown=entry("a","mining",100,-1,RewardCriterionType.CUSTOM_COUNTER,RewardStatus.LOCKED,false,0);
++        var near=entry("b","mining",100,90,RewardCriterionType.CUSTOM_COUNTER,RewardStatus.LOCKED,false,1);
++        var far=entry("c","mining",100,10,RewardCriterionType.CUSTOM_COUNTER,RewardStatus.LOCKED,false,2);
++        var claimed=entry("d","mining",100,100,RewardCriterionType.CUSTOM_COUNTER,RewardStatus.CLAIMED,false,3);
++        assertEquals(List.of(near,far,unknown,claimed),RewardMenuModel.select(List.of(unknown,claimed,far,near),RewardMenuState.category("mining").withSort(RewardMenuState.Sort.CLOSEST)));
++    }
++    @Test void timeLabelsAndPercentagesDoNotInventCompletion() {
++        assertEquals("0h 00m",RewardMenuText.duration(0));
++        assertEquals("30h 00m",RewardMenuText.duration(1800));
++        assertEquals("1h 01m",RewardMenuText.duration(61));
++        assertEquals("0h 59m",RewardMenuText.duration(59));
++        assertEquals(99,RewardMenuText.percent(0.999999));
++        assertEquals("General",RewardMenuText.categoryName(new RewardCategory("misc","&dMisc",Material.NAME_TAG)));
++    }
++    @Test void readyViewCannotAccidentallyBecomeClaimAll() {
++        var state=RewardMenuState.ready().withFilter(RewardMenuState.Filter.ALL);
++        assertEquals(RewardMenuState.Filter.READY,state.filter());
++        assertEquals(RewardMenuState.View.READY,state.view());
++    }
++}
+diff --git a/src/test/java/org/enthusia/tags/rewards/RewardGuiFixture.java b/src/test/java/org/enthusia/tags/rewards/RewardGuiFixture.java
+new file mode 100644
+index 0000000..5a4dace
+--- /dev/null
++++ b/src/test/java/org/enthusia/tags/rewards/RewardGuiFixture.java
+@@ -0,0 +1,107 @@
++package org.enthusia.tags.rewards;
++
++import java.util.*;
++import java.util.concurrent.atomic.AtomicReference;
++import java.util.function.Consumer;
++import java.util.logging.Logger;
++import net.kyori.adventure.text.Component;
++import org.bukkit.*;
++import org.bukkit.entity.Player;
++import org.bukkit.inventory.*;
++import org.bukkit.inventory.meta.ItemMeta;
++import org.bukkit.persistence.PersistentDataContainer;
++import org.bukkit.plugin.Plugin;
++import org.bukkit.scheduler.BukkitScheduler;
++import org.bukkit.scheduler.BukkitTask;
++import org.enthusia.tags.*;
++import org.mockito.MockedConstruction;
++import org.mockito.MockedStatic;
++import static org.mockito.Mockito.*;
++
++/** Server API fixture: exercise actual renderer code without starting or changing a Minecraft server. */
++final class RewardGuiFixture implements AutoCloseable {
++    final RewardService service = mock(RewardService.class);
++    final TagService tags = mock(TagService.class);
++    final EnthusiaTagsPlugin plugin = mock(EnthusiaTagsPlugin.class);
++    final Player player = mock(Player.class);
++    final InventoryView view = mock(InventoryView.class);
++    final BukkitScheduler scheduler = mock(BukkitScheduler.class);
++    final Queue<Runnable> nextTick = new ArrayDeque<>();
++    final List<Runnable> refreshTasks = new ArrayList<>();
++    final Map<String,RewardDefinition> definitions = new LinkedHashMap<>();
++    final Map<String,RewardEvaluation> evaluations = new HashMap<>();
++    final Map<RewardCriterion,OptionalLong> values = new IdentityHashMap<>();
++    final Map<String,RewardCategory> categories = new LinkedHashMap<>();
++    final Map<ItemStack,ItemMeta> metas = new IdentityHashMap<>();
++    final MockedStatic<Bukkit> bukkit;
++    final MockedConstruction<ItemStack> stacks;
++    final RewardMenu menu;
++    Inventory current;
++    RewardGuiFixture() {
++        when(plugin.getName()).thenReturn("EnthusiaTags");
++        when(plugin.namespace()).thenReturn("enthusiatags");
++        when(plugin.getLogger()).thenReturn(Logger.getAnonymousLogger());
++        when(plugin.getPerformanceMonitor()).thenReturn(mock(PerformanceMonitor.class));
++        when(tags.getPlugin()).thenReturn(plugin);
++        when(player.getUniqueId()).thenReturn(UUID.randomUUID());
++        when(player.isOnline()).thenReturn(true);
++        when(player.getOpenInventory()).thenReturn(view);
++        when(view.getTopInventory()).thenAnswer(i -> current);
++        when(player.openInventory(any(Inventory.class))).thenAnswer(i -> { current=i.getArgument(0); return view; });
++        when(service.getRewards()).thenReturn(definitions);
++        when(service.getConfig()).thenReturn(new RewardsConfig("", "", "", "",56,false,"",categories));
++        when(service.getMessage(anyString())).thenAnswer(i -> i.getArgument(0));
++        when(service.getProgressSnapshot(player)).thenReturn(new RewardService.ProgressSnapshot(0,new HashMap<>()));
++        when(service.evaluate(eq(player),any(RewardDefinition.class),any())).thenAnswer(i -> evaluations.get(((RewardDefinition)i.getArgument(1)).getId()));
++        when(service.getVerifiedMenuProgress(eq(player),any(RewardCriterion.class),any())).thenAnswer(i -> values.getOrDefault(i.getArgument(1),OptionalLong.empty()));
++        doAnswer(i -> { if(player.isOnline()) ((Consumer<Player>)i.getArgument(1)).accept(player); return null; })
++            .when(service).runForOnlinePlayer(any(UUID.class),any());
++        bukkit = mockStatic(Bukkit.class);
++        bukkit.when(Bukkit::getScheduler).thenReturn(scheduler);
++        bukkit.when(Bukkit::getOnlinePlayers).thenReturn(List.of(player));
++        bukkit.when(() -> Bukkit.createInventory(any(InventoryHolder.class),anyInt(),any(Component.class))).thenAnswer(i -> inventory(i.getArgument(0),i.getArgument(1)));
++        when(scheduler.runTask(eq(plugin),any(Runnable.class))).thenAnswer(i -> { nextTick.add(i.getArgument(1)); return mock(BukkitTask.class); });
++        when(scheduler.runTaskTimer(eq(plugin),any(Runnable.class),anyLong(),anyLong())).thenAnswer(i -> { refreshTasks.add(i.getArgument(1)); return mock(BukkitTask.class); });
++        stacks = mockConstruction(ItemStack.class,(stack,context) -> {
++            var meta=mock(ItemMeta.class); var name=new AtomicReference<Component>(); var lore=new AtomicReference<List<Component>>(List.of());
++            var glint=new AtomicReference<Boolean>(false);
++            when(stack.getItemMeta()).thenReturn(meta); when(stack.hasItemMeta()).thenReturn(true);
++            when(stack.getType()).thenReturn((Material)context.arguments().getFirst());
++            when(meta.getPersistentDataContainer()).thenReturn(mock(PersistentDataContainer.class));
++            doAnswer(i -> {name.set(i.getArgument(0));return null;}).when(meta).displayName(any(Component.class));
++            when(meta.displayName()).thenAnswer(i -> name.get());
++            doAnswer(i -> {lore.set(i.getArgument(0));return null;}).when(meta).lore(anyList());
++            when(meta.lore()).thenAnswer(i -> lore.get());
++            doAnswer(i -> {glint.set(i.getArgument(0));return null;}).when(meta).setEnchantmentGlintOverride(anyBoolean());
++            when(meta.getEnchantmentGlintOverride()).thenAnswer(i -> glint.get());
++            metas.put(stack,meta);
++        });
++        try { menu = new RewardMenu(service,tags); }
++        catch (RuntimeException | Error failure) { stacks.close(); bukkit.close(); throw failure; }
++    }
++    Inventory inventory(InventoryHolder holder,int size) {
++        var inventory=mock(Inventory.class); var contents=new ItemStack[size];
++        when(inventory.getHolder()).thenReturn(holder);when(inventory.getSize()).thenReturn(size);
++        when(inventory.getItem(anyInt())).thenAnswer(i -> contents[(int)i.getArgument(0)]);
++        when(inventory.getContents()).thenAnswer(i -> contents.clone());
++        doAnswer(i -> {contents[(int)i.getArgument(0)]=i.getArgument(1);return null;}).when(inventory).setItem(anyInt(),any());
++        doAnswer(i -> {Arrays.fill(contents,null);return null;}).when(inventory).clear();
++        return inventory;
++    }
++    RewardDefinition add(String id,String category,long goal,long currentValue,RewardCriterionType type,RewardStatus status) {
++        categories.putIfAbsent(category,new RewardCategory(category,RewardMenuText.titleCase(category),Material.CLOCK));
++        var criterion=new RewardCriterion(type,goal,null,"test",56,"Progress");
++        var reward=new RewardDefinition(id,id,List.of("Complete the challenge."),Material.CLOCK,List.of(criterion),
++            List.of(new RewardAction(RewardActionType.MONEY,"",500,"")),category);
++        definitions.put(id,reward); values.put(criterion,currentValue<0?OptionalLong.empty():OptionalLong.of(currentValue));
++        status(id,status);return reward;
++    }
++    void status(String id,RewardStatus status) {
++        evaluations.put(id,new RewardEvaluation(status,Map.of(),status==RewardStatus.CLAIMED,
++            status==RewardStatus.UNLOCKED || status==RewardStatus.DELIVERY_FAILED,"Requirements not reached"));
++    }
++    void tick() { while(!nextTick.isEmpty()) nextTick.remove().run(); }
++    static String plain(Component component) { return net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(component); }
++    static String lore(ItemStack item) { return String.join("\n",item.getItemMeta().lore().stream().map(RewardGuiFixture::plain).toList()); }
++    @Override public void close() { stacks.close();bukkit.close(); }
++}
+diff --git a/src/test/java/org/enthusia/tags/rewards/RewardGuiInteractionTest.java b/src/test/java/org/enthusia/tags/rewards/RewardGuiInteractionTest.java
+new file mode 100644
+index 0000000..210df49
+--- /dev/null
++++ b/src/test/java/org/enthusia/tags/rewards/RewardGuiInteractionTest.java
+@@ -0,0 +1,111 @@
++package org.enthusia.tags.rewards;
++import java.util.*;
++import java.util.concurrent.CompletableFuture;
++import org.bukkit.entity.Player;
++import org.bukkit.inventory.*;
++import org.bukkit.event.inventory.*;
++import org.junit.jupiter.api.Test;
++import static org.junit.jupiter.api.Assertions.*;
++import static org.mockito.Mockito.*;
++class RewardGuiInteractionTest {
++    private InventoryClickEvent click(RewardGuiFixture f,Inventory inventory,int slot,ClickType type) {
++        var e=mock(InventoryClickEvent.class);when(e.getView()).thenReturn(f.view);
++        when(e.getWhoClicked()).thenReturn(f.player);when(e.getClickedInventory()).thenReturn(inventory);
++        when(e.getRawSlot()).thenReturn(slot);when(e.getClick()).thenReturn(type);return e;
++    }
++    private RewardDefinition ready(RewardGuiFixture f) {
++        var r=f.add("reward","mining",10,10,RewardCriterionType.CUSTOM_COUNTER,RewardStatus.UNLOCKED);
++        f.current=f.menu.createCategory(f.player,"mining");return r;
++    }
++    @Test void lowerInventoryAndUnsafeClicksCannotClaimOrMoveItems() {
++        try(var f=new RewardGuiFixture()) {
++            ready(f);var listener=new RewardListener(f.service,f.menu);
++            var bottom=f.inventory(null,36);
++            var e=click(f,bottom,54,ClickType.LEFT);listener.onInventoryClick(e);verify(e).setCancelled(true);
++            for(var type:List.of(ClickType.SHIFT_LEFT,ClickType.SHIFT_RIGHT,ClickType.DOUBLE_CLICK,ClickType.NUMBER_KEY,
++                    ClickType.SWAP_OFFHAND,ClickType.DROP,ClickType.CONTROL_DROP,ClickType.MIDDLE,ClickType.RIGHT)) {
++                var blocked=click(f,f.current,19,type);listener.onInventoryClick(blocked);verify(blocked).setCancelled(true);
++            }
++            var outside=click(f,null,-999,ClickType.LEFT);listener.onInventoryClick(outside);verify(outside).setCancelled(true);
++            f.tick();verify(f.service,never()).claimAsync(any(),any());assertTrue(f.nextTick.isEmpty());
++        }
++    }
++    @Test void fillerAndForeignInventoryAreNotButtons() {
++        try(var f=new RewardGuiFixture()) {
++            ready(f);var listener=new RewardListener(f.service,f.menu);
++            listener.onInventoryClick(click(f,f.current,18,ClickType.LEFT));f.tick();verify(f.service,never()).claimAsync(any(),any());
++            f.current=f.inventory(null,54);var unrelated=click(f,f.current,19,ClickType.LEFT);
++            listener.onInventoryClick(unrelated);verify(unrelated,never()).setCancelled(anyBoolean());
++        }
++    }
++    @Test void dragIsCancelledOnlyForAnOwnedRewardInventory() {
++        try(var f=new RewardGuiFixture()) {
++            ready(f);var listener=new RewardListener(f.service,f.menu);
++            var e=mock(InventoryDragEvent.class);when(e.getView()).thenReturn(f.view);listener.onInventoryDrag(e);verify(e).setCancelled(true);
++            f.current=f.inventory(null,54);var other=mock(InventoryDragEvent.class);when(other.getView()).thenReturn(f.view);
++            listener.onInventoryDrag(other);verify(other,never()).setCancelled(anyBoolean());
++        }
++    }
++    @Test void claimRunsNextTickAndRapidRepeatsRemainOneInFlightOperation() {
++        try(var f=new RewardGuiFixture()) {
++            var reward=ready(f);var top=f.current;var future=new CompletableFuture<RewardClaimResult>();
++            when(f.service.claimAsync(f.player,reward)).thenReturn(future);var listener=new RewardListener(f.service,f.menu);
++            listener.onInventoryClick(click(f,top,19,ClickType.LEFT));listener.onInventoryClick(click(f,top,19,ClickType.LEFT));
++            verify(f.service,never()).claimAsync(any(),any());assertEquals(1,f.nextTick.size());
++            f.tick();assertTrue(f.menu.claiming(f.player.getUniqueId(),"reward"));
++            assertTrue(RewardGuiFixture.lore(top.getItem(19)).contains("Claiming..."));
++            listener.onInventoryClick(click(f,top,19,ClickType.LEFT));f.tick();verify(f.service,times(1)).claimAsync(f.player,reward);
++            f.status("reward",RewardStatus.CLAIMED);future.complete(RewardClaimResult.SUCCESS);
++            assertFalse(f.menu.claiming(f.player.getUniqueId(),"reward"));assertSame(top,f.current);
++            assertTrue(RewardGuiFixture.lore(top.getItem(19)).contains("Claimed ✓"));verify(f.player,never()).openInventory(any(Inventory.class));
++        }
++    }
++    @Test void closingBeforeScheduledClickPreventsTheClaim() {
++        try(var f=new RewardGuiFixture()) {
++            ready(f);var listener=new RewardListener(f.service,f.menu);listener.onInventoryClick(click(f,f.current,19,ClickType.LEFT));
++            f.current=f.inventory(null,36);f.tick();verify(f.service,never()).claimAsync(any(),any());
++        }
++    }
++    @Test void asyncCompletionDoesNotReopenOrRefreshAnotherInventory() {
++        try(var f=new RewardGuiFixture()) {
++            var reward=ready(f);var top=f.current;var future=new CompletableFuture<RewardClaimResult>();
++            when(f.service.claimAsync(f.player,reward)).thenReturn(future);var listener=new RewardListener(f.service,f.menu);
++            listener.onInventoryClick(click(f,top,19,ClickType.LEFT));f.tick();
++            f.current=f.inventory(null,27);var other=f.current;future.complete(RewardClaimResult.SUCCESS);
++            assertSame(other,f.current);verify(f.player,never()).openInventory(any(Inventory.class));
++            verify(other,never()).clear();assertFalse(f.menu.claiming(f.player.getUniqueId(),"reward"));
++        }
++    }
++    @Test void exceptionalAndSynchronousFailuresReleaseClaimLockAndPermitSafeRetry() {
++        try(var f=new RewardGuiFixture()) {
++            var reward=ready(f);var top=f.current;var failed=new CompletableFuture<RewardClaimResult>();
++            when(f.service.claimAsync(f.player,reward)).thenReturn(failed).thenThrow(new IllegalStateException("provider stopping"));
++            var listener=new RewardListener(f.service,f.menu);listener.onInventoryClick(click(f,top,19,ClickType.LEFT));f.tick();
++            failed.completeExceptionally(new IllegalStateException("delivery failed"));
++            assertFalse(f.menu.claiming(f.player.getUniqueId(),"reward"));
++            assertTrue(RewardGuiFixture.lore(top.getItem(19)).contains("Delivery failed"));
++            listener.onInventoryClick(click(f,top,19,ClickType.LEFT));f.tick();
++            assertFalse(f.menu.claiming(f.player.getUniqueId(),"reward"));verify(f.service,times(2)).claimAsync(f.player,reward);
++        }
++    }
++    @Test void disconnectDuringClaimStillReleasesTheMenuLock() {
++        try(var f=new RewardGuiFixture()) {
++            var reward=ready(f);var future=new CompletableFuture<RewardClaimResult>();
++            when(f.service.claimAsync(f.player,reward)).thenReturn(future);var listener=new RewardListener(f.service,f.menu);
++            listener.onInventoryClick(click(f,f.current,19,ClickType.LEFT));f.tick();
++            when(f.player.isOnline()).thenReturn(false);future.complete(RewardClaimResult.SUCCESS);
++            assertFalse(f.menu.claiming(f.player.getUniqueId(),"reward"));verify(f.player,never()).openInventory(any(Inventory.class));
++        }
++    }
++    @Test void filtersAndPageNavigationNeverCallTheClaimService() {
++        try(var f=new RewardGuiFixture()) {
++            for(int i=0;i<43;i++)f.add("r"+i,"mining",10,0,RewardCriterionType.CUSTOM_COUNTER,RewardStatus.LOCKED);
++            f.current=f.menu.createCategory(f.player,"mining");var h=(RewardMenuHolder)f.current.getHolder();
++            var listener=new RewardListener(f.service,f.menu);
++            listener.onInventoryClick(click(f,f.current,51,ClickType.LEFT));f.tick();assertEquals(1,h.getPage());
++            listener.onInventoryClick(click(f,f.current,15,ClickType.RIGHT));f.tick();assertEquals(RewardMenuState.Filter.CLAIMED,h.state().filter());
++            assertEquals(0,h.getPage());assertTrue(h.visibleRewards().isEmpty());
++            verify(f.service,never()).claimAsync(any(),any());
++        }
++    }
++}
+diff --git a/src/test/java/org/enthusia/tags/rewards/RewardGuiRenderTest.java b/src/test/java/org/enthusia/tags/rewards/RewardGuiRenderTest.java
+new file mode 100644
+index 0000000..7342950
+--- /dev/null
++++ b/src/test/java/org/enthusia/tags/rewards/RewardGuiRenderTest.java
+@@ -0,0 +1,100 @@
++package org.enthusia.tags.rewards;
++import java.util.*;
++import net.kyori.adventure.text.Component;
++import net.kyori.adventure.text.format.TextDecoration;
++import org.bukkit.Material;
++import org.bukkit.inventory.Inventory;
++import org.junit.jupiter.api.Test;
++import static org.junit.jupiter.api.Assertions.*;
++import static org.mockito.Mockito.*;
++class RewardGuiRenderTest {
++    private static RewardMenuHolder holder(Inventory inventory) { return (RewardMenuHolder) inventory.getHolder(); }
++    private static void noItalic(Component component) {
++        assertEquals(TextDecoration.State.FALSE, component.decoration(TextDecoration.ITALIC));
++        component.children().forEach(RewardGuiRenderTest::noItalic);
++    }
++    @Test void dashboardUsesFiveRowsWithDistinctClaimedAndReadyCounts() {
++        try(var f=new RewardGuiFixture()) {
++            for(String c:List.of("playtime","mining","combat","deaths","economy","exploration","misc"))
++                f.add(c,c,100,20,RewardCriterionType.CUSTOM_COUNTER,RewardStatus.LOCKED);
++            f.status("playtime",RewardStatus.CLAIMED); f.status("mining",RewardStatus.UNLOCKED);
++            var inv=f.menu.create(f.player); assertEquals(45,inv.getSize());
++            assertTrue(RewardGuiFixture.lore(inv.getItem(4)).contains("Claimed: 1 / 7"));
++            assertTrue(RewardGuiFixture.lore(inv.getItem(4)).contains("Ready to claim: 1"));
++            assertEquals("General",RewardGuiFixture.plain(inv.getItem(24).getItemMeta().displayName()));
++            assertEquals(RewardMenuAction.Type.READY,holder(inv).action(40).type());
++            assertNull(holder(inv).action(38));assertNull(holder(inv).action(42));
++            verify(f.service,never()).claimAsync(any(),any());
++        }
++    }
++    @Test void rewardGridHasTwentyOnePaddedSlotsAndConditionalPagination() {
++        try(var f=new RewardGuiFixture()) {
++            for(int i=0;i<43;i++)f.add("r"+i,"mining",100,i,RewardCriterionType.CUSTOM_COUNTER,RewardStatus.LOCKED);
++            var inv=f.menu.createCategory(f.player,"mining");var h=holder(inv);
++            assertEquals(54,inv.getSize());assertEquals(21,h.visibleRewards().size());assertEquals(3,h.pageCount());
++            assertNull(h.action(47));assertEquals(RewardMenuAction.Type.NEXT,h.action(51).type());
++            for(int slot:RewardMenuModel.REWARD_SLOTS)assertEquals(RewardMenuAction.Type.CLAIM,h.action(slot).type());
++            f.menu.navigate(f.player,h,h.state().withPage(2));
++            assertEquals(List.of("r42"),h.visibleRewards());assertNull(h.action(51));assertNotNull(h.action(47));
++            assertEquals(RewardMenuAction.Type.BACK,h.action(45).type());assertEquals(Material.BARRIER,inv.getItem(53).getType());
++        }
++    }
++    @Test void readyViewCollectsAcrossCategoriesWithoutShufflingAfterClaim() {
++        try(var f=new RewardGuiFixture()) {
++            f.add("readyA","mining",100,100,RewardCriterionType.CUSTOM_COUNTER,RewardStatus.UNLOCKED);
++            f.add("readyB","combat",100,100,RewardCriterionType.CUSTOM_COUNTER,RewardStatus.UNLOCKED);
++            f.add("locked","mining",100,10,RewardCriterionType.CUSTOM_COUNTER,RewardStatus.LOCKED);
++            var inv=f.menu.create(f.player,RewardMenuState.ready());var h=holder(inv);
++            assertEquals(List.of("readya","readyb"),h.visibleRewards());
++            f.status("readyA",RewardStatus.CLAIMED);f.menu.refresh(f.player,h,true);
++            assertEquals(List.of("readya","readyb"),h.visibleRewards());assertTrue(RewardGuiFixture.lore(inv.getItem(19)).contains("Claimed ✓"));
++            f.menu.refresh(f.player,h,false);assertEquals(List.of("readyb"),h.visibleRewards());
++        }
++    }
++    @Test void timeUnitsAreReadableAndAllTextExplicitlyDisablesItalics() {
++        try(var f=new RewardGuiFixture()) {
++            var reward=f.add("deep","playtime",1800,60,RewardCriterionType.UNDERGROUND_ACTIVE_MINUTES,RewardStatus.LOCKED);
++            var inv=f.menu.createCategory(f.player,"playtime");var item=inv.getItem(19);
++            assertTrue(RewardGuiFixture.lore(item).contains("1h 00m / 30h 00m"));
++            assertTrue(RewardGuiFixture.lore(item).contains("Reward: $500"));
++            noItalic(item.getItemMeta().displayName());item.getItemMeta().lore().forEach(RewardGuiRenderTest::noItalic);
++            noItalic(RewardMenuText.component("&oItalic &c&lred &oagain"));
++            assertFalse(item.getItemMeta().getEnchantmentGlintOverride());
++        }
++    }
++    @Test void unknownProgressIsNotPresentedAsZeroAndReadyGlintIsExclusive() {
++        try(var f=new RewardGuiFixture()) {
++            f.add("unknown","mining",100,-1,RewardCriterionType.CUSTOM_COUNTER,RewardStatus.LOCKED);
++            f.add("ready","mining",100,100,RewardCriterionType.CUSTOM_COUNTER,RewardStatus.UNLOCKED);
++            f.add("claimed","mining",100,100,RewardCriterionType.CUSTOM_COUNTER,RewardStatus.CLAIMED);
++            var inv=f.menu.createCategory(f.player,"mining");
++            String unknown=RewardGuiFixture.lore(inv.getItem(19));
++            assertTrue(unknown.contains("Temporarily unavailable"));assertFalse(unknown.contains("0 / 100"));assertFalse(unknown.contains("0%"));
++            assertFalse(inv.getItem(19).getItemMeta().getEnchantmentGlintOverride());
++            assertTrue(inv.getItem(20).getItemMeta().getEnchantmentGlintOverride());
++            assertFalse(inv.getItem(21).getItemMeta().getEnchantmentGlintOverride());
++            assertEquals(Material.CLOCK,inv.getItem(21).getType());
++        }
++    }
++    @Test void playtimeGroupsAndFiltersPreserveTheRequestedView() {
++        try(var f=new RewardGuiFixture()) {
++            f.add("long","playtime",600,0,RewardCriterionType.PLAYTIME_ACTIVE_MINUTES,RewardStatus.LOCKED);
++            f.add("short","playtime",60,60,RewardCriterionType.PLAYTIME_ACTIVE_MINUTES,RewardStatus.UNLOCKED);
++            f.add("total","playtime",60,0,RewardCriterionType.PLAYTIME_TOTAL_MINUTES,RewardStatus.LOCKED);
++            var inv=f.menu.createCategory(f.player,"playtime");var h=holder(inv);
++            f.menu.navigate(f.player,h,h.state().withGroup(RewardMenuState.Group.ACTIVE).withFilter(RewardMenuState.Filter.UNCLAIMED));
++            assertEquals(List.of("short","long"),h.visibleRewards());
++            assertEquals(RewardMenuState.Group.ACTIVE,h.state().group());assertNotNull(h.action(12));
++            f.menu.refresh(f.player,h,true);assertEquals(RewardMenuState.Group.ACTIVE,h.state().group());
++        }
++    }
++    @Test void emptyCatalogAndMoreThanSevenCategoriesRemainNavigable() {
++        try(var f=new RewardGuiFixture()) {
++            var empty=f.menu.create(f.player);assertTrue(RewardGuiFixture.plain(empty.getItem(22).getItemMeta().displayName()).contains("No rewards"));
++            for(int i=0;i<9;i++)f.add("c"+i,"c"+i,10,0,RewardCriterionType.CUSTOM_COUNTER,RewardStatus.LOCKED);
++            var inv=f.menu.create(f.player);var h=holder(inv);assertEquals(2,h.pageCount());assertNotNull(h.action(42));
++            f.menu.navigate(f.player,h,h.state().withPage(1));assertNotNull(h.action(38));assertNull(h.action(42));
++            assertEquals("c7",h.action(10).value());assertEquals("c8",h.action(12).value());
++        }
++    }
++}

@@ -1,0 +1,4 @@
+cab9d863af9ba945f11b12facdb6c3bd85cafd4f86828d91c66fdff753b1c465  EnthusiaAdvancements-1.0.0-pilot.5.jar
+41402850c2fc5e4b067b9daa54120f2bd8ecb2e983ff59b3c48ccfc891e21462  EnthusiaTags-2.2.2-rewards-gui-test.1.jar
+8c7aa9e5f1d719d4c27059d1f4a646cba473fd0e5a5c406786a3efbb8220d090  README.txt
+599ebe63ca636cf0f869e6b177575619f0445f6e8d9c9e2b76e7801745398d12  rewards-gui-source.patch
