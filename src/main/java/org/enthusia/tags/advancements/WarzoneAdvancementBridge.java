@@ -14,14 +14,14 @@ import org.enthusia.tags.advancements.domain.DuelMilestoneProgress;
 final class WarzoneAdvancementBridge {
     private final Path file;
     private final StatsReader reader;
-    @FunctionalInterface
-    interface StatsReader { Map<UUID, DuelMilestoneProgress.Stats> read(Path path) throws Exception; }
     // Published atomically by the background reader; sessions are main-thread-only.
-    private record Snapshot(long readStarted, Map<UUID, DuelMilestoneProgress.Stats> players) {}
     private volatile Snapshot latest;
     private final AtomicBoolean refreshing = new AtomicBoolean();
     private final Map<UUID, DuelMilestoneProgress> sessions = new HashMap<>();
     private final Map<UUID, Long> sessionStarted = new HashMap<>();
+    @FunctionalInterface
+    interface StatsReader { Map<UUID, DuelMilestoneProgress.Stats> read(Path path) throws Exception; }
+    private record Snapshot(long readStarted, Map<UUID, DuelMilestoneProgress.Stats> players) {}
     void beginSession(UUID player) {
         sessions.remove(player);
         sessionStarted.put(player, System.nanoTime());
