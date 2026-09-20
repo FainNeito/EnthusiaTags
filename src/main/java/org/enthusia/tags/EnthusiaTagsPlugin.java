@@ -5,6 +5,8 @@ import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.enthusia.tags.api.TagVisibilityService;
+import org.enthusia.tags.advancements.NativeAdvancementController;
+import org.enthusia.tags.cosmetics.RoseChatPresenceHook;
 import org.enthusia.tags.cosmetics.CosmeticsCommand;
 import org.enthusia.tags.cosmetics.CosmeticsListener;
 import org.enthusia.tags.cosmetics.CosmeticsService;
@@ -32,7 +34,7 @@ public final class EnthusiaTagsPlugin extends JavaPlugin {
     private DailyService dailyService;
     private LoreItemRewardRuntime loreItemRewardRuntime;
     private LoreItemRewardAdmin loreItemRewardAdmin;
-    private org.enthusia.tags.advancements.NativeAdvancementController nativeAdvancements;
+    private NativeAdvancementController nativeAdvancements;
 
     @Override
     public void onEnable() {
@@ -86,7 +88,7 @@ public final class EnthusiaTagsPlugin extends JavaPlugin {
         if (getConfig().getBoolean("advancements.enabled", true)
             && Bukkit.getPluginManager().isPluginEnabled("EnthusiaAdvancements")) {
             try {
-                nativeAdvancements = new org.enthusia.tags.advancements.NativeAdvancementController(this, rewardService);
+                nativeAdvancements = new NativeAdvancementController(this, rewardService);
             } catch (RuntimeException | LinkageError ex) {
                 getLogger().warning("Native advancement track unavailable; rewards remain accessible: " + ex.getMessage());
             }
@@ -172,7 +174,7 @@ public final class EnthusiaTagsPlugin extends JavaPlugin {
     private void registerListeners() {
         Bukkit.getPluginManager().registerEvents(new TagListener(tagService, rewardService), this);
         Bukkit.getPluginManager().registerEvents(new CosmeticsListener(cosmeticsService, tagService, messages, rewardService), this);
-        org.enthusia.tags.cosmetics.RoseChatPresenceHook.register(this, cosmeticsService);
+        RoseChatPresenceHook.register(this, cosmeticsService);
         RewardsCommand rewardsCommand = new RewardsCommand(rewardService, tagService, messages, this);
         if (rewardService.isAvailable()) {
             Bukkit.getPluginManager().registerEvents(new RewardListener(rewardService, rewardsCommand.getRewardMenu()), this);

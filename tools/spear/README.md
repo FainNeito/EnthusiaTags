@@ -1,5 +1,6 @@
 # SPEAR project tooling
-Upstream: https://github.com/BadgersMC/spear-plugin at 2c91bae.
+
+Upstream: <https://github.com/BadgersMC/spear-plugin> at 2c91bae.
 ears.mjs is copied unchanged from hooks/lib/ears.mjs. See UPSTREAM-NOTICE.md for the upstream MIT declaration and provenance.
 Skills were read from the existing ItemSignature workspace's .agents/skills/spear-* directories.
 state.mjs is a project adaptation of state.sh for Windows without Bash/jq, using the same state fields and phase names with additional transition checks.

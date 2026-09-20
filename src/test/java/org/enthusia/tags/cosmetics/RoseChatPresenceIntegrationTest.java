@@ -12,6 +12,7 @@ import org.bukkit.event.Cancellable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
 class RoseChatPresenceIntegrationTest {
     @Test
@@ -28,29 +29,28 @@ class RoseChatPresenceIntegrationTest {
             UUID id = UUID.randomUUID();
             Player subject = PresenceLifecycleTest.player(id);
             Player viewer = PresenceLifecycleTest.player(UUID.randomUUID());
-            CosmeticsService service = new CosmeticsService(null, null, null);
+            var fixture = PresenceLifecycleTest.fixture(id, "custom");
+            CosmeticsService service = fixture.service();
             service.getCosmetics().put("custom", new CosmeticDefinition("custom", "custom", "quit",
                 CosmeticType.QUIT_MESSAGE, null, null, null, null, "&6{player} left", "test", 0, 0, 0, 0));
-            PresenceLifecycleTest.selections(service).put(id, new java.util.concurrent.ConcurrentHashMap<>(Map.of("quit", "custom")));
-            var apply = Class.forName("org.enthusia.tags.cosmetics.RoseChatPresenceHook")
-                .getDeclaredMethod("applyReplacement", Event.class, CosmeticsService.class);
-            apply.setAccessible(true);
             Event event = (Event) constructor.newInstance(subject, viewer, "quit", List.of("default1", "default2"));
-            apply.invoke(null, event, service);
+            RoseChatPresenceHook.applyReplacement( event, service);
             assertEquals(List.of("&6Tester left"), type.getMethod("getLines").invoke(event));
             assertSame(viewer, type.getMethod("getViewer").invoke(event));
             assertSame(subject, type.getMethod("getPlayer").invoke(event));
 
             Event cancelled = (Event) constructor.newInstance(subject, viewer, "quit", List.of("default"));
             ((Cancellable) cancelled).setCancelled(true);
-            apply.invoke(null, cancelled, service);
+            RoseChatPresenceHook.applyReplacement( cancelled, service);
             assertEquals(List.of("default"), type.getMethod("getLines").invoke(cancelled));
 
             service.getCosmetics().put("original_quit", new CosmeticDefinition("original_quit", "Original", "quit",
                 CosmeticType.ORIGINAL, null, null, null, null, "MUST NOT REPLACE", "test", 0, 0, 0, 0));
-            PresenceLifecycleTest.selections(service).get(id).put("quit", "original_quit");
+            service.unloadPlayer(subject);
+            when(fixture.storage().loadSelectionsNow(id)).thenReturn(Map.of("quit", "original_quit"));
+            service.preloadPlayerBlocking(id);
             Event original = (Event) constructor.newInstance(subject, viewer, "quit", List.of("default1", "default2"));
-            apply.invoke(null, original, service);
+            RoseChatPresenceHook.applyReplacement( original, service);
             assertEquals(List.of("default1", "default2"), type.getMethod("getLines").invoke(original));
         }
     }
