@@ -8,7 +8,8 @@ Status: [x] complete locally through SPEAR refine; new duel track still requires
 References: REQ-021, REQ-022, REQ-023, REQ-024; implementation.md Warzone Duels statistics bridge.
 Acceptance: Three fixed-key nodes, strict read-only parsing, off-thread reads, silent first observation, live threshold crossing once, no regression on missing/failed reads, reset session on quit, opt-in default, no guild or reward mutations.
 Evidence:
-- Local WarzoneDuels checkout `../2026-09-17/get-started-on-the-warzoneduels-update/src/main/java/dev/minecraft/warzoneduels/adapter/bukkit/persistence/PlayerStatsStore.java` explicitly persists players.<UUID>.wins and best-win-streak in stats.yml using atomic replacement. StatsService records all winning party members. PlayerDuelStats retains best streak after losses. Inspected through Remote Desktop Commander; no edits to that checkout.
+
+- Local WarzoneDuels checkout `../2026-09-17/get-started-on-the-warzoneduels-update/src/main/java/dev/minecraft/warzoneduels/adapter/bukkit/persistence/PlayerStatsStore.java` explicitly persists `players.<UUID>.wins` and `best-win-streak` in stats.yml using atomic replacement. StatsService records all winning party members. PlayerDuelStats retains best streak after losses. Inspected through Remote Desktop Commander; no edits to that checkout.
 - Existing NativeAdvancementController and io.github.badgersmc.advancements.pilot.ProjectionService provide Node, silent project, explicit celebrate and plugin-owned tree removal. org.bukkit.Material, org.bukkit.Bukkit, org.bukkit.plugin.java.JavaPlugin, org.bukkit.scheduler.BukkitTask and org.bukkit.plugin.Plugin are existing Paper adapter dependencies; asynchronous runTaskTimerAsynchronously supplies the background reader.
 - Existing org.bukkit.configuration.file.YamlConfiguration and org.bukkit.configuration.ConfigurationSection provide strict loadFromString and getValues(false); IOException/InvalidConfigurationException are converted to omitted snapshots, never zero. java.nio.file.Files.readString, java.nio.file.Path, java.util maps/sets/UUID and AtomicReference are JDK APIs. No new library dependency.
 - New org.enthusia.tags.advancements.domain.DuelMilestoneProgress is a framework-free per-session projection policy; WarzoneStatsReader and WarzoneAdvancementBridge remain adapter-only. org.junit.jupiter.api.Test and org.junit.jupiter.api.Assertions are existing test dependencies.
@@ -17,12 +18,12 @@ Evidence:
 - Green: ../../warzone-green.log passes 14 focused tests including existing shutdown behavior. ../../warzone-full-verify.log records clean verify with all 156 tests passing, zero failures/errors/skips, on Java 25 and the pinned Paper 26.2 API. Domain imports are JDK-only; new adapters use only the dependencies cited above. EARS and diff checks pass. Artifact metadata is 2.2.2-pilot.2 to distinguish this test build.
 - Scope: three opt-in, display-only milestones. No WarzoneDuels code/data edits, guild work, reward payouts, kill-effect changes or deployment. Real Paper/client behavior is an explicit test-server acceptance item in ../../outputs/Enthusia-Warzone-Duels-test/README.md. No commit/push/PR step, per the existing delivery boundary.
 
-
 ## T-009 [TDD] Adventure click-event runtime compatibility
 
 Status: [x] complete locally; real join/quit client validation remains required.
 References: REQ-020, REQ-011, REQ-013; implementation.md Presence integration.
 Evidence:
+
 - Test-server join log reports NoSuchFieldError for RUN_COMMAND and SUGGEST_COMMAND in AdventureClickDecorator. Existing build resolves Adventure 4.26.1; local Maven Adventure 5.2.0 javap confirms typed Action fields and removed clickEvent(Action,String), with preserved named factories and changePage(int).
 - Existing infrastructure imports dev.rosewood.rosechat.message.tokenizer.Token, dev.rosewood.rosechat.message.tokenizer.decorator.ClickDecorator, net.kyori.adventure.text.Component, net.kyori.adventure.text.event.ClickEvent; regression uses existing org.junit.jupiter.api.Test and org.junit.jupiter.api.Assertions. No domain or persistence edits.
 - Test runtime matrix uses official net.kyori Adventure 5.2.0 artifacts alongside existing 4.26.1 runtime. Test compares actual decorated components with factory-built expected events for all six supported actions and placeholder/URL handling.
@@ -34,6 +35,7 @@ Evidence:
 Status: [x] complete locally; server reload/restart validation remains outstanding.
 References: REQ-001, REQ-019; implementation.md Persistence and Presentation.
 Evidence:
+
 - RewardService.loadCriterion/legacySource/keyForType validate CUSTOM_COUNTER keys but defaultCounterKeys omits PLAYTIME_CONSECUTIVE_ACTIVE_MINUTES, UNDERGROUND_ACTIVE_MINUTES and PING_MS_AT_LEAST. RewardTracker already persists max_consecutive_active, underground_active and max_ping_ms; computeLegacyProgress uses those exact keys.
 - Existing rewards.yml identifies sleeps_in_minecraft (720), marathon_session (360), yearn_for_mines (600), deep_dweller (1800), lag_was_crazy (150). No YAML rewrite or schema migration required; preserve explicit source/key/counter overrides.
 - Tests reuse existing org.junit.jupiter.api.Test, org.junit.jupiter.api.io.TempDir, org.junit.jupiter.api.Assertions, org.bukkit.configuration.ConfigurationSection, org.bukkit.configuration.file.YamlConfiguration, org.bukkit.entity.Player, org.bukkit.plugin.java.JavaPlugin, org.enthusia.tags.PerformanceMonitor; fixtures use standard Java IO/reflection/collections/concurrency and sun.misc.Unsafe as in RewardGoldNetworkTest. Real temporary RewardStorage verifies historical persisted counters and claims without invoking reward delivery.
@@ -45,8 +47,9 @@ Evidence:
 Status: [x] complete locally; actual server restart and presence rendering remain staging checks.
 References: REQ-018; implementation.md Presence integration and Verification and rollout.
 Evidence:
+
 - Test-server latest.log: Paper 26.2.build.123-stable, Java 25; RoseChat fails in shaded RoseGarden NMSUtil static initialization parsing "build". No server writes authorized in this task.
-- Official RoseGarden 1.5.7 source archive at https://repo.rosewooddev.io/repository/public/dev/rosewood/rosegarden/1.5.7/rosegarden-1.5.7-sources.jar inspected locally: NMSUtil distinguishes year-based versions and ignores nonnumeric patch metadata. Prefer dependency update to a private shadow-class override.
+- Official RoseGarden 1.5.7 source archive at <https://repo.rosewooddev.io/repository/public/dev/rosewood/rosegarden/1.5.7/rosegarden-1.5.7-sources.jar> inspected locally: NMSUtil distinguishes year-based versions and ignores nonnumeric patch metadata. Prefer dependency update to a private shadow-class override.
 - Companion build.gradle uses RoseGarden 1.5.4 with Shadow relocation/minimize and existing org.junit.jupiter.api.Test, org.junit.jupiter.api.Assertions. Test uses only these imports plus Java standard-library reflection, URLClassLoader, Path and Proxy; org.bukkit.Bukkit and org.bukkit.Server are inspected through the existing Paper test runtime. Each version uses isolated NMSUtil initialization and restores Bukkit's server field.
 - Scope: companion dependency and regression tests only; no reward data or configs changed, no commits/push/deployment.
 - Red: ../../rose-version-red.log reproduces NumberFormatException in static initialization. Green: ../../rose-version-green.log verifies legacy 1.21.11, year-based 26.1, exact 26.2.build.123-stable and future-format 26.3.build.1-stable. The same assertions pass against the final relocated/minimized JAR, not merely the dependency classpath.
@@ -57,6 +60,7 @@ Evidence:
 Status: [x] complete locally through SPEAR refine; server staging remains outstanding.
 References: REQ-016, REQ-017; implementation.md Persistence and Presentation.
 Evidence:
+
 - RewardService.claimInternal loads the ledger before delivery but only checks settled fingerprint conflicts inside the action loop. RewardStorage.reserveGoldActionNow rejects mismatches with SQLException; no schema change is needed.
 - NativeAdvancementController.close calls the provider before clearing state; EnthusiaTagsPlugin.onDisable calls this before other services. Retain at-most-once toast policy unchanged.
 - Existing RewardGoldNetworkTest and PresenceLifecycleTest establish org.junit.jupiter.api.Test, org.junit.jupiter.api.io.TempDir, org.junit.jupiter.api.Assertions, sun.misc.Unsafe and reflection isolation conventions. Existing Paper dependency supplies org.bukkit.Bukkit, org.bukkit.Server, org.bukkit.plugin.PluginManager, org.bukkit.plugin.java.JavaPlugin; existing pilot supplies io.github.badgersmc.advancements.pilot.ProjectionService. No new runtime dependencies or domain imports.
@@ -107,12 +111,12 @@ References: REQ-007, REQ-008, REQ-009, REQ-014, REQ-015; implementation.md Prese
 Evidence:
 
 - Target supplied by user: 26.2, later 26.3; no UltimateAdvancementAPI installed.
-- Official 2.8.1 release notes confirm 26.2 support: https://www.spigotmc.org/resources/ultimateadvancementapi-1-15-26-2.95585/updates
+- Official 2.8.1 release notes confirm 26.2 support: <https://www.spigotmc.org/resources/ultimateadvancementapi-1-15-26-2.95585/updates>
 - Current EnthusiaAdvancements `build.gradle.kts` declares 2.8.0; its startup copies combat, exploration and guild defaults. Pilot must not enable those trees.
 - Verified UAA 2.8.1 API and source constructors for AdvancementTab, RootAdvancement, BaseAdvancement and AdvancementDisplay. Both display notification flags must be false during projection. Explicit displayToastToPlayer/getAnnounceMessage are reserved for committed live unlocks. Reward rendering never calls reward commands.
 - Existing RewardStorage.markUnlockedNow uses INSERT OR IGNORE without reporting insertion; repeated asynchronous evaluations can therefore notify twice. Test uses org.enthusia.tags.PerformanceMonitor, org.junit.jupiter.api.Test, org.junit.jupiter.api.io.TempDir, org.junit.jupiter.api.Assertions and existing SQLite; Java reflection observes its actual returned result.
 - A separate Maven pilot module inside EnthusiaAdvancements avoids enabling unrelated bundled trees or requiring their plugin integrations. It is explicitly a test-server replacement build, not the complete existing multi-tree distribution. Its public projection API accepts definitions/progress only and cannot claim Tags rewards.
-- Confirmed Paper 26.2 API coordinates from https://docs.papermc.io/paper/dev/project-setup/ and https://jd.papermc.io/paper/26.2/ ; Tags and pilot now compile against io.papermc.paper:paper-api:26.2.build.124-stable. UAA AdvancementUtils.SHOW_ADVANCEMENT_MESSAGES_GAMERULE avoids hard-coding the old renamed gamerule field.
+- Confirmed Paper 26.2 API coordinates from <https://docs.papermc.io/paper/dev/project-setup/> and <https://jd.papermc.io/paper/26.2/> ; Tags and pilot now compile against io.papermc.paper:paper-api:26.2.build.124-stable. UAA AdvancementUtils.SHOW_ADVANCEMENT_MESSAGES_GAMERULE avoids hard-coding the old renamed gamerule field.
 - Prove: first insertion returned null instead of true; `../../tags-native-red.log`. Green: actual SQLite insert winner, concurrent connections and restart; history does not execute a claim. CompletionBaseline tests cover silent first complete observation, provider unavailability and verified incomplete-to-complete transitions.
 - Pilot dependencies/import evidence from actual 2.8.1 JAR and sources: com.fren_gor.ultimateAdvancementAPI.AdvancementTab, com.fren_gor.ultimateAdvancementAPI.UltimateAdvancementAPI, com.fren_gor.ultimateAdvancementAPI.advancement.Advancement, com.fren_gor.ultimateAdvancementAPI.advancement.BaseAdvancement, com.fren_gor.ultimateAdvancementAPI.advancement.RootAdvancement, com.fren_gor.ultimateAdvancementAPI.advancement.display.AdvancementDisplay, com.fren_gor.ultimateAdvancementAPI.advancement.display.AdvancementFrameType. UAA schedules/coalesces tab updates; native criteria are limited to 100 percentage steps, never rounding incomplete progress up to completion.
 - Paper API adapter imports: org.bukkit.Bukkit, org.bukkit.ChatColor, org.bukkit.Material, org.bukkit.entity.Player, org.bukkit.event.EventHandler, org.bukkit.event.HandlerList, org.bukkit.event.Listener, org.bukkit.event.player.PlayerQuitEvent, org.bukkit.inventory.ItemStack, org.bukkit.plugin.Plugin, org.bukkit.plugin.ServicePriority, org.bukkit.plugin.java.JavaPlugin, org.bukkit.scheduler.BukkitTask. Existing source contracts: org.enthusia.tags.rewards.RewardAction, org.enthusia.tags.rewards.RewardActionType, org.enthusia.tags.rewards.RewardDefinition, org.enthusia.tags.rewards.RewardCriterion, org.enthusia.tags.rewards.RewardCriterionType, org.enthusia.tags.rewards.RewardService. New io.github.badgersmc.advancements.pilot.ProjectionService is provided, never shaded into Tags. org.enthusia.tags.advancements.domain.CompletionBaseline uses only java.util.HashSet and java.util.Set; all remaining new java.* imports are standard library.
@@ -127,8 +131,8 @@ Status: complete locally through SPEAR refine; native integration remains T-002b
 References: REQ-007, REQ-009, REQ-014; implementation.md Presentation and Verification and rollout.
 Evidence:
 
-- Official Maven coordinates and source archive: https://nexus.frengor.com/repository/public/com/frengor/ultimateadvancementapi/2.8.1/ ; local `../uaa-2.8.1.jar` and `../uaa-2.8.1-sources.jar`.
-- Official runtime distribution metadata: https://api.modrinth.com/v2/version/uSaZfvN8 . Its supported game versions explicitly include 26.2, not 26.3. Downloaded `../UltimateAdvancementAPI-Plugin-2.8.1.jar` and verified its SHA512 against the publisher metadata: `949fae68b88835c099298cd39421204fccd40c58292b5662a8ca5616f233a2f8b1b5f3da48204f927fffe9c7be936042cd438921042e52575148d5d23728c894`.
+- Official Maven coordinates and source archive: <https://nexus.frengor.com/repository/public/com/frengor/ultimateadvancementapi/2.8.1/> ; local `../uaa-2.8.1.jar` and `../uaa-2.8.1-sources.jar`.
+- Official runtime distribution metadata: <https://api.modrinth.com/v2/version/uSaZfvN8> . Its supported game versions explicitly include 26.2, not 26.3. Downloaded `../UltimateAdvancementAPI-Plugin-2.8.1.jar` and verified its SHA512 against the publisher metadata: `949fae68b88835c099298cd39421204fccd40c58292b5662a8ca5616f233a2f8b1b5f3da48204f927fffe9c7be936042cd438921042e52575148d5d23728c894`.
 - Inspected runtime plugin.yml: UltimateAdvancementAPI 2.8.1, main com.fren_gor.ultimateAdvancementAPI.AdvancementPlugin. The Maven API artifact is not substituted for this installable plugin distribution.
 - Source `com/fren_gor/ultimateAdvancementAPI/advancement/Advancement.java`: setProgression(..., false) still invokes onGrant; false suppresses rewards only. onGrant separately broadcasts and schedules the toast. T-002b must explicitly suppress historical notifications rather than rely on that boolean.
 - Local EnthusiaAdvancements build.gradle.kts compileOnly and testImplementation pins updated together from 2.8.0 to 2.8.1. No runtime logic, new trees, imports or domain dependencies added by this infrastructure slice. Full EnthusiaAdvancements build and native client behavior are not verified by this task.
@@ -160,7 +164,7 @@ References: REQ-011, REQ-012, REQ-013; implementation.md Presence integration.
 Evidence:
 
 - Inspected sibling RoseChat PlayerListener: join at NORMAL and quit at HIGHEST directly send per-viewer messages after staff visibility checks. Tags must not re-broadcast through Bukkit; replacement requires an explicit hook inside that delivery path.
-- Confirmed checkout origin https://github.com/wsg138/Enthusia-RoseChat.git. Existing org.bukkit.entity.Player, org.bukkit.event.EventHandler, org.bukkit.event.EventPriority, org.bukkit.event.player.PlayerQuitEvent and org.bukkit.event.entity.PlayerDeathEvent are supplied by the current Paper API. Test uses org.junit.jupiter.api.Test and org.junit.jupiter.api.Assertions, standard Java reflection/collections and sun.misc.Unsafe for constructor-free listener isolation, not runtime code.
+- Confirmed checkout origin <https://github.com/wsg138/Enthusia-RoseChat.git>. Existing org.bukkit.entity.Player, org.bukkit.event.EventHandler, org.bukkit.event.EventPriority, org.bukkit.event.player.PlayerQuitEvent and org.bukkit.event.entity.PlayerDeathEvent are supplied by the current Paper API. Test uses org.junit.jupiter.api.Test and org.junit.jupiter.api.Assertions, standard Java reflection/collections and sun.misc.Unsafe for constructor-free listener isolation, not runtime code.
 - New public RoseChat PresenceMessageEvent is an infrastructure contract; Tags will bind only this explicit event through the RoseChat plugin classloader, preserving optional dependency loading. No reflective access to RoseChat private internals and no domain framework dependencies.
 - Imports/evidence: org.bukkit.event.Event, org.bukkit.event.Cancellable, org.bukkit.event.HandlerList, org.bukkit.event.EventException, org.bukkit.event.Listener, org.bukkit.plugin.Plugin and org.bukkit.plugin.java.JavaPlugin use the existing Paper dependency. dev.rosewood.rosechat.api.event.PresenceMessageEvent is the new companion API. org.junit.jupiter.api.io.TempDir and javax.tools.ToolProvider compile and exercise that actual companion source in the Tags integration test. org.enthusia.tags.cosmetics.RoseChatPresenceHook is optional infrastructure wiring.
 - Behavioral red: HIGH quit handler removed the selection before RoseChat HIGHEST delivery (`tags-presence-red.log`). Green tests cover retained selection then MONITOR cleanup, RoseChat ownership, suppressed Bukkit messages, standalone fallback, actual event replacement/cancellation and Original preservation. RoseChat clean build succeeded (`../../rosechat-presence-verify.log`); no runtime client test yet.
@@ -172,10 +176,11 @@ Status: complete locally through SPEAR refine; test-server artifacts assembled, 
 References: REQ-007, REQ-014; implementation.md Verification and rollout.
 Evidence:
 
-- Minecraft 26.2 release notes specify resource-pack format 88.0: https://feedback.minecraft.net/hc/en-us/articles/46690753273997-Minecraft-Java-Edition-26-2 . Modern min_format/max_format schema is described at https://www.minecraft.net/en-us/article/minecraft-snapshot-25w31a . The supplied PNG is copied unchanged, not regenerated.
+- Minecraft 26.2 release notes specify resource-pack format 88.0: <https://feedback.minecraft.net/hc/en-us/articles/46690753273997-Minecraft-Java-Edition-26-2> . Modern min_format/max_format schema is described at <https://www.minecraft.net/en-us/article/minecraft-snapshot-25w31a> . The supplied PNG is copied unchanged, not regenerated.
 - Native root icon uses PAPER with custom-model-data 815001. Pack range dispatch maps that value to enthusia:item/logo and restores normal paper at 815002; no pack means ordinary vanilla paper. Existing server packs must merge the paper selector rather than overwrite their own mappings.
 - Bundle contains local Tags, projection-only EnthusiaAdvancements, companion RoseChat, official checksum-verified UAA 2.8.1, optional logo pack, install checklist and checksums. No production files are read or changed.
 - Final clean builds: `../../tags-pilot-package.log` (138 tests), `../../ea-pilot-package.log` (3 tests), `../../rosechat-pilot-package.log` (12 tests). Resource JSON parses, archive metadata is at root, PNG checksum matches the supplied original, plugin descriptors are inspected, and Tags contains no shaded UAA/pilot API classes. Pilot and Tags descriptors explicitly target api-version 26.2. All artifacts are under `../../outputs/EnthusiaTags-26.2-test-bundle`.
+
 ## T-005 [DOC] Operator migration, compatibility and staging checklist
 
 Status: complete locally through SPEAR refine; ready for user-run test-server staging.
@@ -219,6 +224,7 @@ Evidence: EnthusiaCommend feature branch persists positive-receipt, overall high
 Status: locally verified; hosted validation pending the updated head.
 References: REQ-901 through REQ-905; implementation.md Presentation, Presence integration, Verification.
 Evidence:
+
 - Rechecked original CodeRabbit findings against the foundation branch rather than assuming later branches contain the fixes.
 - ReviewRegressionTest initially failed all three cases: repeated hour/minute tokens, combined seconds, and a consumed completion transition. The implementation now passes them; NotificationRetryTest separately verifies failed-delivery retention and persistence retry classification.
 - RoseChatLateBindingTest exercises late enable, duplicate enable, and disable/re-enable using the actual event-registration boundary. Original selection is now explicitly selected in the companion-source test. RoseChat presence ownership continues to suppress Bukkit fallback whenever RoseChat is enabled, because broadcasting a fallback without the per-viewer hook would bypass its audience rules.

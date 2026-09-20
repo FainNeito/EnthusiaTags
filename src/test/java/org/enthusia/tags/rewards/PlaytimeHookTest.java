@@ -60,15 +60,12 @@ class PlaytimeHookTest {
 
     @Test
     void placeholderErrorsAreNotConvertedToProgress() throws Exception {
-        RewardService service = new RewardService(null, null, null, new org.enthusia.tags.PerformanceMonitor(null));
-        var parse = RewardService.class.getDeclaredMethod("parsePlaytimeMinutes", String.class, String.class);
-        parse.setAccessible(true);
         for (String invalid : new String[] { "", "%playtime_123_minutes%", "database error 503", "-20", "NaN", "999999999999999999999h" }) {
-            assertEquals(-1L, parse.invoke(service, invalid, "%playtime_minutes%"), invalid);
+            assertEquals(-1L, PlaytimeTextParser.parse( invalid, "%playtime_minutes%"), invalid);
         }
-        assertEquals(0L, parse.invoke(service, "0", "%playtime_minutes%"));
-        assertEquals(90L, parse.invoke(service, "1h 30m", "%playtime_minutes%"));
-        assertEquals(1000L, parse.invoke(service, "1,000", "%enthusiaplaytime_active_minutes%"));
+        assertEquals(0L, PlaytimeTextParser.parse( "0", "%playtime_minutes%"));
+        assertEquals(90L, PlaytimeTextParser.parse( "1h 30m", "%playtime_minutes%"));
+        assertEquals(1000L, PlaytimeTextParser.parse( "1,000", "%enthusiaplaytime_active_minutes%"));
     }
 
     public static final class Snapshot {

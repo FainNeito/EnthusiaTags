@@ -28,7 +28,10 @@ jobs:
         run: bash tools/bootstrap_loreitems_release.sh
 
       - name: Bootstrap pinned companion sources
-        run: python3 tools/ci/bootstrap_companions.py
+        run: |
+          python3 -m pip install --require-hashes -r tools/ci/requirements.txt
+          python3 -m unittest discover -s tools/ci -p 'test_*.py'
+          bash tools/ci/bootstrap_companions.sh
 
       - name: Test and package
         run: mvn --batch-mode --no-transfer-progress clean verify

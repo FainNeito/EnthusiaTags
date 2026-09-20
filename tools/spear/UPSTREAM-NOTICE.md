@@ -1,5 +1,6 @@
 # SPEAR upstream notice
-Source: https://github.com/BadgersMC/spear-plugin, revision 2c91bae.
+
+Source: <https://github.com/BadgersMC/spear-plugin>, revision 2c91bae.
 The upstream README declares the project licensed MIT. That snapshot does not include a standalone LICENSE file.
 Vendored ears.mjs and .agents/skills/spear-* come from that snapshot. The project-specific state.mjs and architecture template adaptations are identified in their headers.
 
@@ -7,7 +8,7 @@ Vendored ears.mjs and .agents/skills/spear-* come from that snapshot. The projec
 
 The following text is reproduced verbatim from the same snapshot's
 `reference-implementations/ts-spear/LICENSE`:
-https://github.com/BadgersMC/spear-plugin/blob/2c91bae/reference-implementations/ts-spear/LICENSE
+<https://github.com/BadgersMC/spear-plugin/blob/2c91bae/reference-implementations/ts-spear/LICENSE>
 
 The root README declares MIT, but supplies no separate copyright notice for the
 vendored helpers/skills. This preserves the upstream notice that is available;

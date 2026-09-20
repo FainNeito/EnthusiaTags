@@ -1178,67 +1178,95 @@ public final class RewardStorage {
      */
     public boolean reserveGoldActionNow(UUID playerId, String rewardId, RewardAction action,
                                         String fingerprint, String ipAddress) throws SQLException {
-        if (playerId == null || rewardId == null || rewardId.isBlank() || action == null
-            || action.getActionId() == null || action.getActionId().isBlank() || !action.isGoldNetworkLimited()
-            || fingerprint == null || fingerprint.isBlank() || ipAddress == null || ipAddress.isBlank()) {
+        requireGoldReservation(playerId, rewardId, action, fingerprint, ipAddress);
+        return executeBlockingMeasured("storage.rewards.gold-reserve",
+            () -> reserveGoldActionDirect(playerId, rewardId, action, fingerprint, ipAddress));
+    }
+
+    private static void requireGoldReservation(UUID playerId, String rewardId, RewardAction action,
+                                                String fingerprint, String ipAddress) throws SQLException {
+        if (playerId == null || action == null || !action.isGoldNetworkLimited()) {
             throw new SQLException("Gold reservation requires a typed action, identity and verified address");
         }
-        return executeBlockingMeasured("storage.rewards.gold-reserve", () -> {
-            connection.setAutoCommit(false);
-            try {
-                // Acquire the SQLite writer lock before reading any state (including across connections).
-                try (PreparedStatement statement = connection.prepareStatement("""
-                    INSERT OR IGNORE INTO reward_gold_ip_claims
-                      (reward_id,action_id,ip_address,player_uuid,reserved_at) VALUES(?,?,?,?,?)
-                    """)) {
-                    statement.setString(1, rewardId);
-                    statement.setString(2, action.getActionId());
-                    statement.setString(3, ipAddress);
-                    statement.setString(4, playerId.toString());
-                    statement.setLong(5, System.currentTimeMillis());
-                    statement.executeUpdate();
-                }
-                ActionLedgerEntry existing = selectActionEntry(playerId, rewardId, action.getActionId());
-                if (existing != null && (!fingerprint.equals(existing.fingerprint())
-                    || (existing.status() != RewardStatus.DELIVERY_FAILED
-                        && existing.status() != RewardStatus.WITHHELD_NETWORK_LIMIT))) {
-                    throw new SQLException("Gold action already pending, delivered or changed; reconcile before retrying");
-                }
-                if (existing != null && existing.status() == RewardStatus.WITHHELD_NETWORK_LIMIT) {
-                    connection.rollback();
-                    return false;
-                }
-                boolean blocked;
-                try (PreparedStatement statement = connection.prepareStatement("""
-                    SELECT player_uuid FROM reward_gold_ip_claims
-                    WHERE reward_id=? AND ip_address=?
-                    UNION ALL SELECT player_uuid FROM reward_ip_claims WHERE reward_id=? AND ip_address=?
-                    """)) {
-                    statement.setString(1, rewardId);
-                    statement.setString(2, ipAddress);
-                    statement.setString(3, rewardId);
-                    statement.setString(4, ipAddress);
-                    blocked = false;
-                    try (ResultSet rows = statement.executeQuery()) {
-                        while (rows.next()) blocked |= !playerId.toString().equals(rows.getString(1));
-                    }
-                }
-                if (blocked) {
-                    // If only a legacy owner blocked us, do not create new reservation evidence for this alt.
-                    deleteGoldReservationDirect(playerId, rewardId, action.getActionId(), ipAddress);
-                    saveActionLedgerDirect(playerId, rewardId, action, fingerprint,
-                        RewardStatus.WITHHELD_NETWORK_LIMIT, null,
-                        "Raw Gold withheld: another account has a reservation for this challenge on this network");
-                }
-                connection.commit();
-                return !blocked;
-            } catch (SQLException ex) {
-                connection.rollback();
-                throw ex;
-            } finally {
-                connection.setAutoCommit(true);
+        for (String value : new String[]{rewardId, action.getActionId(), fingerprint, ipAddress}) {
+            if (value == null || value.isBlank()) {
+                throw new SQLException("Gold reservation requires a typed action, identity and verified address");
             }
-        });
+        }
+    }
+
+    private boolean reserveGoldActionDirect(UUID playerId, String rewardId, RewardAction action,
+                                             String fingerprint, String ipAddress) throws SQLException {
+        connection.setAutoCommit(false);
+        try {
+            // The write still precedes every read, preserving the cross-connection SQLite writer lock.
+            insertGoldReservationDirect(playerId, rewardId, action.getActionId(), ipAddress);
+            ActionLedgerEntry existing = selectActionEntry(playerId, rewardId, action.getActionId());
+            if (!mayReserveGold(existing, fingerprint)) {
+                connection.rollback();
+                return false;
+            }
+            boolean blocked = hasOtherGoldOwner(playerId, rewardId, ipAddress);
+            if (blocked) {
+                deleteGoldReservationDirect(playerId, rewardId, action.getActionId(), ipAddress);
+                saveActionLedgerDirect(playerId, rewardId, action, fingerprint,
+                    RewardStatus.WITHHELD_NETWORK_LIMIT, null,
+                    "Raw Gold withheld: another account has a reservation for this challenge on this network");
+            }
+            connection.commit();
+            return !blocked;
+        } catch (SQLException ex) {
+            connection.rollback();
+            throw ex;
+        } finally {
+            connection.setAutoCommit(true);
+        }
+    }
+
+    private static boolean mayReserveGold(ActionLedgerEntry existing, String fingerprint) throws SQLException {
+        if (existing == null) return true;
+        if (!fingerprint.equals(existing.fingerprint()) || existing.status() == null) {
+            throw new SQLException("Gold action already pending, delivered or changed; reconcile before retrying");
+        }
+        return switch (existing.status()) {
+            case DELIVERY_FAILED -> true;
+            case WITHHELD_NETWORK_LIMIT -> false;
+            default -> throw new SQLException("Gold action already pending, delivered or changed; reconcile before retrying");
+        };
+    }
+
+    private void insertGoldReservationDirect(UUID playerId, String rewardId, String actionId, String ipAddress)
+        throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+            INSERT OR IGNORE INTO reward_gold_ip_claims
+              (reward_id,action_id,ip_address,player_uuid,reserved_at) VALUES(?,?,?,?,?)
+            """)) {
+            statement.setString(1, rewardId);
+            statement.setString(2, actionId);
+            statement.setString(3, ipAddress);
+            statement.setString(4, playerId.toString());
+            statement.setLong(5, System.currentTimeMillis());
+            statement.executeUpdate();
+        }
+    }
+
+    private boolean hasOtherGoldOwner(UUID playerId, String rewardId, String ipAddress) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+            SELECT player_uuid FROM reward_gold_ip_claims
+            WHERE reward_id=? AND ip_address=?
+            UNION ALL SELECT player_uuid FROM reward_ip_claims WHERE reward_id=? AND ip_address=?
+            """)) {
+            statement.setString(1, rewardId);
+            statement.setString(2, ipAddress);
+            statement.setString(3, rewardId);
+            statement.setString(4, ipAddress);
+            try (ResultSet rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    if (!playerId.toString().equals(rows.getString(1))) return true;
+                }
+            }
+        }
+        return false;
     }
 
     private void deleteGoldReservationDirect(UUID playerId, String rewardId, String actionId, String ipAddress)

@@ -1,15 +1,13 @@
 package org.enthusia.tags.rewards;
 
 import java.io.InputStreamReader;
-import java.lang.reflect.Field;
-import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Executors;
+import java.util.HashMap;
 import java.util.logging.Logger;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -19,6 +17,7 @@ import org.enthusia.tags.PerformanceMonitor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class ImplicitCounterCriteriaTest {
     record Expected(String id, String key, long amount) {}
@@ -29,18 +28,15 @@ class ImplicitCounterCriteriaTest {
         new Expected("deep_dweller", "underground_active", 1800),
         new Expected("lag_was_crazy", "max_ping_ms", 150));
 
-    public static class TestPlugin extends JavaPlugin {
-        @Override public Logger getLogger() { return Logger.getLogger("counter-criteria-test"); }
+    private JavaPlugin plugin() {
+        JavaPlugin plugin = mock(JavaPlugin.class);
+        when(plugin.getLogger()).thenReturn(Logger.getLogger("counter-criteria-test"));
+        when(plugin.isEnabled()).thenReturn(true);
+        return plugin;
     }
 
-    private RewardService service() throws Exception {
-        Field unsafeField = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        unsafeField.setAccessible(true);
-        var plugin = (TestPlugin) ((sun.misc.Unsafe) unsafeField.get(null)).allocateInstance(TestPlugin.class);
-        Field enabled = JavaPlugin.class.getDeclaredField("isEnabled");
-        enabled.setAccessible(true);
-        enabled.set(plugin, true);
-        return new RewardService(plugin, null, null, new PerformanceMonitor(null));
+    private RewardService service() {
+        return new RewardService(plugin(), null, null, new PerformanceMonitor(null));
     }
 
     private YamlConfiguration bundled() throws Exception {
@@ -50,11 +46,8 @@ class ImplicitCounterCriteriaTest {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private List<RewardCriterion> parse(RewardService service, ConfigurationSection section) throws Exception {
-        var method = RewardService.class.getDeclaredMethod("loadCriteria", ConfigurationSection.class);
-        method.setAccessible(true);
-        return (List<RewardCriterion>) method.invoke(service, section);
+    private List<RewardCriterion> parse(RewardService service, ConfigurationSection section) {
+        return service.loadCriteria(section);
     }
 
     @Test void allBundledCriteriaRemainValidIncludingTheFiveMissingMappings() throws Exception {
@@ -100,13 +93,11 @@ class ImplicitCounterCriteriaTest {
     @Test void persistedCustomCountersDoNotRequirePlaytimeProvider() throws Exception {
         var service = service();
         var config = bundled();
-        var available = RewardService.class.getDeclaredMethod("isCriterionAvailable", RewardCriterion.class);
-        available.setAccessible(true);
         for (var expected : EXISTING) {
             var criterion = parse(service,
                 config.getConfigurationSection("rewards." + expected.id() + ".criteria")).getFirst();
             assertEquals(RewardSourceType.CUSTOM_COUNTER, criterion.getSourceType());
-            assertEquals(true, available.invoke(service, criterion), expected.id());
+            assertTrue(service.isCriterionAvailable(criterion), expected.id());
         }
     }
 
@@ -120,46 +111,24 @@ class ImplicitCounterCriteriaTest {
         storage.close();
         storage = new RewardStorage(directory.resolve("rewards.db").toFile(), new PerformanceMonitor(null));
         storage.init();
-        var executor = Executors.newSingleThreadExecutor();
         try {
-            var service = service();
-            set(service, "storage", storage);
-            set(service, "claimExecutor", executor);
-            Field lifecycle = RewardService.class.getDeclaredField("lifecycle");
-            lifecycle.setAccessible(true);
-            @SuppressWarnings("unchecked")
-            var lifecycleState = (java.util.concurrent.atomic.AtomicReference<Object>) lifecycle.get(service);
-            Object running = java.util.Arrays.stream(lifecycleState.get().getClass().getEnumConstants())
-                .filter(value -> value.toString().equals("RUNNING")).findFirst().orElseThrow();
-            lifecycleState.set(running);
-            assertTrue(service.isAvailable(), "Fixture must model an enabled service");
-            var state = new RewardPlayerState();
-            state.hydrate(storage.loadNow(playerId));
-            Field states = RewardService.class.getDeclaredField("playerStates");
-            states.setAccessible(true);
-            @SuppressWarnings("unchecked")
-            var players = (Map<UUID, RewardPlayerState>) states.get(service);
-            players.put(playerId, state);
-            Player player = (Player) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[]{Player.class},
-                (p, method, args) -> method.getName().equals("getUniqueId") ? playerId : null);
-            var compute = RewardService.class.getDeclaredMethod("computeProgress", Player.class, RewardCriterion.class);
-            compute.setAccessible(true);
+            var service = spy(new RewardService(plugin(), null, null, new PerformanceMonitor(null), storage));
+            doReturn(true).when(service).isAvailable();
+            service.preloadPlayerBlocking(playerId);
+            Player player = mock(Player.class);
+            when(player.getUniqueId()).thenReturn(playerId);
             var config = bundled();
             for (var expected : EXISTING) {
                 var criterion = parse(service, config.getConfigurationSection("rewards." + expected.id() + ".criteria")).getFirst();
                 assertTrue(criterion.isValid(), expected.id());
-                assertEquals(counters.get(expected.key()), compute.invoke(service, player, criterion));
+                assertEquals(counters.get(expected.key()), service.getProgress(player, criterion,
+                    new RewardService.ProgressSnapshot(0, new HashMap<>())));
                 assertTrue(storage.loadActionLedgerNow(playerId, expected.id()).isEmpty());
             }
             assertEquals(saved, storage.loadNow(playerId));
-            assertEquals(counters, state.countersSnapshot());
-            assertFalse(state.isDirty());
-        } finally { executor.shutdownNow(); storage.close(); }
+            for (var entry : counters.entrySet()) assertEquals(entry.getValue(), service.getCounter(playerId, entry.getKey()));
+            assertTrue(service.isClaimed(playerId, "sleeps_in_minecraft"));
+        } finally { storage.close(); }
     }
 
-    private void set(Object target, String name, Object value) throws Exception {
-        Field field = target.getClass().getDeclaredField(name);
-        field.setAccessible(true);
-        field.set(target, value);
-    }
 }

@@ -13,6 +13,9 @@ import org.enthusia.tags.advancements.domain.DuelMilestoneProgress;
 
 final class WarzoneAdvancementBridge {
     private final Path file;
+    private final StatsReader reader;
+    @FunctionalInterface
+    interface StatsReader { Map<UUID, DuelMilestoneProgress.Stats> read(Path path) throws Exception; }
     // Published atomically by the background reader; sessions are main-thread-only.
     private record Snapshot(long readStarted, Map<UUID, DuelMilestoneProgress.Stats> players) {}
     private volatile Snapshot latest;
@@ -23,12 +26,18 @@ final class WarzoneAdvancementBridge {
         sessions.remove(player);
         sessionStarted.put(player, System.nanoTime());
     }
-    WarzoneAdvancementBridge(Path file) { this.file = file; }
+    WarzoneAdvancementBridge(Path file) {
+        this(file, path -> WarzoneStatsReader.parse(Files.readString(path)));
+    }
+    WarzoneAdvancementBridge(Path file, StatsReader reader) {
+        this.file = file;
+        this.reader = java.util.Objects.requireNonNull(reader, "reader");
+    }
     void refresh() throws Exception {
         if (!refreshing.compareAndSet(false, true)) return;
         long started = System.nanoTime();
         try {
-            latest = new Snapshot(started, WarzoneStatsReader.parse(Files.readString(file)));
+            latest = new Snapshot(started, reader.read(file));
         } catch (Exception failure) {
             latest = null;
             throw failure;

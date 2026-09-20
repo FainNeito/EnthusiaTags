@@ -1,5 +1,6 @@
 package org.enthusia.tags.advancements;
 
+import org.enthusia.tags.advancements.domain.ReputationMilestoneProgress.Stats;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -13,32 +14,22 @@ class CommendBridgeTest {
     @TempDir Path directory;
     private final UUID player = UUID.randomUUID();
 
-    private void save(
-        Path file,
-        boolean positive,
-        int max,
-        int min,
-        boolean recovered,
-        int kind,
-        int generous,
-        int trusted,
-        int stall
-    ) throws Exception {
+    private void save(Path file, Stats stats) throws Exception {
         Files.writeString(file,
             "advancementEvidence:\n  " + player + ":\n" +
-            "    positiveReceived: " + positive + "\n" +
-            "    maxOverall: " + max + "\n" +
-            "    minOverall: " + min + "\n" +
-            "    recoveredFromSevere: " + recovered + "\n" +
+            "    positiveReceived: " + stats.positiveReceived() + "\n" +
+            "    maxOverall: " + stats.maxOverall() + "\n" +
+            "    minOverall: " + stats.minOverall() + "\n" +
+            "    recoveredFromSevere: " + stats.recoveredFromSevere() + "\n" +
             "    categoryMax:\n" +
-            "      WAS_KIND: " + kind + "\n" +
-            "      GAVE_ITEMS: " + generous + "\n" +
-            "      TRUSTWORTHY: " + trusted + "\n" +
-            "      GOOD_STALL: " + stall + "\n");
+            "      WAS_KIND: " + stats.kindMax() + "\n" +
+            "      GAVE_ITEMS: " + stats.generousMax() + "\n" +
+            "      TRUSTWORTHY: " + stats.trustworthyMax() + "\n" +
+            "      GOOD_STALL: " + stats.goodStallMax() + "\n");
     }
     @Test void historicalLiveFailureAndReconnectLifecycle() throws Exception {
         Path file = directory.resolve("data.yml");
-        save(file, true, 10, -5, false, 5, 0, 0, 0);
+        save(file, new Stats(true, 10, -5, false, 5, 0, 0, 0));
 
         var bridge = new CommendAdvancementBridge(file);
         bridge.beginSession(player);
@@ -49,7 +40,7 @@ class CommendBridgeTest {
         assertEquals(1000, historical.progress().get("reputation/well_regarded"));
         assertTrue(historical.celebrate().isEmpty());
 
-        save(file, true, 20, -10, false, 5, 5, 0, 0);
+        save(file, new Stats(true, 20, -10, false, 5, 5, 0, 0));
         bridge.refresh();
         var live = bridge.observe(player);
         assertTrue(live.celebrate().contains("reputation/pillar_of_the_community"));
@@ -63,7 +54,7 @@ class CommendBridgeTest {
         bridge.forget(player);
         bridge.beginSession(player);
         assertTrue(bridge.observe(player).progress().isEmpty());
-        save(file, true, 20, -25, true, 5, 5, 5, 5);
+        save(file, new Stats(true, 20, -25, true, 5, 5, 5, 5));
         bridge.refresh();
         var reconnect = bridge.observe(player);
         assertEquals(1000, reconnect.progress().get("reputation/public_enemy"));
@@ -129,7 +120,7 @@ class CommendBridgeTest {
             bridge.beginSession(player);
             assertThrows(IllegalArgumentException.class, bridge::refresh);
             assertTrue(bridge.observe(player).progress().isEmpty());
-            save(file, true, 20, -25, true, 5, 5, 5, 5);
+            save(file, new Stats(true, 20, -25, true, 5, 5, 5, 5));
             bridge.refresh();
             var restored = bridge.observe(player);
             assertTrue(restored.progress().values().stream().allMatch(value -> value == 1000));
@@ -139,7 +130,7 @@ class CommendBridgeTest {
 
     @Test void malformedShapeRetainsAlreadyKnownSessionProgress() throws Exception {
         Path file = directory.resolve("known.yml");
-        save(file, true, 20, -25, true, 5, 5, 5, 5);
+        save(file, new Stats(true, 20, -25, true, 5, 5, 5, 5));
         var bridge = new CommendAdvancementBridge(file);
         bridge.beginSession(player);
         bridge.refresh();

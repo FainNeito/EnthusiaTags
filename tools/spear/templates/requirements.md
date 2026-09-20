@@ -11,15 +11,19 @@ Each requirement carries a stable ID. Tasks reference requirements by ID. New re
 ## Product (what the system is for)
 
 ### REQ-001 — Example Ubiquitous requirement
+
 **Ubiquitous.** THE SYSTEM SHALL {{UBIQUITOUS_RESPONSE}}.
 
 ### REQ-002 — Example Event-driven requirement
+
 **Event-driven.** WHEN {{EVENT}} THE SYSTEM SHALL {{RESPONSE}}.
 
 ### REQ-003 — Example State-driven requirement
+
 **State-driven.** WHILE {{STATE}} THE SYSTEM SHALL {{RESPONSE}}.
 
 ### REQ-004 — Example Unwanted-behavior requirement
+
 **Unwanted.** IF {{UNWANTED_CONDITION}} THEN THE SYSTEM SHALL {{RESPONSE}}.
 
 ---
@@ -39,6 +43,7 @@ Each requirement carries a stable ID. Tasks reference requirements by ID. New re
 ## Acceptance
 
 ### REQ-100 — Example acceptance criterion
+
 **Event-driven.** WHEN {{ACCEPTANCE_TRIGGER}} THE SYSTEM SHALL {{ACCEPTANCE_OUTCOME}}.
 
 ---
