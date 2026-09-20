@@ -1,6 +1,6 @@
 # EnthusiaTags rewards GUI — test build 1
 
-Version: 2.2.2-rewards-gui-test.1. Built from an isolated local snapshot based on a690322; source PRs remain untouched. This branch hosts test binaries only and has no PR or release workflow.
+Version: 2.2.2-rewards-gui-test.1. Built from an isolated local snapshot based on a690322; source PRs remain untouched. This branch is used only to host test artifacts. No existing source/PR branch was updated, and no release workflow was run.
 
 ## Files
 
