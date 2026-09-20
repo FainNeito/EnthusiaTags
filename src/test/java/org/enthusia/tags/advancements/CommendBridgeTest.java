@@ -119,6 +119,37 @@ class CommendBridgeTest {
         assertTrue(source.contains("commendTask.cancel()"));
     }
 
+    @Test void correctedHistoryAfterWrongShapedEvidenceRemainsSilent() throws Exception {
+        Path file = directory.resolve("shape.yml");
+        for (String malformed : new String[]{"dataVersion: 9\nadvancementEvidence: []\n",
+                "advancementEvidence:\n  " + player + ":\n    positiveReceived: true\n"
+                + "    maxOverall: 20\n    minOverall: -25\n    recoveredFromSevere: true\n    categoryMax: broken\n"}) {
+            Files.writeString(file, malformed);
+            var bridge = new CommendAdvancementBridge(file);
+            bridge.beginSession(player);
+            assertThrows(IllegalArgumentException.class, bridge::refresh);
+            assertTrue(bridge.observe(player).progress().isEmpty());
+            save(file, true, 20, -25, true, 5, 5, 5, 5);
+            bridge.refresh();
+            var restored = bridge.observe(player);
+            assertTrue(restored.progress().values().stream().allMatch(value -> value == 1000));
+            assertTrue(restored.celebrate().isEmpty(), "Restored evidence is historical, not a live crossing");
+        }
+    }
+
+    @Test void malformedShapeRetainsAlreadyKnownSessionProgress() throws Exception {
+        Path file = directory.resolve("known.yml");
+        save(file, true, 20, -25, true, 5, 5, 5, 5);
+        var bridge = new CommendAdvancementBridge(file);
+        bridge.beginSession(player);
+        bridge.refresh();
+        var known = bridge.observe(player).progress();
+        Files.writeString(file, "dataVersion: 9\nadvancementEvidence: false\n");
+        assertThrows(IllegalArgumentException.class, bridge::refresh);
+        assertEquals(known, bridge.observe(player).progress());
+        assertTrue(bridge.observe(player).celebrate().isEmpty());
+    }
+
     @Test void missingProviderEvidenceIsUnavailableNotZero() throws Exception {
         Path file = directory.resolve("data.yml");
         Files.writeString(file, "players: {}\n");
