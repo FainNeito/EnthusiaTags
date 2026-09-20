@@ -23,15 +23,19 @@ final class WarzoneStatsReader {
             }
             ConfigurationSection player = players.getConfigurationSection(key);
             if (player == null) throw new IllegalArgumentException("Invalid player record");
+            ConfigurationSection evidence = player.getConfigurationSection("advancements");
+            if (evidence == null && player.contains("advancements")) {
+                throw new IllegalArgumentException("Invalid advancements section for " + key);
+            }
             result.put(id, new DuelMilestoneProgress.Stats(
                 counter(player.get("wins")),
                 counter(player.get("best-win-streak")),
-                optionalCounter(player.get("advancements.challenges-sent")),
-                optionalCounter(player.get("advancements.spoils-claims")),
-                optionalCounter(player.get("advancements.mutual-draws")),
-                optionalCounter(player.get("advancements.custom-rules-wins")),
-                optionalCounter(player.get("advancements.restricted-mobility-wins")),
-                optionalCounter(player.get("advancements.low-health-wins"))
+                optionalCounter(evidence == null ? null : evidence.get("challenges-sent")),
+                optionalCounter(evidence == null ? null : evidence.get("spoils-claims")),
+                optionalCounter(evidence == null ? null : evidence.get("mutual-draws")),
+                optionalCounter(evidence == null ? null : evidence.get("custom-rules-wins")),
+                optionalCounter(evidence == null ? null : evidence.get("restricted-mobility-wins")),
+                optionalCounter(evidence == null ? null : evidence.get("low-health-wins"))
             ));
         }
         return Map.copyOf(result);

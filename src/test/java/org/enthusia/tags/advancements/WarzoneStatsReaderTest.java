@@ -60,6 +60,20 @@ class WarzoneStatsReaderTest {
         )));
     }
 
+    @Test void presentNonSectionAdvancementEvidenceFailsClosed() {
+        for (String value : new String[]{"7", "broken", "[]", "[one, two]", "true"}) {
+            String yaml = record("    wins: 50\n    best-win-streak: 5\n    advancements: " + value + "\n");
+            assertThrows(IllegalArgumentException.class, () -> WarzoneStatsReader.parse(yaml), value);
+        }
+    }
+
+    @Test void emptyAdvancementSectionRetainsLegacyZeroCounters() throws Exception {
+        var stats = WarzoneStatsReader.parse(record(
+            "    wins: 1\n    best-win-streak: 1\n    advancements: {}\n")).get(PLAYER);
+        assertEquals(0, stats.challengesSent());
+        assertEquals(0, stats.lowHealthWins());
+    }
+
     @Test void absentPlayerIsNotManufactured() throws Exception {
         assertTrue(WarzoneStatsReader.parse("players: {}\n").isEmpty());
     }

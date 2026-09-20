@@ -1,18 +1,24 @@
 # Warzone Duels advancement integration
 
-This optional, display-only follow-on adds a row to the existing Enthusia advancement tab:
+This optional, display-only track adds nine branched nodes to the existing Enthusia advancement tab.
 
 | Display name | Stable key | Requirement |
 | --- | --- | --- |
-| Arena Initiate | warzone_duels/first_blood | 1 duel win |
-| Arena Win Streak | warzone_duels/unstoppable | Best duel win streak of 5 |
-| The Gladiator | warzone_duels/gladiator | 50 duel wins |
+| Welcome to the Thunderdome | warzone_duels/welcome_to_thunderdome | Send a valid duel challenge |
+| Arena Initiate | warzone_duels/first_blood | Win 1 duel |
+| Arena Win Streak | warzone_duels/unstoppable | Reach a best win streak of 5 |
+| The Gladiator | warzone_duels/gladiator | Win 50 duels |
+| To the Victor Go the Spoils | warzone_duels/victor_spoils | Withdraw at least one captured item from the duel vault |
+| A Price for Peace | warzone_duels/price_for_peace | Complete a duel by mutual draw agreement |
+| My House, My Rules | warzone_duels/my_house_my_rules | As the 1v1 challenger, win a kill-result duel with non-default rules |
+| Adapt and Overcome | warzone_duels/adapt_and_overcome | Win a kill-result duel with Ender Pearls and Wind Charges disabled |
+| Not Even Close | warzone_duels/not_even_close | Win a 1v1 kill-result duel below four health points, before healing |
 
-The first two display names deliberately differ from existing combat advancements First Blood and Unstoppable. Their internal keys remain stable. Individual and Duel Party wins use WarzoneDuels' own statistics; guild membership is not involved. No additional currency or cosmetic rewards are granted.
+Arena Initiate and Arena Win Streak deliberately use different display names from the ordinary combat challenges. Stable keys are unchanged. Ordinary win totals follow the provider's individual and Duel Party statistics; conditional milestones use the restrictions in the table. No additional currency or cosmetic rewards are granted.
 
-## Enabling
+## Dependencies and enabling
 
-Keep the existing EnthusiaAdvancements pilot companion and compatible UltimateAdvancementAPI installation. Back up the current Tags JAR/configuration, stop the server, replace Tags with 2.2.2-pilot.2, and add this key inside the existing `advancements` section:
+Use the reviewed WarzoneDuels 1.0.3 provider with six durable event counters (FainNeito/WarzoneDuels PR #1), the owner-aware EnthusiaAdvancements pilot.4 renderer, compatible UltimateAdvancementAPI, and the Tags build from PR #2. Do not assume an older provider supplies the new event counters. Replace required companion JARs together while the test server is fully stopped, retain existing player data and configuration, and enable the existing key:
 
 ```yaml
 advancements:
@@ -20,20 +26,18 @@ advancements:
   warzone-duels-enabled: true
 ```
 
-Do not replace the rest of the configuration or run two Tags JARs. Restart to apply the toggle. WarzoneDuels must be enabled; its JAR does not need replacement for this integration. The flag defaults to false. Disable the flag and restart to remove this optional row.
+The option defaults to false. Do not duplicate the advancements YAML section or leave multiple versions of the same plugin installed. Restart to apply enable/disable changes. This checklist is not a deployment instruction executed by PR cleanup.
 
 ## Safety and history
 
-The bridge reads WarzoneDuels' `stats.yml` every five seconds off-thread. It requires explicit integer `wins` and `best-win-streak` per player UUID. Missing/unreadable/malformed files are unknown, not zero; already known session progress is retained. A missing UUID in a valid complete snapshot proves no recorded history.
+The bridge reads stats.yml asynchronously every five seconds without modifying it or touching reward ledgers. Explicit nonnegative integer wins and best-win-streak are required per UUID. Six optional counters live under advancements: challenges-sent, spoils-claims, mutual-draws, custom-rules-wins, restricted-mobility-wins, and low-health-wins.
 
-The first fresh post-join snapshot silently restores historical progress. Later observed threshold crossings use the existing native toast/announcement path, once per session. A completion before the initial baseline or during a shutdown may appear silently. No reward ledger is read or written by this bridge, and it never writes duel statistics. Existing reward claims and gold/IP policy are unchanged.
+Legacy missing counters remain zero; historical conditional accomplishments are not guessed from win totals. A present wrong-shaped advancement section is rejected, not treated as absent. Missing/unreadable/malformed snapshots retain known session progress and cannot create a false zero baseline. An absent UUID in a valid complete snapshot means no recorded history.
 
-## Verification
+The first valid post-join snapshot restores provable history silently. Later threshold crossings celebrate once. Events before the first baseline or during shutdown may appear silently; unit tests do not prove live toast delivery.
 
-- SPEAR red/green tests cover thresholds, historical restoration, failed reads, progress retention, reconnect baselines, fixed keys and configuration wiring.
-- Local clean verify: 156 tests passed, zero failures/errors/skips, Java 25 with the pinned Paper 26.2 API.
-- Test server: WarzoneDuels 1.0.2 schema inspected; Tags 2.2.2-pilot.2 enabled and registered 104 challenges (101 existing plus 3 duel milestones); startup completed and the duel arena restored.
-- User reported the installed result looks good. This is not a claim of exhaustive live threshold/toast, restart, or 26.3 compatibility testing.
-- Existing hosting CI still needs the pilot companion dependency and sibling RoseChat contract source; local success is not a hosted-CI approval claim.
+## Verification provenance
 
-Spoils, surrender, modifier/low-health wins, spectator betting and hidden interaction achievements remain future work. No guild advancements or kill-effect changes are included.
+The initial three-node pilot had a historical 156-test run and an older provider schema. Those figures are not the current nine-node acceptance result. The previous cleanup at df3dd31 passed 173 Java tests plus 8 separate tooling tests. Current follow-up validation is recorded in docs/pr-stack-verification.md after clean verification; GitHub Actions checks the exact pushed head and Codacy is a separate gate.
+
+No guild-war champion, spectator-betting, or hidden-interaction advancement is added here. Nexo icon troubleshooting remains outside this pass.
