@@ -19,3 +19,7 @@ After the Warzone parser fixes were synchronized, round2-commend-verify.log pass
 ## Express foundation-sync history
 
 The earlier run at f0a6716 passed 197 Java tests plus eight Node tests. That count precedes the parser follow-up and return-lifecycle contract coverage. The latest completed run is recorded below once verification completes.
+
+## Express provider-contract follow-up
+
+round2-express-verify.log passed clean verify with 207 Java tests, zero failures/errors/skips, including the inherited malformed-evidence fixes and two new return-lifecycle fixtures. Final shading verification passed. The focused Express reader/bridge run passed eight tests. Inspection of the pinned provider confirmed returned rows already change recipient_uuid to the original sender, so aggregation behavior remains unchanged; docs/express-history-contract.md records the source and fixture limits. No mail database or server was modified.
