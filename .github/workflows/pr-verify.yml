@@ -34,9 +34,15 @@ jobs:
       - name: Bootstrap checksum-verified LoreItems release
         run: bash tools/bootstrap_loreitems_release.sh
       - name: Build pinned companion renderer and fetch presence contract
-        run: python3 tools/ci/bootstrap_companions.py
+        run: |
+          python3 -m pip install --require-hashes -r tools/ci/requirements.txt
+          python3 -m unittest discover -s tools/ci -p 'test_*.py'
+          bash tools/ci/bootstrap_companions.sh
       - name: Clean build and verification
         run: mvn -B -ntp clean verify
+      - name: Exercise read-only SQLite using the final shaded jar
+        run: java --class-path target/EnthusiaTags.jar tools/ci/SQLiteArtifactProbe.java
+
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

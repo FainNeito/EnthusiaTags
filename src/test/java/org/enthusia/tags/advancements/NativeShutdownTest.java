@@ -1,77 +1,53 @@
 package org.enthusia.tags.advancements;
 
 import io.github.badgersmc.advancements.pilot.ProjectionService;
-import java.lang.reflect.Field;
-import java.lang.reflect.Proxy;
-import java.util.ArrayDeque;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import org.bukkit.Bukkit;
-import org.bukkit.Server;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.ServicesManager;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.enthusia.tags.PerformanceMonitor;
+import org.bukkit.scheduler.BukkitScheduler;
+import org.bukkit.scheduler.BukkitTask;
 import org.enthusia.tags.rewards.RewardService;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 class NativeShutdownTest {
-    public static class TestPlugin extends JavaPlugin {
-        @Override public Logger getLogger() { return Logger.getLogger("shutdown-test"); }
-    }
-
-    @Test void providerFailureDoesNotEscapeOrLeavePendingState() throws Exception {
-        Field serverField = Bukkit.class.getDeclaredField("server");
-        serverField.setAccessible(true);
-        Object previous = serverField.get(null);
-        AtomicInteger removals = new AtomicInteger();
-        PluginManager manager = (PluginManager) Proxy.newProxyInstance(getClass().getClassLoader(),
-            new Class<?>[]{PluginManager.class}, (p, m, a) -> m.getName().equals("isPluginEnabled") ? true : null);
-        Server server = (Server) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[]{Server.class},
-            (p, m, a) -> m.getName().equals("getPluginManager") ? manager : null);
-        NativeAdvancementController controller = allocate(NativeAdvancementController.class);
-        Map<UUID, Set<String>> pending = new HashMap<>();
-        UUID id = UUID.randomUUID();
-        pending.put(id, Set.of("test"));
-        ArrayDeque<UUID> queue = new ArrayDeque<>();
-        queue.add(id);
-        ProjectionService provider = (ProjectionService) Proxy.newProxyInstance(getClass().getClassLoader(),
-            new Class<?>[]{ProjectionService.class}, (p, m, a) -> {
-                if (m.getName().equals("removeTree")) {
-                    removals.incrementAndGet();
-                    throw new IllegalStateException("provider unavailable");
-                }
-                return null;
-            });
-        set(controller, "plugin", allocate(TestPlugin.class));
-        set(controller, "rewards", new RewardService(null, null, null, new PerformanceMonitor(null)));
-        set(controller, "projection", provider);
-        set(controller, "registered", true);
-        set(controller, "pendingCelebrations", pending);
-        set(controller, "queue", queue);
-        try {
-            serverField.set(null, server);
+    @Test void providerFailureDoesNotEscapeAndCloseIsIdempotent() {
+        JavaPlugin plugin = mock(JavaPlugin.class);
+        when(plugin.getConfig()).thenReturn(new YamlConfiguration());
+        when(plugin.getLogger()).thenReturn(Logger.getLogger("shutdown-test"));
+        RewardService rewards = mock(RewardService.class);
+        when(rewards.getRewards()).thenReturn(Map.of());
+        ProjectionService projection = mock(ProjectionService.class);
+        ServicesManager services = mock(ServicesManager.class);
+        when(services.load(ProjectionService.class)).thenReturn(projection);
+        PluginManager manager = mock(PluginManager.class);
+        when(manager.isPluginEnabled("EnthusiaAdvancements")).thenReturn(true);
+        BukkitScheduler scheduler = mock(BukkitScheduler.class);
+        BukkitTask task = mock(BukkitTask.class);
+        when(scheduler.runTaskTimer(eq(plugin), any(Runnable.class), eq(20L), eq(20L))).thenReturn(task);
+        try (var bukkit = mockStatic(Bukkit.class);
+             var itemStacks = mockConstruction(ItemStack.class, (item, context) ->
+                 when(item.getItemMeta()).thenReturn(mock(ItemMeta.class)))) {
+            bukkit.when(Bukkit::getServicesManager).thenReturn(services);
+            bukkit.when(Bukkit::getPluginManager).thenReturn(manager);
+            bukkit.when(Bukkit::getScheduler).thenReturn(scheduler);
+            NativeAdvancementController controller = new NativeAdvancementController(plugin, rewards);
+            verify(projection).registerTree(eq(plugin), eq("enthusia"), any(ItemStack.class), anyList());
+            doThrow(new IllegalStateException("provider unavailable"))
+                .when(projection).removeTree(plugin, "enthusia");
             assertDoesNotThrow(controller::close);
-            assertTrue(pending.isEmpty());
-            assertTrue(queue.isEmpty());
             assertDoesNotThrow(controller::close);
-            assertEquals(1, removals.get(), "Closed controller must not remove its tree again");
-        } finally { serverField.set(null, previous); }
-    }
-
-    private static void set(Object target, String name, Object value) throws Exception {
-        Field field = target.getClass().getDeclaredField(name);
-        field.setAccessible(true);
-        field.set(target, value);
-    }
-
-    private static <T> T allocate(Class<T> type) throws Exception {
-        Field field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        field.setAccessible(true);
-        return type.cast(((sun.misc.Unsafe) field.get(null)).allocateInstance(type));
+            verify(projection, times(1)).removeTree(plugin, "enthusia");
+            verify(task, atLeastOnce()).cancel();
+            verify(rewards, atLeastOnce()).setAdvancementNotifications(isNull());
+        }
     }
 }

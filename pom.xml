@@ -116,11 +116,11 @@
                                     <resourceexists>
                                         <zipentry
                                             zipfile="${project.build.directory}/EnthusiaTags.jar"
-                                            name="org/enthusia/tags/libs/sqlite/JDBC.class"/>
+                                            name="org/sqlite/JDBC.class"/>
                                     </resourceexists>
                                 </condition>
                                 <fail unless="sqlite.shaded.driver.present"
-                                      message="Shaded EnthusiaTags JAR is missing relocated SQLite JDBC driver"/>
+                                      message="Shaded EnthusiaTags JAR is missing the original-namespace SQLite JDBC driver"/>
                             </target>
                         </configuration>
                     </execution>
@@ -149,13 +149,9 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <minimizeJar>true</minimizeJar>
-                            <relocations>
-                                <relocation>
-                                    <pattern>org.sqlite</pattern>
-                                    <shadedPattern>org.enthusia.tags.libs.sqlite</shadedPattern>
-                                </relocation>
-                            </relocations>
+                            <!-- Retain JNI/callback classes that cannot be discovered by bytecode-only minimization. -->
+                            <minimizeJar>false</minimizeJar>
+                            <!-- SQLite native JNI bindings require their original org.sqlite package names. -->
                         </configuration>
                     </execution>
                 </executions>

@@ -25,6 +25,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
+import org.enthusia.tags.advancements.domain.PendingCelebrations;
 import org.enthusia.tags.rewards.RewardAction;
 import org.enthusia.tags.rewards.RewardDefinition;
 import org.enthusia.tags.rewards.RewardService;
@@ -182,14 +183,20 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
     }
 
     private static String actionDescription(RewardAction action) {
-        String label = action.getLabel() == null ? "" : color(action.getLabel());
+        String label = color(action.getLabel());
         return switch (action.getType()) {
-            case MONEY -> action.getAmount() + " currency (Raw Gold-backed)" + (label.isBlank() ? "" : " - " + label);
-            case ITEM -> action.getItemAmount() + "x " + (label.isBlank() ? action.getMaterial() : label);
-            case TAG -> "Tag: " + (label.isBlank() ? action.getValue() : label);
-            case COMMAND -> label.isBlank() ? "Configured unlock (see /rewards)" : label;
-            default -> label.isBlank() ? "Configured item reward (see /rewards)" : label;
+            case MONEY -> action.getAmount() + " currency (Raw Gold-backed)" + labelSuffix(label);
+            case ITEM -> action.getItemAmount() + "x " + labelOr(label, String.valueOf(action.getMaterial()));
+            case TAG -> "Tag: " + labelOr(label, action.getValue());
+            case COMMAND -> labelOr(label, "Configured unlock (see /rewards)");
+            default -> labelOr(label, "Configured item reward (see /rewards)");
         };
+    }
+    private static String labelOr(String label, String fallback) {
+        return label.isBlank() ? fallback : label;
+    }
+    private static String labelSuffix(String label) {
+        return label.isBlank() ? "" : " - " + label;
     }
     private static String color(String value) {
         return value == null ? "" : ChatColor.translateAlternateColorCodes('&', value);
@@ -198,55 +205,80 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
     private void tick() {
         if (!rewards.isAvailable()) return;
         try {
-            if (!plugin.getConfig().getBoolean("advancements.enabled", true)) {
-                if (registered) projection.removeTree(plugin, "enthusia");
-                registered = false;
-                pendingCelebrations.clear();
-                return;
-            }
-            if (!registered || definitions != rewards.getRewards()) rebuild();
+            if (!prepareTree()) return;
             if (queue.isEmpty()) Bukkit.getOnlinePlayers().forEach(player -> queue.add(player.getUniqueId()));
-            int limit = Math.max(1, Math.min(100, plugin.getConfig().getInt("advancements.players-per-tick", 25)));
-            for (int count = 0; count < limit && !queue.isEmpty(); count++) {
-                Player player = Bukkit.getPlayer(queue.removeFirst());
-                if (player == null) continue;
-                rewards.queueProgressRefresh(player);
-                if (!projection.ready(player)) continue;
-                Map<String, Integer> progress = new LinkedHashMap<>();
-                for (RewardDefinition reward : definitions.values()) {
-                    int value = rewards.getAdvancementProgress(player, reward);
-                    if (value >= 0) progress.put(key(reward.getId()), value);
-                }
-                if (duels != null) {
-                    var update = duels.observe(player.getUniqueId());
-                    progress.putAll(update.progress());
-                    if (!update.celebrate().isEmpty()) pendingCelebrations
-                        .computeIfAbsent(player.getUniqueId(), ignored -> new HashSet<>()).addAll(update.celebrate());
-                }
-                if (commend != null) {
-                    var update = commend.observe(player.getUniqueId());
-                    progress.putAll(update.progress());
-                    if (!update.celebrate().isEmpty()) pendingCelebrations
-                        .computeIfAbsent(player.getUniqueId(), ignored -> new HashSet<>()).addAll(update.celebrate());
-                }
-                if (express != null) {
-                    var update = express.observe(player.getUniqueId());
-                    progress.putAll(update.progress());
-                    if (!update.celebrate().isEmpty()) pendingCelebrations
-                        .computeIfAbsent(player.getUniqueId(), ignored -> new HashSet<>()).addAll(update.celebrate());
-                }
-                projection.project(plugin, "enthusia", player, progress);
-                Set<String> pending = pendingCelebrations.get(player.getUniqueId());
-                if (pending == null) continue;
-                org.enthusia.tags.advancements.domain.PendingCelebrations.deliver(
-                    pending, progress, key -> projection.celebrate(plugin, "enthusia", player, key));
-                if (pending.isEmpty()) pendingCelebrations.remove(player.getUniqueId());
-            }
+            projectQueuedPlayers();
         } catch (RuntimeException ex) {
-            if (System.currentTimeMillis() >= nextWarning) {
-                nextWarning = System.currentTimeMillis() + 60000;
-                plugin.getLogger().warning("Native advancement projection will retry: " + ex.getMessage());
-            }
+            warnAndRetry(ex);
+        }
+    }
+    private boolean prepareTree() {
+        if (!plugin.getConfig().getBoolean("advancements.enabled", true)) {
+            if (registered) projection.removeTree(plugin, "enthusia");
+            registered = false;
+            pendingCelebrations.clear();
+            return false;
+        }
+        if (!registered || definitions != rewards.getRewards()) rebuild();
+        return true;
+    }
+    private void projectQueuedPlayers() {
+        int limit = Math.max(1, Math.min(100, plugin.getConfig().getInt("advancements.players-per-tick", 25)));
+        for (int count = 0; count < limit && !queue.isEmpty(); count++) {
+            projectPlayer(Bukkit.getPlayer(queue.removeFirst()));
+        }
+    }
+    private void projectPlayer(Player player) {
+        if (player == null) return;
+        rewards.queueProgressRefresh(player);
+        if (!projection.ready(player)) return;
+        Map<String, Integer> progress = collectProgress(player);
+        projection.project(plugin, "enthusia", player, progress);
+        celebratePending(player, progress);
+    }
+    private Map<String, Integer> collectProgress(Player player) {
+        Map<String, Integer> progress = new LinkedHashMap<>();
+        for (RewardDefinition reward : definitions.values()) {
+            int value = rewards.getAdvancementProgress(player, reward);
+            if (value >= 0) progress.put(key(reward.getId()), value);
+        }
+        addDuelProgress(player, progress);
+        addCommendProgress(player, progress);
+        addExpressProgress(player, progress);
+        return progress;
+    }
+    private void addExpressProgress(Player player, Map<String, Integer> progress) {
+        if (express == null) return;
+        var update = express.observe(player.getUniqueId());
+        progress.putAll(update.progress());
+        if (!update.celebrate().isEmpty()) pendingCelebrations
+            .computeIfAbsent(player.getUniqueId(), ignored -> new HashSet<>()).addAll(update.celebrate());
+    }
+    private void addCommendProgress(Player player, Map<String, Integer> progress) {
+        if (commend == null) return;
+        var update = commend.observe(player.getUniqueId());
+        progress.putAll(update.progress());
+        if (!update.celebrate().isEmpty()) pendingCelebrations
+            .computeIfAbsent(player.getUniqueId(), ignored -> new HashSet<>()).addAll(update.celebrate());
+    }
+    private void addDuelProgress(Player player, Map<String, Integer> progress) {
+        if (duels == null) return;
+        var update = duels.observe(player.getUniqueId());
+        progress.putAll(update.progress());
+        if (!update.celebrate().isEmpty()) pendingCelebrations
+            .computeIfAbsent(player.getUniqueId(), ignored -> new HashSet<>()).addAll(update.celebrate());
+    }
+    private void celebratePending(Player player, Map<String, Integer> progress) {
+        Set<String> pending = pendingCelebrations.get(player.getUniqueId());
+        if (pending == null) return;
+        PendingCelebrations.deliver(
+            pending, progress, key -> projection.celebrate(plugin, "enthusia", player, key));
+        if (pending.isEmpty()) pendingCelebrations.remove(player.getUniqueId());
+    }
+    private void warnAndRetry(RuntimeException error) {
+        if (System.currentTimeMillis() >= nextWarning) {
+            nextWarning = System.currentTimeMillis() + 60000;
+            plugin.getLogger().warning("Native advancement projection will retry: " + error.getMessage());
         }
     }
     @EventHandler public void onJoin(PlayerJoinEvent event) {

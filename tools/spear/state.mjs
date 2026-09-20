@@ -1,5 +1,6 @@
 // Project-local locked state machine. Bash delegates here; retain UPSTREAM-NOTICE.md.
 import fs from 'node:fs'; import path from 'node:path'; import {randomUUID} from 'node:crypto';
+import {hasTaskEvidence} from './evidence.mjs';
 const file=path.resolve(process.env.SPEAR_STATE_FILE || '.claude/spear-state.json');
 const transitions={idle:['spec'],spec:['spec-done'],'spec-done':['prove','arch'],prove:['prove-done'],'prove-done':['engine'],engine:['engine-done'],'engine-done':['arch'],arch:['arch-done'],'arch-done':['refine'],refine:['idle']};
 const [operation,...args]=process.argv.slice(2);
@@ -15,7 +16,7 @@ function acquire() {
   const timeout=Number(process.env.SPEAR_LOCK_TIMEOUT_MS || 5000);
   if(!Number.isFinite(timeout) || timeout<0 || timeout>60000) throw Error('Invalid SPEAR lock timeout');
   const deadline=Date.now()+timeout;
-  while(true) {
+  while(!locked) {
     try {fs.mkdirSync(lock);locked=true;return;} catch(e) {if(e.code!=='EEXIST') throw e;}
     if(Date.now()>=deadline) throw Error('SPEAR state is locked; stop the owning process before recovering a stale lock: '+lock);
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,25);
@@ -34,21 +35,11 @@ function save(state) {
 }
 function requireEvidence(state) {
   if(!state.currentTaskId) throw Error('Select a task before leaving spec-done');
-  const tasks=fs.readFileSync(process.env.SPEAR_TASKS_FILE || 'docs/tasks.md','utf8').split(/\r?\n/);
-  let active=false, evidence=false, found=false;
-  for(const line of tasks) {
-    const heading=line.match(/^(?:#{2,4}\s+|\s*-\s+\[[ x~!]\]\s+\*\*)([A-Za-z]+-\d+)\b/);
-    if(heading) {if(active) break; active=heading[1]===state.currentTaskId; continue;}
-    if(!active) continue;
-    const marker=line.match(/^\s*Evidence:\s*(.*)$/);
-    if(marker) {evidence=true; if(marker[1].replace(/[\x60\s]/g,'')) found=true; continue;}
-    if(evidence) {
-      if(/^\s*[A-Z][A-Za-z ]+:/.test(line)) break;
-      if(/^\s*-\s+\S/.test(line)) found=true;
-    }
-  }
-  if(!found) throw Error('Task '+state.currentTaskId+' requires non-empty Evidence before prove/arch');
+  const text=fs.readFileSync(process.env.SPEAR_TASKS_FILE || 'docs/tasks.md','utf8');
+  if(!hasTaskEvidence(text,state.currentTaskId))
+    throw Error('Task '+state.currentTaskId+' requires non-empty Evidence before prove/arch');
 }
+
 try {
   acquire(); const state=load();
   switch(operation) {
