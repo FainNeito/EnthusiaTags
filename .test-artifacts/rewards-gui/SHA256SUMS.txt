@@ -1,0 +1,2 @@
+3af5f59bdca117820277863d06039c23aae629712c03f6596827654c3ba0568b  EnthusiaTags-2.2.2-rewards-gui-test.1.jar
+cab9d863af9ba945f11b12facdb6c3bd85cafd4f86828d91c66fdff753b1c465  EnthusiaAdvancements-1.0.0-pilot.5.jar
