@@ -14,34 +14,34 @@ final class WarzoneStatsReader {
         config.loadFromString(yaml);
         ConfigurationSection players = config.getConfigurationSection("players");
         if (players == null) throw new IllegalArgumentException("Missing players section");
-
         Map<UUID, DuelMilestoneProgress.Stats> result = new HashMap<>();
         for (String key : players.getKeys(false)) {
-            UUID id = UUID.fromString(key);
-            if (!id.toString().equalsIgnoreCase(key)) {
-                throw new IllegalArgumentException("Invalid player UUID");
-            }
-            ConfigurationSection player = players.getConfigurationSection(key);
-            if (player == null) throw new IllegalArgumentException("Invalid player record");
-            ConfigurationSection evidence = player.getConfigurationSection("advancements");
-            if (evidence == null && player.contains("advancements")) {
-                throw new IllegalArgumentException("Invalid advancements section for " + key);
-            }
-            result.put(id, new DuelMilestoneProgress.Stats(
-                counter(player.get("wins")),
-                counter(player.get("best-win-streak")),
-                optionalCounter(evidence == null ? null : evidence.get("challenges-sent")),
-                optionalCounter(evidence == null ? null : evidence.get("spoils-claims")),
-                optionalCounter(evidence == null ? null : evidence.get("mutual-draws")),
-                optionalCounter(evidence == null ? null : evidence.get("custom-rules-wins")),
-                optionalCounter(evidence == null ? null : evidence.get("restricted-mobility-wins")),
-                optionalCounter(evidence == null ? null : evidence.get("low-health-wins"))
-            ));
+            result.put(playerId(key), playerStats(players.getConfigurationSection(key)));
         }
         return Map.copyOf(result);
     }
 
-    private static int optionalCounter(Object value) {
+    private static UUID playerId(String key) {
+        UUID id = UUID.fromString(key);
+        if (!id.toString().equalsIgnoreCase(key)) throw new IllegalArgumentException("Invalid player UUID");
+        return id;
+    }
+
+    private static DuelMilestoneProgress.Stats playerStats(ConfigurationSection player) {
+        if (player == null) throw new IllegalArgumentException("Invalid player record");
+        ConfigurationSection evidence = player.getConfigurationSection("advancements");
+        if (evidence == null && player.contains("advancements")) {
+            throw new IllegalArgumentException("Invalid advancements section");
+        }
+        return new DuelMilestoneProgress.Stats(
+            counter(player.get("wins")), counter(player.get("best-win-streak")),
+            optionalCounter(evidence, "challenges-sent"), optionalCounter(evidence, "spoils-claims"),
+            optionalCounter(evidence, "mutual-draws"), optionalCounter(evidence, "custom-rules-wins"),
+            optionalCounter(evidence, "restricted-mobility-wins"), optionalCounter(evidence, "low-health-wins"));
+    }
+
+    private static int optionalCounter(ConfigurationSection evidence, String key) {
+        Object value = evidence == null ? null : evidence.get(key);
         return value == null ? 0 : counter(value);
     }
 

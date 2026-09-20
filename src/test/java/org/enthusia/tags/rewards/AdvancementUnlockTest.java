@@ -2,6 +2,7 @@ package org.enthusia.tags.rewards;
 
 import java.nio.file.Path;
 import java.util.UUID;
+import java.util.concurrent.CompletionException;
 import org.enthusia.tags.PerformanceMonitor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -29,10 +30,10 @@ class AdvancementUnlockTest {
         a.init(); b.init();
         try {
             var first = java.util.concurrent.CompletableFuture.supplyAsync(() -> {
-                try { return a.markUnlockedNow(id, "reward"); } catch (Exception ex) { throw new RuntimeException(ex); }
+                try { return a.markUnlockedNow(id, "reward"); } catch (Exception ex) { throw new CompletionException(ex); }
             });
             var second = java.util.concurrent.CompletableFuture.supplyAsync(() -> {
-                try { return b.markUnlockedNow(id, "reward"); } catch (Exception ex) { throw new RuntimeException(ex); }
+                try { return b.markUnlockedNow(id, "reward"); } catch (Exception ex) { throw new CompletionException(ex); }
             });
             assertNotEquals(first.get(5, java.util.concurrent.TimeUnit.SECONDS), second.get(5, java.util.concurrent.TimeUnit.SECONDS));
         } finally { a.close(); b.close(); }
@@ -40,18 +41,17 @@ class AdvancementUnlockTest {
     @Test
     void onlyTheFirstDurableUnlockMayNotify(@TempDir Path directory) throws Exception {
         UUID id = UUID.randomUUID();
-        var method = RewardStorage.class.getMethod("markUnlockedNow", UUID.class, String.class);
         RewardStorage storage = new RewardStorage(directory.resolve("rewards.db").toFile(), new PerformanceMonitor(null));
         storage.init();
         try {
-            assertEquals(Boolean.TRUE, method.invoke(storage, id, "existing_challenge"));
-            assertEquals(Boolean.FALSE, method.invoke(storage, id, "existing_challenge"));
+            assertEquals(Boolean.TRUE, storage.markUnlockedNow(id, "existing_challenge"));
+            assertEquals(Boolean.FALSE, storage.markUnlockedNow(id, "existing_challenge"));
             assertTrue(storage.loadNow(id).claims().isEmpty(), "Unlocking must never grant rewards");
         } finally { storage.close(); }
         storage = new RewardStorage(directory.resolve("rewards.db").toFile(), new PerformanceMonitor(null));
         storage.init();
         try {
-            assertEquals(Boolean.FALSE, method.invoke(storage, id, "existing_challenge"));
+            assertEquals(Boolean.FALSE, storage.markUnlockedNow(id, "existing_challenge"));
         } finally { storage.close(); }
     }
 }

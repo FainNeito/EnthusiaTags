@@ -5,7 +5,8 @@ import org.enthusia.tags.advancements.domain.ExpressMilestoneProgress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
-import java.sql.DriverManager;
+import org.sqlite.JDBC;
+import java.util.Properties;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -23,9 +24,9 @@ final class ExpressStatsReader {
         if (database == null || !Files.isRegularFile(database)) {
             throw new IllegalArgumentException("EnthusiaExpress mail.db is unavailable");
         }
-        Class.forName(org.sqlite.JDBC.class.getName());
         String url = "jdbc:sqlite:" + database.toUri() + "?mode=ro";
-        try (Connection connection = DriverManager.getConnection(url)) {
+        try (Connection connection = JDBC.createConnection(url, new Properties())) {
+            if (connection == null) throw new SQLException("SQLite rejected its explicit read-only URL");
             Set<String> columns = columns(connection);
             requireColumns(columns);
             Map<UUID, MutableStats> players = new HashMap<>();
