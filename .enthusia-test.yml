@@ -1,0 +1,14 @@
+schema_version: 1
+plugin:
+  id: enthusia-tags
+  name: EnthusiaTags
+  main_class: org.enthusia.tags.EnthusiaTagsPlugin
+artifact:
+  name: sentinel-plugin
+  jar_path: plugin.jar
+profiles:
+  - restart
+configs: []
+databases: []
+dependencies: []
+actions: []
