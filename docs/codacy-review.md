@@ -35,3 +35,8 @@ The reader now calls the fixed SQLite driver directly instead of reflectively lo
 The isolated-artifact probe exposed an additional packaging bug not visible on the ordinary unit-test classpath: relocated SQLite attempted to load native org/sqlite/core/NativeDB and failed. The shade relocation has been removed for this JNI-backed dependency; it remains bundled under its original namespace, with explicit class-presence and actual read-only connection tests. This is a build-artifact correction, not a database migration or a claim about the current live server.
 SQLite packaging also retains the full JDBC classes instead of bytecode-only minimization, because native callbacks are not visible to that analysis. This preserves the pinned dependency version; it does not disable source analysis or alter runtime database permissions.
 Final local Express verification passed 207 Java tests, zero failures/errors/skips, and the isolated deliverable printed SHADED_SQLITE_READ_ONLY_OK after the namespace correction. The Linux hosted job repeats the same final-artifact probe.
+
+## Diary follow-on
+
+The reported README list spacing is corrected. Functional inherited changes are synchronized without changing Diary milestones, icon models, textures, metadata, the pinned renderer pilot.5 dependency, or the deferred client acceptance status.
+The combined Diary branch passed 219 Java tests, zero failures/errors/skips, and its isolated deliverable also passed the read-only SQLite probe. These checks do not resolve the deferred Diary icon display issue.

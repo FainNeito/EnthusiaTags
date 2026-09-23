@@ -226,6 +226,17 @@ References: REQ-039 through REQ-045; implementation.md Presentation.
 Acceptance: eleven display-only Express advancements use persisted mail history, historical completion is silent, live crossings celebrate once, failed reads retain known progress, SQLite is opened read-only off-thread, pending claims are not counted as delivered, and no provider writes or advancement rewards occur.
 Evidence: ExpressProgressTest, ExpressStatsReaderTest, ExpressBridgeTest, AdvancementNodeOrderTest and AdvancementLayoutTest pass 16 focused tests with zero failures/errors/skips. Historical package/letter sends, packed-item maxima, successful claims, read letters and returned-package collection are derived from existing mail rows; no EnthusiaExpress provider modification is required. Live staging exposed that shade minimization removed the reflectively loaded relocated SQLite driver; ExpressStatsReader now carries a direct JDBC class reference and the verify phase asserts that org/enthusia/tags/libs/sqlite/JDBC.class exists in the shaded artifact. EnthusiaTags clean verify passes 191 tests with zero failures/errors/skips and packages the shaded test JAR.
 
+## T-015 [TDD] DiaryKeeper advancement track
+
+Status: complete locally through verification; live test-server acceptance pending.
+References: REQ-046 through REQ-050; implementation.md Presentation.
+Acceptance: eight display-only diary advancements use durable DiaryKeeper evidence, legacy issuance receives only provable historical credit, live crossings celebrate once, failed reads retain known progress, and no advancement rewards are introduced.
+Evidence: DiaryKeeper 1.4.10 changes are based directly on wsg138/DiaryKeeper 1.4.9 and persist edit/destruction/void/container/pickup evidence in diaries.yml, seed Dear Diary from existing issuance, and one-time migrate additional provable history from retained analytics.yml events. DiaryKeeper clean verify passes 88 tests. DiaryProgressTest, DiaryStatsReaderTest, DiaryBridgeTest, AdvancementNodeOrderTest and AdvancementLayoutTest pass 17 focused consumer tests. EnthusiaTags clean verify passes 202 tests with zero failures/errors/skips. The signing advancement was omitted because current wsg138 DiaryKeeper intentionally prevents signing and keeps diaries writable.
+
+### Diary custom icon follow-up
+
+The supplied 16x16 journal-and-quill Aseprite artwork is exported losslessly to PNG. Live testing showed both WRITABLE_BOOK custom-model-data and direct item-model attempts still rendering the vanilla writable-book icon. Inspection then found the older direct Enthusia resource pack explicitly mapped PAPER threshold 815002 back to `minecraft:item/paper`, which could override any new 815002 icon mapping when that pack remained enabled. The final approach deliberately uses PAPER custom-model-data 815002, because the existing Enthusia tab logo already proves that Nexo's PAPER override pipeline works on this server with 815001; the stale 815002 vanilla fallback has been replaced with `enthusia:item/journal_quill`. Dear Diary is display-only, so its backing material does not need to be WRITABLE_BOOK. The Nexo item config maps PAPER 815002 to the same model, and the external pack contains the baked model and texture. Focused diary/layout tests pass 18 tests and the full EnthusiaTags verification passes 203 tests.
+
 ## T-900 [TDD] PR-review correctness and verification cleanup
 
 Status: locally verified; hosted validation pending the updated head.

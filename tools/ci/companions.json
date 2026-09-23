@@ -1,8 +1,8 @@
 {
   "renderer": {
     "repository": "FainNeito/EnthusiaAdvancements",
-    "sha": "1cefd9f5803ea77d58f9c96184f40b733469582c",
-    "version": "1.0.0-pilot.4"
+    "sha": "139177ccba8f37b2d568f2e4d8fb7e5e0b864db8",
+    "version": "1.0.0-pilot.5"
   },
   "rosechat": {
     "repository": "FainNeito/Enthusia-RoseChat",
