@@ -55,6 +55,18 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         this.rewards = rewards;
         projection = Bukkit.getServicesManager().load(ProjectionService.class);
         if (projection == null) throw new IllegalStateException("EnthusiaAdvancements projection service unavailable; install the pilot companion build");
+        initializeBridges();
+        rebuild();
+        scheduleBridgeRefreshes();
+        Bukkit.getPluginManager().registerEvents(this, plugin);
+        rewards.setAdvancementNotifications((player, completed) -> {
+            Set<String> pending = pendingCelebrations.computeIfAbsent(player.getUniqueId(), ignored -> new HashSet<>());
+            completed.forEach(reward -> pending.add(key(reward.getId())));
+        });
+        task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 20L, 20L);
+    }
+
+    private void initializeBridges() {
         if (plugin.getConfig().getBoolean("advancements.warzone-duels-enabled", false)) {
             var provider = Bukkit.getPluginManager().getPlugin("WarzoneDuels");
             if (provider != null && provider.isEnabled()) {
@@ -83,7 +95,9 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                 Bukkit.getOnlinePlayers().forEach(player -> diary.beginSession(player.getUniqueId()));
             } else plugin.getLogger().warning("DiaryKeeper advancements requested but DiaryKeeper is unavailable; bridge disabled.");
         }
-        rebuild();
+    }
+
+    private void scheduleBridgeRefreshes() {
         if (duels != null) duelTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, new Runnable() {
             private long warningAfter;
             @Override public void run() {
@@ -135,12 +149,6 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                 }
             }
         }, 20L, 100L);
-        Bukkit.getPluginManager().registerEvents(this, plugin);
-        rewards.setAdvancementNotifications((player, completed) -> {
-            Set<String> pending = pendingCelebrations.computeIfAbsent(player.getUniqueId(), ignored -> new HashSet<>());
-            completed.forEach(reward -> pending.add(key(reward.getId())));
-        });
-        task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 20L, 20L);
     }
 
     public static String key(String rewardId) {
