@@ -31,6 +31,8 @@ public final class PlaytimeHook {
     }
 
     public static final class ProgressUnavailableException extends IllegalStateException {
+        private static final long serialVersionUID = 1L;
+
         public ProgressUnavailableException() {
             super("Playtime could not be read authoritatively");
         }
