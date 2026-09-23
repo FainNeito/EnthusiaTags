@@ -74,6 +74,21 @@ class WarzoneStatsReaderTest {
         assertEquals(0, stats.lowHealthWins());
     }
 
+    @Test void lossyNumericCoercionsStayRejected() {
+        for (String value : new String[]{"1.0", "2147483648", "4294967296", "-1"}) {
+            assertThrows(IllegalArgumentException.class, () -> WarzoneStatsReader.parse(record(
+                "    wins: " + value + "\n    best-win-streak: 1\n")), value);
+        }
+    }
+
+    @Test void caseVariantUuidRecordsCannotOverwriteHistory() {
+        String uuid = "abcdefab-cdef-abcd-efab-cdefabcdefab";
+        String body = "    wins: 1\n    best-win-streak: 1\n";
+        String yaml = "players:\n  " + uuid + ":\n" + body + "  "
+            + uuid.toUpperCase(java.util.Locale.ROOT) + ":\n" + body;
+        assertThrows(IllegalArgumentException.class, () -> WarzoneStatsReader.parse(yaml));
+    }
+
     @Test void absentPlayerIsNotManufactured() throws Exception {
         assertTrue(WarzoneStatsReader.parse("players: {}\n").isEmpty());
     }
