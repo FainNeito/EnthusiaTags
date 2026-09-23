@@ -1,24 +1,13 @@
 package org.enthusia.tags.advancements;
 
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class AdvancementLayoutTest {
     @Test void everyBundledRewardHasAnIntentionalPlacement() throws Exception {
-        YamlConfiguration config;
-        try (var in = getClass().getClassLoader().getResourceAsStream("rewards.yml")) {
-            assertNotNull(in);
-            config = YamlConfiguration.loadConfiguration(
-                new InputStreamReader(in, StandardCharsets.UTF_8));
-        }
-
-        var rewards = config.getConfigurationSection("rewards");
-        assertNotNull(rewards);
+        var rewards = BundledRewardFixture.rewards();
         for (String id : rewards.getKeys(false)) {
             assertTrue(AdvancementLayout.hasFixed(id), id);
         }
@@ -57,14 +46,7 @@ class AdvancementLayoutTest {
         assertEquals(31, fallback.y());
     }
     private String[] bundledIds() throws Exception {
-        YamlConfiguration config;
-        try (var in = getClass().getClassLoader().getResourceAsStream("rewards.yml")) {
-            assertNotNull(in);
-            config = YamlConfiguration.loadConfiguration(
-                new InputStreamReader(in, StandardCharsets.UTF_8));
-        }
-        var rewards = config.getConfigurationSection("rewards");
-        assertNotNull(rewards);
+        var rewards = BundledRewardFixture.rewards();
         return rewards.getKeys(false).toArray(String[]::new);
     }
 }

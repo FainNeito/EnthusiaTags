@@ -27,7 +27,7 @@ final class WarzoneAdvancementBridge {
         sessionStarted.put(player, System.nanoTime());
     }
     WarzoneAdvancementBridge(Path file) {
-        this(file, path -> WarzoneStatsReader.parse(Files.readString(path)));
+        this(file, path -> WarzoneStatsReader.parse(Files.readString(path, java.nio.charset.StandardCharsets.UTF_8)));
     }
     WarzoneAdvancementBridge(Path file, StatsReader reader) {
         this.file = file;
