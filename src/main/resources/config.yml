@@ -13,6 +13,9 @@ advancements:
   # Display-only reputation track. Enabled when EnthusiaCommend is available.
   # Historical provider evidence is credited silently; this never pays rewards.
   commendation-enabled: true
+  # Display-only EnthusiaExpress history track. Enabled when EnthusiaExpress is available.
+  # Reads mail.db off-thread in read-only mode; historical rows are credited silently.
+  express-enabled: true
   # Optional per-existing-reward frame overrides: TASK, GOAL or CHALLENGE.
   frames: {}
 

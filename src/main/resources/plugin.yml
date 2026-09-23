@@ -6,6 +6,7 @@ author: Enthusia
 softdepend:
   - WarzoneDuels
   - EnthusiaCommend
+  - EnthusiaExpress
   - EnthusiaAdvancements
   - RoseChat
   - PlaceholderAPI

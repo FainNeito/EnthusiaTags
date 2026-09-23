@@ -40,6 +40,9 @@ jobs:
           bash tools/ci/bootstrap_companions.sh
       - name: Clean build and verification
         run: mvn -B -ntp clean verify
+      - name: Exercise read-only SQLite using the final shaded jar
+        run: java --class-path target/EnthusiaTags.jar tools/ci/org/enthusia/tools/SQLiteArtifactProbe.java
+
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

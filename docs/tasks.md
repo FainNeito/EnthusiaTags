@@ -219,6 +219,13 @@ References: REQ-034 through REQ-038; implementation.md Presentation.
 Acceptance: ten display-only reputation advancements use durable EnthusiaCommend evidence, historical completion is silent, live crossings celebrate once, missing reads retain known progress, positive category milestones are tracked at +5, and no negative-behavior category achievements or rewards are introduced.
 Evidence: EnthusiaCommend feature branch persists positive-receipt, overall high/low-water, redemption, and positive-category high-water evidence in data.yml; its clean verify passes 178 tests. ReputationProgressTest, CommendStatsReaderTest, CommendBridgeTest, AdvancementNodeOrderTest and AdvancementLayoutTest pass 20 focused tests. Historical original implementation verification at 368fff7 passed 181 EnthusiaTags tests with zero failures/errors/skips. Later foundation-sync and review-follow-up totals are identified separately in docs/pr-stack-verification.md.
 
+## T-014 [TDD] EnthusiaExpress mail-history advancement track
+
+Status: complete locally through verification; live test-server acceptance pending.
+References: REQ-039 through REQ-045; implementation.md Presentation.
+Acceptance: eleven display-only Express advancements use persisted mail history, historical completion is silent, live crossings celebrate once, failed reads retain known progress, SQLite is opened read-only off-thread, pending claims are not counted as delivered, and no provider writes or advancement rewards occur.
+Evidence: ExpressProgressTest, ExpressStatsReaderTest, ExpressBridgeTest, AdvancementNodeOrderTest and AdvancementLayoutTest pass 16 focused tests with zero failures/errors/skips. Historical package/letter sends, packed-item maxima, successful claims, read letters and returned-package collection are derived from existing mail rows; no EnthusiaExpress provider modification is required. Live staging exposed that shade minimization removed the reflectively loaded relocated SQLite driver; ExpressStatsReader now carries a direct JDBC class reference and the verify phase asserts that org/enthusia/tags/libs/sqlite/JDBC.class exists in the shaded artifact. EnthusiaTags clean verify passes 191 tests with zero failures/errors/skips and packages the shaded test JAR.
+
 ## T-900 [TDD] PR-review correctness and verification cleanup
 
 Status: locally verified; hosted validation pending the updated head.

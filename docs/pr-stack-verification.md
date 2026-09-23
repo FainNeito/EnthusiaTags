@@ -15,3 +15,11 @@ The earlier run at 2f83047 passed 187 Java tests and eight separate Node tests. 
 ## Commendation malformed-section follow-up
 
 After the Warzone parser fixes were synchronized, round2-commend-verify.log passed clean verify with 195 Java tests, zero failures/errors/skips. The focused pre-fix run reproduced four failures; the fixed 14-test reader/bridge run passed. Wrong-shaped advancementEvidence and categoryMax fields now reject snapshots, while genuinely missing version-9 data and empty category maps remain compatible. Corrected historical data cannot trigger false live-completion toasts. This records local verification separately from exact-head hosted checks and the still-required Codacy gate.
+
+## Express foundation-sync history
+
+The earlier run at f0a6716 passed 197 Java tests plus eight Node tests. That count precedes the parser follow-up and return-lifecycle contract coverage. The latest completed run is recorded below once verification completes.
+
+## Express provider-contract follow-up
+
+round2-express-verify.log passed clean verify with 207 Java tests, zero failures/errors/skips, including the inherited malformed-evidence fixes and two new return-lifecycle fixtures. Final shading verification passed. The focused Express reader/bridge run passed eight tests. Inspection of the pinned provider confirmed returned rows already change recipient_uuid to the original sender, so aggregation behavior remains unchanged; docs/express-history-contract.md records the source and fixture limits. No mail database or server was modified.

@@ -27,3 +27,11 @@ The Warzone parser has been decomposed without relaxing malformed-evidence rejec
 ## Commendation follow-on
 
 The lengthy test helper argument list is replaced by the existing immutable reputation Stats value, preserving every serialization field and threshold assertion. The provider remains read-only and historical/malformed-data behavior is unchanged. Inherited foundation and Warzone changes remain under the same strict gates.
+
+## Express follow-on
+
+The reader now calls the fixed SQLite driver directly instead of reflectively loading its class name. Its direct reference retains the driver under shading, and the same read-only URI is used. A final-artifact probe runs with only the shaded JAR, reads a newly created disposable database, requires a write attempt to fail, and confirms unchanged database bytes. No production mail database is opened or modified by the probe.
+
+The isolated-artifact probe exposed an additional packaging bug not visible on the ordinary unit-test classpath: relocated SQLite attempted to load native org/sqlite/core/NativeDB and failed. The shade relocation has been removed for this JNI-backed dependency; it remains bundled under its original namespace, with explicit class-presence and actual read-only connection tests. This is a build-artifact correction, not a database migration or a claim about the current live server.
+SQLite packaging also retains the full JDBC classes instead of bytecode-only minimization, because native callbacks are not visible to that analysis. This preserves the pinned dependency version; it does not disable source analysis or alter runtime database permissions.
+Final local Express verification passed 207 Java tests, zero failures/errors/skips, and the isolated deliverable printed SHADED_SQLITE_READ_ONLY_OK after the namespace correction. The Linux hosted job repeats the same final-artifact probe.
