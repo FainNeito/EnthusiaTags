@@ -2054,7 +2054,7 @@ public final class RewardService {
         };
     }
 
-    private boolean isCriterionAvailable(RewardCriterion criterion) {
+    boolean isCriterionAvailable(RewardCriterion criterion) {
         if (criterion == null || !criterion.isValid()) {
             return false;
         }
@@ -2063,6 +2063,7 @@ public final class RewardService {
             return naturalBlockTrackingAvailable;
         }
         return switch (criterion.getSourceType()) {
+            case CUSTOM_COUNTER -> true;
             case VAULT_BALANCE -> vaultHook.isAvailable();
             case BALTOP -> baltopPlugin != null;
             case PLAYTIME -> playtimeHook.isAvailable() || config.allowPlaceholderPlaytimeFallback();
@@ -2833,7 +2834,7 @@ public final class RewardService {
         rewards = java.util.Collections.unmodifiableMap(loadedRewards);
     }
 
-    private List<RewardCriterion> loadCriteria(ConfigurationSection section) {
+    List<RewardCriterion> loadCriteria(ConfigurationSection section) {
         List<RewardCriterion> criteria = new ArrayList<>();
         if (section == null) {
             return criteria;
@@ -3160,6 +3161,9 @@ public final class RewardService {
 
     private static Map<RewardCriterionType, String> defaultCounterKeys() {
         Map<RewardCriterionType, String> keys = new EnumMap<>(RewardCriterionType.class);
+        keys.put(RewardCriterionType.PLAYTIME_CONSECUTIVE_ACTIVE_MINUTES, "max_consecutive_active");
+        keys.put(RewardCriterionType.UNDERGROUND_ACTIVE_MINUTES, "underground_active");
+        keys.put(RewardCriterionType.PING_MS_AT_LEAST, "max_ping_ms");
         keys.put(RewardCriterionType.KILL_STREAK_CURRENT, "kill_streak");
         keys.put(RewardCriterionType.DEATH_STREAK_SAME, "death_streak_same");
         keys.put(RewardCriterionType.QUICK_KILL_COUNT, "quick_kill");

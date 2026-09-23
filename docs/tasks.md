@@ -1,5 +1,60 @@
 # SPEAR tasks
 
+## T-010 [TDD] Optional Warzone Duels statistics advancements
+
+Naming correction approved after the initial build: duel display titles are Arena Initiate and Arena Win Streak, avoiding existing combat titles First Blood and Unstoppable. Stable duel keys, thresholds, existing combat definitions and reward history are unchanged; node tests assert the corrected titles and preserved keys.
+
+Status: [x] complete locally through SPEAR refine; new duel track still requires live test-server acceptance.
+References: REQ-021, REQ-022, REQ-023, REQ-024; implementation.md Warzone Duels statistics bridge.
+Acceptance: Three fixed-key nodes, strict read-only parsing, off-thread reads, silent first observation, live threshold crossing once, no regression on missing/failed reads, reset session on quit, opt-in default, no guild or reward mutations.
+Evidence:
+
+- Local WarzoneDuels checkout `../2026-09-17/get-started-on-the-warzoneduels-update/src/main/java/dev/minecraft/warzoneduels/adapter/bukkit/persistence/PlayerStatsStore.java` explicitly persists `players.<UUID>.wins` and `best-win-streak` in stats.yml using atomic replacement. StatsService records all winning party members. PlayerDuelStats retains best streak after losses. Inspected through Remote Desktop Commander; no edits to that checkout.
+- Existing NativeAdvancementController and io.github.badgersmc.advancements.pilot.ProjectionService provide Node, silent project, explicit celebrate and plugin-owned tree removal. org.bukkit.Material, org.bukkit.Bukkit, org.bukkit.plugin.java.JavaPlugin, org.bukkit.scheduler.BukkitTask and org.bukkit.plugin.Plugin are existing Paper adapter dependencies; asynchronous runTaskTimerAsynchronously supplies the background reader.
+- Existing org.bukkit.configuration.file.YamlConfiguration and org.bukkit.configuration.ConfigurationSection provide strict loadFromString and getValues(false); IOException/InvalidConfigurationException are converted to omitted snapshots, never zero. java.nio.file.Files.readString, java.nio.file.Path, java.util maps/sets/UUID and AtomicReference are JDK APIs. No new library dependency.
+- New org.enthusia.tags.advancements.domain.DuelMilestoneProgress is a framework-free per-session projection policy; WarzoneStatsReader and WarzoneAdvancementBridge remain adapter-only. org.junit.jupiter.api.Test and org.junit.jupiter.api.Assertions are existing test dependencies.
+- Existing Paper org.bukkit.event.player.PlayerJoinEvent supplies the session boundary; org.junit.jupiter.api.io.TempDir provides isolated on-disk fixtures. org.enthusia.tags.advancements.domain.DuelMilestoneProgress.Stats is the new validated framework-free snapshot value.
+- Red: warzone-red.log records 12 tests, 9 assertion failures and one missing-map-result error against empty implementation seams. Additional warzone-reconnect-red.log proves cached pre-join reads must not become live baselines. No unrelated compilation failure is counted as red.
+- Green: ../../warzone-green.log passes 14 focused tests including existing shutdown behavior. ../../warzone-full-verify.log records clean verify with all 156 tests passing, zero failures/errors/skips, on Java 25 and the pinned Paper 26.2 API. Domain imports are JDK-only; new adapters use only the dependencies cited above. EARS and diff checks pass. Artifact metadata is 2.2.2-pilot.2 to distinguish this test build.
+- Scope: three opt-in, display-only milestones. No WarzoneDuels code/data edits, guild work, reward payouts, kill-effect changes or deployment. Real Paper/client behavior is an explicit test-server acceptance item in ../../outputs/Enthusia-Warzone-Duels-test/README.md. No commit/push/PR step, per the existing delivery boundary.
+
+## T-009 [TDD] Adventure click-event runtime compatibility
+
+Status: [x] complete locally; real join/quit client validation remains required.
+References: REQ-020, REQ-011, REQ-013; implementation.md Presence integration.
+Evidence:
+
+- Test-server join log reports NoSuchFieldError for RUN_COMMAND and SUGGEST_COMMAND in AdventureClickDecorator. Existing build resolves Adventure 4.26.1; local Maven Adventure 5.2.0 javap confirms typed Action fields and removed clickEvent(Action,String), with preserved named factories and changePage(int).
+- Existing infrastructure imports dev.rosewood.rosechat.message.tokenizer.Token, dev.rosewood.rosechat.message.tokenizer.decorator.ClickDecorator, net.kyori.adventure.text.Component, net.kyori.adventure.text.event.ClickEvent; regression uses existing org.junit.jupiter.api.Test and org.junit.jupiter.api.Assertions. No domain or persistence edits.
+- Test runtime matrix uses official net.kyori Adventure 5.2.0 artifacts alongside existing 4.26.1 runtime. Test compares actual decorated components with factory-built expected events for all six supported actions and placeholder/URL handling.
+- Test also imports existing dev.rosewood.rosechat.message.tokenizer.composer.decorator.adventure.AdventureClickDecorator. Behavioral red: ../../rose-click-red.log reproduces NoSuchFieldError in both tests; green: ../../rose-click-green.log passes the legacy and Adventure 5 runtime suites. No new production imports; only infrastructure code changed, domain rules unaffected.
+- Refine: ../../rose-click-full.log records successful offline clean build, all existing tests, Adventure 5 matrix and packaged version-parser regression. No database, reward, selection or presence audience changes; no commits or deployment.
+
+## T-008 [TDD] Restore implicit counter mappings for five existing challenges
+
+Status: [x] complete locally; server reload/restart validation remains outstanding.
+References: REQ-001, REQ-019; implementation.md Persistence and Presentation.
+Evidence:
+
+- RewardService.loadCriterion/legacySource/keyForType validate CUSTOM_COUNTER keys but defaultCounterKeys omits PLAYTIME_CONSECUTIVE_ACTIVE_MINUTES, UNDERGROUND_ACTIVE_MINUTES and PING_MS_AT_LEAST. RewardTracker already persists max_consecutive_active, underground_active and max_ping_ms; computeLegacyProgress uses those exact keys.
+- Existing rewards.yml identifies sleeps_in_minecraft (720), marathon_session (360), yearn_for_mines (600), deep_dweller (1800), lag_was_crazy (150). No YAML rewrite or schema migration required; preserve explicit source/key/counter overrides.
+- Tests reuse existing org.junit.jupiter.api.Test, org.junit.jupiter.api.io.TempDir, org.junit.jupiter.api.Assertions, org.bukkit.configuration.ConfigurationSection, org.bukkit.configuration.file.YamlConfiguration, org.bukkit.entity.Player, org.bukkit.plugin.java.JavaPlugin, org.enthusia.tags.PerformanceMonitor; fixtures use standard Java IO/reflection/collections/concurrency and sun.misc.Unsafe as in RewardGoldNetworkTest. Real temporary RewardStorage verifies historical persisted counters and claims without invoking reward delivery.
+- Red: ../../counter-criteria-red.log has two behavioral assertion failures (invalid sleeps_in_minecraft) and no errors. Green: ../../counter-criteria-green.log passes three tests: all bundled criteria, explicit key/alias/source preservation and fail-closed unknown counters, and reopened SQLite progress/claim preservation with unchanged revision and no new action ledgers.
+- Refine: ../../counter-criteria-full.log, Maven clean verify / JDK 25 / Paper API 26.2 build 124, 143 tests passed with zero failures/errors/skips including LayerRulesTest. Only three existing counter mappings added; no production imports, domain dependencies, reward amounts, identifiers, configs or schemas changed. Synthetic invalid-counter warnings are expected in the negative test.
+
+## T-007 [TDD] Companion RoseChat year-based version compatibility
+
+Status: [x] complete locally; actual server restart and presence rendering remain staging checks.
+References: REQ-018; implementation.md Presence integration and Verification and rollout.
+Evidence:
+
+- Test-server latest.log: Paper 26.2.build.123-stable, Java 25; RoseChat fails in shaded RoseGarden NMSUtil static initialization parsing "build". No server writes authorized in this task.
+- Official RoseGarden 1.5.7 source archive at <https://repo.rosewooddev.io/repository/public/dev/rosewood/rosegarden/1.5.7/rosegarden-1.5.7-sources.jar> inspected locally: NMSUtil distinguishes year-based versions and ignores nonnumeric patch metadata. Prefer dependency update to a private shadow-class override.
+- Companion build.gradle uses RoseGarden 1.5.4 with Shadow relocation/minimize and existing org.junit.jupiter.api.Test, org.junit.jupiter.api.Assertions. Test uses only these imports plus Java standard-library reflection, URLClassLoader, Path and Proxy; org.bukkit.Bukkit and org.bukkit.Server are inspected through the existing Paper test runtime. Each version uses isolated NMSUtil initialization and restores Bukkit's server field.
+- Scope: companion dependency and regression tests only; no reward data or configs changed, no commits/push/deployment.
+- Red: ../../rose-version-red.log reproduces NumberFormatException in static initialization. Green: ../../rose-version-green.log verifies legacy 1.21.11, year-based 26.1, exact 26.2.build.123-stable and future-format 26.3.build.1-stable. The same assertions pass against the final relocated/minimized JAR, not merely the dependency classpath.
+- Refine: ../../rose-version-full.log, Gradle 8.13 / JDK 21 clean build passes all tests and packagedVersionTest. Existing Bungee chat dependency added only to test runtime to support Bukkit Server proxy signatures. No domain changes or new production imports; git diff --check passes. Version parsing tests do not establish full Minecraft 26.3 compatibility.
+
 ## T-006 [TDD] Review reward and shutdown safety
 
 Status: [x] complete locally through SPEAR refine; server staging remains outstanding.
@@ -136,6 +191,26 @@ Evidence:
 - Exact staged plugin descriptors and publisher checksum were inspected in T-004. Latest clean tests total 153 across Tags (138), pilot renderer (3) and RoseChat (12). No real-server/client or 26.3 validation is implied. Full Kotlin/Nexus EnthusiaAdvancements is explicitly distinguished from the isolated pilot module.
 - SPEAR was followed for each implementation slice. Per user instruction, no commit/push/PR/release/deployment step is performed.
 - Final cross-check: Tags full test suite rerun (`../../tags-docs-final-test.log`) passed all 138 tests. Final ZIP entries were checked against every SHA256 manifest entry; all matched. Generated Maven reduced POM was restored to its pre-build tracked content. Remaining checks are explicitly user-run server/client staging, not missing implementation tasks.
+
+## T-011 [TDD] Remaining non-guild WarzoneDuels event advancements
+
+Status: complete locally through verification; live test-server acceptance remains pending.
+References: REQ-025 through REQ-032; implementation.md Warzone Duels statistics bridge.
+Evidence:
+
+- WarzoneDuels 1.0.3 now persists provider-owned counters for valid challenges sent, successful spoils withdrawals, mutual draws, challenger custom-rules wins, restricted-mobility wins, and low-health wins.
+- Gameplay boundaries are wired in DuelService, SpoilsService, StatsService and DuelAdvancementPolicy; guild-war and spectator-betting achievements remain excluded.
+- WarzoneDuels full verify passes 76 tests with zero failures/errors/skips.
+- EnthusiaTags projects nine WarzoneDuels nodes total, preserves the existing three stable IDs, reads new evidence fields read-only, treats legacy provider rows as zero evidence for new achievements, restores history silently and celebrates only new threshold crossings.
+- Focused EnthusiaTags Warzone tests pass 16 tests; full clean verify passes 159 tests with zero failures/errors/skips.
+- No advancement rewards are paid by this bridge. Test-server deployment and live toast/claim behavior remain staging checks.
+
+## T-012 [TDD] Branched native advancement layout
+
+Status: complete locally; live client visual acceptance pending.
+References: REQ-033; implementation.md Presentation.
+Acceptance: every bundled reward has a fixed non-overlapping coordinate, category paths branch instead of forming long rows, Warzone Duels forms three sub-branches, unknown future rewards retain a deterministic fallback, and no requirements/reward logic changes.
+Evidence: AdvancementLayoutTest covers all bundled reward IDs, coordinate uniqueness, representative parents/bounds, and fallback behavior. WarzoneBridgeTest covers the three-way duel layout. A live test-server startup exposed that the projection API requires parent definitions before their children; AdvancementNodeOrder now topologically orders the full projected graph before registration. Focused layout/order tests pass 12 tests with zero failures/errors/skips; full clean verify passes 167 tests with zero failures/errors/skips and packages the shaded test JAR.
 
 ## T-900 [TDD] PR-review correctness and verification cleanup
 

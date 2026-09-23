@@ -21,6 +21,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -38,6 +39,8 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
     private final ArrayDeque<UUID> queue = new ArrayDeque<>();
     private Map<String, RewardDefinition> definitions;
     private BukkitTask task;
+    private BukkitTask duelTask;
+    private WarzoneAdvancementBridge duels;
     private long nextWarning;
     private boolean registered;
 
@@ -46,7 +49,26 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         this.rewards = rewards;
         projection = Bukkit.getServicesManager().load(ProjectionService.class);
         if (projection == null) throw new IllegalStateException("EnthusiaAdvancements projection service unavailable; install the pilot companion build");
+        if (plugin.getConfig().getBoolean("advancements.warzone-duels-enabled", false)) {
+            var provider = Bukkit.getPluginManager().getPlugin("WarzoneDuels");
+            if (provider != null && provider.isEnabled()) {
+                duels = new WarzoneAdvancementBridge(provider.getDataFolder().toPath().resolve("stats.yml"));
+                Bukkit.getOnlinePlayers().forEach(player -> duels.beginSession(player.getUniqueId()));
+            } else plugin.getLogger().warning("Warzone Duels advancements requested but WarzoneDuels is unavailable; bridge disabled.");
+        }
         rebuild();
+        if (duels != null) duelTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, new Runnable() {
+            private long warningAfter;
+            @Override public void run() {
+                try { duels.refresh(); }
+                catch (Exception ex) {
+                    if (System.currentTimeMillis() >= warningAfter) {
+                        warningAfter = System.currentTimeMillis() + 60000;
+                        plugin.getLogger().warning("Warzone duel statistics unavailable; retaining known advancement progress: " + ex.getMessage());
+                    }
+                }
+            }
+        }, 20L, 100L);
         Bukkit.getPluginManager().registerEvents(this, plugin);
         rewards.setAdvancementNotifications((player, completed) -> {
             Set<String> pending = pendingCelebrations.computeIfAbsent(player.getUniqueId(), ignored -> new HashSet<>());
@@ -67,25 +89,31 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         for (RewardDefinition reward : next.values()) categories.computeIfAbsent(reward.getCategory(), ignored -> new ArrayList<>()).add(reward);
         int row = 0;
         for (List<RewardDefinition> group : categories.values()) {
-            String parent = null;
+            String fallbackParentId = null;
             for (int index = 0; index < group.size(); index++) {
                 RewardDefinition reward = group.get(index);
                 String frame = plugin.getConfig().getString("advancements.frames." + reward.getId(), "TASK").toUpperCase(Locale.ROOT);
                 if (!List.of("TASK", "GOAL", "CHALLENGE").contains(frame)) frame = "TASK";
+                var placement = AdvancementLayout.placement(
+                    reward.getId(), fallbackParentId, index + 1, row * 4 + 1);
+                String parent = placement.parentId() == null ? null : key(placement.parentId());
                 nodes.add(new ProjectionService.Node(key(reward.getId()), parent, color(reward.getName()),
-                    description(reward), reward.getIcon(), frame, index + 1, row * 2));
-                parent = key(reward.getId());
+                    description(reward), reward.getIcon(), frame, placement.x(), placement.y()));
+                fallbackParentId = reward.getId();
             }
             row++;
+        }
+        if (duels != null) {
+            nodes.addAll(WarzoneAdvancementBridge.nodes(AdvancementLayout.warzoneBaseY(row)));
         }
         ItemStack icon = new ItemStack(Material.PAPER);
         var meta = icon.getItemMeta();
         meta.setCustomModelData(plugin.getConfig().getInt("advancements.logo-custom-model-data", 815001));
         icon.setItemMeta(meta);
-        projection.registerTree(plugin, "enthusia", icon, nodes);
+        projection.registerTree(plugin, "enthusia", icon, AdvancementNodeOrder.parentFirst(nodes));
         registered = true;
         definitions = next;
-        plugin.getLogger().info("Enthusia native track: " + nodes.size() + " existing challenges; no reward execution in renderer.");
+        plugin.getLogger().info("Enthusia native track: " + nodes.size() + " challenges; no reward execution in renderer.");
     }
 
     static List<String> description(RewardDefinition reward) {
@@ -162,7 +190,15 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
             int value = rewards.getAdvancementProgress(player, reward);
             if (value >= 0) progress.put(key(reward.getId()), value);
         }
+        addDuelProgress(player, progress);
         return progress;
+    }
+    private void addDuelProgress(Player player, Map<String, Integer> progress) {
+        if (duels == null) return;
+        var update = duels.observe(player.getUniqueId());
+        progress.putAll(update.progress());
+        if (!update.celebrate().isEmpty()) pendingCelebrations
+            .computeIfAbsent(player.getUniqueId(), ignored -> new HashSet<>()).addAll(update.celebrate());
     }
     private void celebratePending(Player player, Map<String, Integer> progress) {
         Set<String> pending = pendingCelebrations.get(player.getUniqueId());
@@ -177,13 +213,18 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
             plugin.getLogger().warning("Native advancement projection will retry: " + error.getMessage());
         }
     }
+    @EventHandler public void onJoin(PlayerJoinEvent event) {
+        if (duels != null) duels.beginSession(event.getPlayer().getUniqueId());
+    }
     @EventHandler public void onQuit(PlayerQuitEvent event) {
         UUID id = event.getPlayer().getUniqueId();
         pendingCelebrations.remove(id);
+        if (duels != null) duels.forget(id);
         queue.removeIf(id::equals);
     }
     @Override public void close() {
         if (task != null) task.cancel();
+        if (duelTask != null) duelTask.cancel();
         rewards.setAdvancementNotifications(null);
         HandlerList.unregisterAll(this);
         try {

@@ -19,3 +19,7 @@ Dynamic-filename findings in the SPEAR test fixture and local command-line tools
 ## Validation
 
 The Java foundation clean verify passed 146 tests with zero failures/errors/skips after the refactor. Eight new Python bootstrap regressions cover digest/version mismatch, malicious metadata, XML entities, size limits and path escapes. The final Node run passed 12 tests with zero failures/skips and EARS validation passed. Python passed all eight tests. The Linux shell orchestration is tested by the actual hosted job, not claimed as locally executed on this Windows checkout. A local build does not imply Codacy approval.
+
+## Warzone follow-on
+
+The Warzone parser has been decomposed without relaxing malformed-evidence rejection. Its overlapping-refresh test now blocks a real injected reader rather than modifying a private AtomicBoolean. Implicit-counter regressions use real storage hydration and public progress reads rather than Unsafe or private field access. Clean Java 25 verification passed 176 tests, zero failures/errors/skips; inherited Node and Python gates are run separately. The original nine advancement keys, event counters, opt-in flag and no-reward behavior are unchanged.

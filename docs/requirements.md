@@ -22,10 +22,39 @@ Users: existing and new Enthusia players, including alternate accounts; server a
 
 - REQ-016: IF any configured reward action conflicts with its saved fingerprint THEN THE SYSTEM SHALL persist reconciliation-required status before reserving or delivering any component.
 - REQ-017: IF the advancement provider throws during tree removal on shutdown THEN THE SYSTEM SHALL log the failure and clear controller state without interrupting remaining plugin shutdown.
+- REQ-018: WHEN RoseChat initializes on Paper year-based version strings THE SYSTEM SHALL resolve the Minecraft major and minor versions without interpreting build metadata as a number.
+- REQ-019: WHEN existing consecutive-active, underground-active or maximum-ping criteria omit an explicit counter key THE SYSTEM SHALL resolve their established stored counters without modifying challenge thresholds, rewards, claims or administrator-specified keys.
+- REQ-020: WHEN RoseChat decorates a clickable message THE SYSTEM SHALL preserve each configured click action on Adventure 4 and 5 runtimes without binary linkage errors.
+
+## Approved follow-on: Warzone Duels statistics slice
+
+REQ-014 remains the original pilot boundary; the user explicitly authorized Warzone Duels on 2026-09-18. Guild and Market advancements remain excluded.
+
+- REQ-021: WHEN the optional Warzone Duels statistics bridge is enabled THE SYSTEM SHALL append Arena Initiate (1 win), Arena Win Streak (best streak 5), and The Gladiator (50 wins) to the existing Enthusia tree using read-only persisted WarzoneDuels statistics without issuing rewards or modifying either plugin's player data.
+- REQ-022: WHEN an online player's first valid duel snapshot is observed THE SYSTEM SHALL project historical progress silently and celebrate only subsequent newly observed completions during that session.
+- REQ-023: IF duel statistics are missing, unreadable or malformed THEN THE SYSTEM SHALL retain known progress and retry without substituting zero or announcing completion.
+- REQ-024: THE SYSTEM SHALL keep the duel bridge disabled by default and perform statistics file reads off the server thread while retaining fixed advancement identifiers and keeping all guild integrations excluded.
 
 The existing MONEY action is the server's Vault-backed Raw Gold currency (see RewardMoneyPolicy). Explicit RAW_GOLD and RAW_GOLD_BLOCK item actions also count as gold. Arbitrary reward commands are not parsed as currency: administrators must use typed gold actions for gold payouts; otherwise commands cannot be safely classified. Existing whole-reward IP reservations are conservative evidence for gold only. No historical rewards are removed or replayed.
 
 A network-limited component is durably withheld for that account; changing IP later must not make it claimable again. Missing IP or database failure is retryable, not a permanent rejection. No implicit account whitelist exception is introduced for gold.
+
+## Approved follow-on: Warzone Duels event-backed achievements
+
+The user explicitly authorized the remaining non-guild WarzoneDuels advancement roadmap on 2026-09-18. Guild-war/champion integration remains excluded. Betting achievements remain deferred because the current WarzoneDuels repository has participant wagers but no spectator-betting subsystem.
+
+- REQ-025: WHEN a player sends a valid Warzone Duel challenge THE SYSTEM SHALL complete Welcome to the Thunderdome from a provider-owned durable achievement counter.
+- REQ-026: WHEN a duel winner successfully withdraws at least one captured spoils item THE SYSTEM SHALL complete To the Victor Go the Spoils from a provider-owned durable achievement counter.
+- REQ-027: WHEN every surviving participant agrees to a draw THE SYSTEM SHALL complete A Price for Peace for those agreeing participants from provider-owned durable achievement counters.
+- REQ-028: WHEN a one-versus-one challenger wins a duel using a non-default ruleset THE SYSTEM SHALL complete My House, My Rules for that challenger from a provider-owned durable achievement counter.
+- REQ-029: WHEN a player wins a duel with both Ender Pearls and Wind Charges disabled THE SYSTEM SHALL complete Adapt and Overcome from a provider-owned durable achievement counter.
+- REQ-030: WHEN a player wins a one-versus-one kill result with less than four health points remaining THE SYSTEM SHALL complete Not Even Close from a provider-owned durable achievement counter.
+- REQ-031: THE SYSTEM SHALL project provider-owned WarzoneDuels achievement counters into the Enthusia advancement tree with silent historical reconciliation, live one-time celebration, off-thread reads, monotonic session progress and no reward payout.
+- REQ-032: THE SYSTEM SHALL leave Champion of the Realm, Place Your Bets, Eye for Talent, High Roller and the proposed hidden duel achievements unimplemented until their required guild-war, spectator-betting or missing durable provider evidence is separately approved and available.
+
+## Advancement presentation layout
+
+- REQ-033: WHEN the native Enthusia advancement tree is rendered THE SYSTEM SHALL place all bundled challenge nodes in fixed compact category branches, preserve existing challenge identifiers and requirements, keep future unknown rewards on a deterministic fallback layout, and present Warzone Duels as three branches for mastery, spoils/peace, and special-condition victories.
 
 ## PR cleanup safety and verification
 
