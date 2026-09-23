@@ -150,3 +150,10 @@ Evidence:
 - Eight Node tooling regression tests cover malformed/missing clauses, inline requirements, state shape, shared-lock exclusion, evidence gating, failed atomic rename, concurrent transitions, and Bash delegation. Regression failures were reproduced against the original helpers; the final run passes eight tests.
 - Java 25 clean verify passes 146 Tags tests (zero failures/errors/skips), separately from seven companion-renderer tests and eight Node tests. Generated reduced POM is excluded from this change.
 - Hosted CI checks the exact head, builds pinned companions, and keeps Codacy as a separate strict gate. Absence of a Codacy result remains a failure, not a skipped approval.
+
+## T-907 [TDD] Complete provider-boundary review
+
+References: REQ-906; implementation.md Presentation.
+Evidence: Current owner-bound projection API and scheduler integration; completion-linkage-red.log reproduced two uncaught linkage errors using a captured real scheduled callback. A separate fatal-error test proves VM failures must not be swallowed.
+Acceptance: RuntimeException and LinkageError are contained at projection/removal boundaries; no broad catch-all for Error/Throwable, no reward changes, and all dependent PRs inherit the fix.
+Status: complete locally. Java 25 clean Maven verification passes 149 tests with zero failures and errors; hosted review remains pending.

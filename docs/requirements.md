@@ -34,3 +34,5 @@ A network-limited component is durably withheld for that account; changing IP la
 - REQ-903: WHEN RoseChat enables after Tags THE SYSTEM SHALL install its per-viewer presence binding once while preserving RoseChat audience restrictions and defaults when the API is unavailable.
 - REQ-904: WHEN repeated playtime unit tokens are parsed THE SYSTEM SHALL count every occurrence with checked arithmetic and combine seconds before rounding.
 - REQ-905: WHEN local workflow tooling reads or modifies task state THE SYSTEM SHALL reject malformed state, serialize concurrent operations, enforce required evidence, and replace files atomically.
+
+- REQ-906: IF a companion linkage error occurs during projection or tree removal THEN THE SYSTEM SHALL contain and log that integration failure while preserving retry/cleanup behavior without swallowing fatal virtual-machine errors.
