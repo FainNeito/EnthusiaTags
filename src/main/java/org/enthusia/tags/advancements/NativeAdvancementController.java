@@ -67,6 +67,13 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
     }
 
     private void initializeBridges() {
+        initializeDuels();
+        initializeCommend();
+        initializeExpress();
+        initializeDiary();
+    }
+
+    private void initializeDuels() {
         if (plugin.getConfig().getBoolean("advancements.warzone-duels-enabled", false)) {
             var provider = Bukkit.getPluginManager().getPlugin("WarzoneDuels");
             if (provider != null && provider.isEnabled()) {
@@ -74,6 +81,9 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                 Bukkit.getOnlinePlayers().forEach(player -> duels.beginSession(player.getUniqueId()));
             } else plugin.getLogger().warning("Warzone Duels advancements requested but WarzoneDuels is unavailable; bridge disabled.");
         }
+    }
+
+    private void initializeCommend() {
         if (plugin.getConfig().getBoolean("advancements.commendation-enabled", true)) {
             var provider = Bukkit.getPluginManager().getPlugin("EnthusiaCommend");
             if (provider != null && provider.isEnabled()) {
@@ -81,6 +91,9 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                 Bukkit.getOnlinePlayers().forEach(player -> commend.beginSession(player.getUniqueId()));
             } else plugin.getLogger().warning("Reputation advancements requested but EnthusiaCommend is unavailable; bridge disabled.");
         }
+    }
+
+    private void initializeExpress() {
         if (plugin.getConfig().getBoolean("advancements.express-enabled", true)) {
             var provider = Bukkit.getPluginManager().getPlugin("EnthusiaExpress");
             if (provider != null && provider.isEnabled()) {
@@ -88,6 +101,9 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                 Bukkit.getOnlinePlayers().forEach(player -> express.beginSession(player.getUniqueId()));
             } else plugin.getLogger().warning("EnthusiaExpress advancements requested but EnthusiaExpress is unavailable; bridge disabled.");
         }
+    }
+
+    private void initializeDiary() {
         if (plugin.getConfig().getBoolean("advancements.diary-enabled", true)) {
             var provider = Bukkit.getPluginManager().getPlugin("DiaryKeeper");
             if (provider != null && provider.isEnabled()) {
@@ -98,6 +114,13 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
     }
 
     private void scheduleBridgeRefreshes() {
+        scheduleDuelRefresh();
+        scheduleCommendRefresh();
+        scheduleExpressRefresh();
+        scheduleDiaryRefresh();
+    }
+
+    private void scheduleDuelRefresh() {
         if (duels != null) duelTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, new Runnable() {
             private long warningAfter;
             @Override public void run() {
@@ -110,6 +133,9 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                 }
             }
         }, 20L, 100L);
+    }
+
+    private void scheduleCommendRefresh() {
         if (commend != null) commendTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, new Runnable() {
             private long warningAfter;
             @Override public void run() {
@@ -123,6 +149,9 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                 }
             }
         }, 20L, 100L);
+    }
+
+    private void scheduleExpressRefresh() {
         if (express != null) expressTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, new Runnable() {
             private long warningAfter;
             @Override public void run() {
@@ -136,6 +165,9 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                 }
             }
         }, 20L, 100L);
+    }
+
+    private void scheduleDiaryRefresh() {
         if (diary != null) diaryTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, new Runnable() {
             private long warningAfter;
             @Override public void run() {
