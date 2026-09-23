@@ -8,8 +8,10 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ConcurrentHashMap;
 
 final class ExpressAdvancementBridge {
     private final Path database;
@@ -22,6 +24,7 @@ final class ExpressAdvancementBridge {
     private final AtomicBoolean refreshing = new AtomicBoolean();
     private final Map<UUID, ExpressMilestoneProgress> sessions = new HashMap<>();
     private final Map<UUID, Long> sessionStarted = new HashMap<>();
+    private final Set<UUID> trackedPlayers = ConcurrentHashMap.newKeySet();
 
     ExpressAdvancementBridge(Path database) {
         this.database = database;
@@ -30,12 +33,13 @@ final class ExpressAdvancementBridge {
     void beginSession(UUID player) {
         sessions.remove(player);
         sessionStarted.put(player, System.nanoTime());
+        trackedPlayers.add(player);
     }
     void refresh() throws Exception {
         if (!refreshing.compareAndSet(false, true)) return;
         long started = System.nanoTime();
         try {
-            latest = new Snapshot(started, ExpressStatsReader.read(database));
+            latest = new Snapshot(started, ExpressStatsReader.read(database, trackedPlayers));
         } catch (Exception failure) {
             latest = null;
             throw failure;
@@ -58,6 +62,7 @@ final class ExpressAdvancementBridge {
     void forget(UUID player) {
         sessions.remove(player);
         sessionStarted.remove(player);
+        trackedPlayers.remove(player);
     }
 
     private static ExpressMilestoneProgress.Stats emptyStats() {
