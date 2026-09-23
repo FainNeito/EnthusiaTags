@@ -238,7 +238,7 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
             if (!prepareTree()) return;
             if (queue.isEmpty()) Bukkit.getOnlinePlayers().forEach(player -> queue.add(player.getUniqueId()));
             projectQueuedPlayers();
-        } catch (RuntimeException ex) {
+        } catch (RuntimeException | LinkageError ex) {
             warnAndRetry(ex);
         }
     }
@@ -313,7 +313,7 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
             pending, progress, key -> projection.celebrate(plugin, "enthusia", player, key));
         if (pending.isEmpty()) pendingCelebrations.remove(player.getUniqueId());
     }
-    private void warnAndRetry(RuntimeException error) {
+    private void warnAndRetry(Throwable error) {
         if (System.currentTimeMillis() >= nextWarning) {
             nextWarning = System.currentTimeMillis() + 60000;
             plugin.getLogger().warning("Native advancement projection will retry: " + error.getMessage());
@@ -346,7 +346,7 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         try {
             if (registered && Bukkit.getPluginManager().isPluginEnabled("EnthusiaAdvancements"))
                 projection.removeTree(plugin, "enthusia");
-        } catch (RuntimeException ex) {
+        } catch (RuntimeException | LinkageError ex) {
             plugin.getLogger().warning("Native advancement tree removal failed during shutdown: " + ex.getMessage());
         } finally {
             registered = false;

@@ -7,6 +7,10 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import org.sqlite.JDBC;
 import java.util.Properties;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -21,20 +25,68 @@ final class ExpressStatsReader {
     }
 
     static Map<UUID, ExpressMilestoneProgress.Stats> read(Path database) throws Exception {
+        return readSelected(database, null);
+    }
+
+    static Map<UUID, ExpressMilestoneProgress.Stats> read(Path database, Set<UUID> onlinePlayers) throws Exception {
+        List<UUID> selected = new ArrayList<>(Set.copyOf(onlinePlayers));
+        if (selected.isEmpty()) return Map.of();
+        return readSelected(database, selected);
+    }
+
+    private static Map<UUID, ExpressMilestoneProgress.Stats> readSelected(Path database, List<UUID> selected) throws Exception {
         if (database == null || !Files.isRegularFile(database)) {
             throw new IllegalArgumentException("EnthusiaExpress mail.db is unavailable");
         }
         String url = "jdbc:sqlite:" + database.toUri() + "?mode=ro";
         try (Connection connection = JDBC.createConnection(url, new Properties())) {
             if (connection == null) throw new SQLException("SQLite rejected its explicit read-only URL");
+            // All aggregates in this refresh share one consistent, read-only snapshot.
+            connection.setAutoCommit(false);
             Set<String> columns = columns(connection);
             requireColumns(columns);
             Map<UUID, MutableStats> players = new HashMap<>();
-            readSenderStats(connection, players);
-            readRecipientStats(connection, players, columns.contains("delivery_pending"));
+            boolean deliveryPending = columns.contains("delivery_pending");
+            if (selected == null) {
+                readCounts(connection, players, deliveryPending, null);
+            } else {
+                for (int from = 0; from < selected.size(); from += 500) {
+                    readCounts(connection, players, deliveryPending,
+                        selected.subList(from, Math.min(from + 500, selected.size())));
+                }
+            }
             Map<UUID, ExpressMilestoneProgress.Stats> result = new HashMap<>();
             players.forEach((id, stats) -> result.put(id, stats.freeze()));
             return Map.copyOf(result);
+        }
+    }
+
+    private static void readCounts(Connection connection, Map<UUID, MutableStats> players,
+                                   boolean deliveryPending, List<UUID> selected) throws SQLException {
+        readSenderStats(connection, players, selected);
+        readRecipientStats(connection, players, deliveryPending, selected);
+    }
+
+    private static String selection(String column, List<UUID> selected) {
+        if (!Set.of("sender_uuid", "recipient_uuid").contains(column)) {
+            throw new IllegalArgumentException("Unsupported mail ownership column");
+        }
+        if (selected == null) return "";
+        return " AND " + column + " IN (" + String.join(",", Collections.nCopies(selected.size(), "?")) + ")";
+    }
+
+    private static PreparedStatement prepare(Connection connection, String sql, List<UUID> selected) throws SQLException {
+        PreparedStatement statement = connection.prepareStatement(sql);
+        try {
+            if (selected != null) {
+                for (int index = 0; index < selected.size(); index++) {
+                    statement.setString(index + 1, selected.get(index).toString());
+                }
+            }
+            return statement;
+        } catch (SQLException | RuntimeException failure) {
+            try { statement.close(); } catch (SQLException closeFailure) { failure.addSuppressed(closeFailure); }
+            throw failure;
         }
     }
 
@@ -64,7 +116,8 @@ final class ExpressStatsReader {
     }
     private static void readSenderStats(
         Connection connection,
-        Map<UUID, MutableStats> players
+        Map<UUID, MutableStats> players,
+        List<UUID> selected
     ) throws SQLException {
         String sql = """
             SELECT sender_uuid,
@@ -72,11 +125,11 @@ final class ExpressStatsReader {
                    SUM(CASE WHEN type='LETTER' THEN 1 ELSE 0 END) AS sent_letters,
                    MAX(CASE WHEN type='PACKAGE' THEN packed_item_count ELSE 0 END) AS max_packed
               FROM mail
-             WHERE sender_uuid IS NOT NULL
+             WHERE sender_uuid IS NOT NULL%s
              GROUP BY sender_uuid
-            """;
-        try (var statement = connection.createStatement();
-             ResultSet result = statement.executeQuery(sql)) {
+            """.formatted(selection("sender_uuid", selected));
+        try (var statement = prepare(connection, sql, selected);
+             ResultSet result = statement.executeQuery()) {
             while (result.next()) {
                 UUID id = uuid(result.getString("sender_uuid"));
                 MutableStats stats = players.computeIfAbsent(id, ignored -> new MutableStats());
@@ -89,7 +142,8 @@ final class ExpressStatsReader {
     private static void readRecipientStats(
         Connection connection,
         Map<UUID, MutableStats> players,
-        boolean hasDeliveryPending
+        boolean hasDeliveryPending,
+        List<UUID> selected
     ) throws SQLException {
         // recipient_uuid is the current mailbox owner. MailRepository.expire rewrites it
         // to sender_uuid before a normal return can become RETURN_CLAIMED; see the
@@ -101,10 +155,11 @@ final class ExpressStatsReader {
                    SUM(CASE WHEN type='LETTER' AND unread=0 THEN 1 ELSE 0 END) AS read_letters,
                    SUM(CASE WHEN type='PACKAGE' AND status='RETURN_CLAIMED'%s THEN 1 ELSE 0 END) AS returned_claims
               FROM mail
+             WHERE 1=1%s
              GROUP BY recipient_uuid
-            """.formatted(delivered, delivered);
-        try (var statement = connection.createStatement();
-             ResultSet result = statement.executeQuery(sql)) {
+            """.formatted(delivered, delivered, selection("recipient_uuid", selected));
+        try (var statement = prepare(connection, sql, selected);
+             ResultSet result = statement.executeQuery()) {
             while (result.next()) {
                 UUID id = uuid(result.getString("recipient_uuid"));
                 MutableStats stats = players.computeIfAbsent(id, ignored -> new MutableStats());

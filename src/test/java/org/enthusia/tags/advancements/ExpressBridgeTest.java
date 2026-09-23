@@ -35,6 +35,15 @@ class ExpressBridgeTest {
             java.util.Set.of("express/frequent_shipper"),
             bridge.observe(player).celebrate());
     }
+    @Test void idleBridgeDoesNotOpenTheProviderDatabase() {
+        var bridge = new ExpressAdvancementBridge(directory.resolve("missing.db"));
+        assertDoesNotThrow(bridge::refresh);
+        bridge.beginSession(player);
+        assertThrows(Exception.class, bridge::refresh);
+        bridge.forget(player);
+        assertDoesNotThrow(bridge::refresh);
+    }
+
     @Test void nodesAreBranchedAndRewardless() {
         var nodes = ExpressAdvancementBridge.nodes(42);
         assertEquals(11, nodes.size());

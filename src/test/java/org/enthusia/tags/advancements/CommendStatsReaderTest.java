@@ -82,6 +82,15 @@ class CommendStatsReaderTest {
         assertEquals(0, stats.goodStallMax());
     }
 
+    @Test void mixedCaseDuplicateUuidRecordsAreRejected() {
+        String uuid = "abcdefab-cdef-abcd-efab-cdefabcdefab";
+        String fields = "    positiveReceived: true\n    maxOverall: 20\n"
+            + "    minOverall: -25\n    recoveredFromSevere: true\n";
+        String yaml = "advancementEvidence:\n  " + uuid + ":\n" + fields
+            + "  " + uuid.toUpperCase(java.util.Locale.ROOT) + ":\n" + fields;
+        assertThrows(IllegalArgumentException.class, () -> CommendStatsReader.parse(yaml));
+    }
+
     @Test void missingOrMalformedEvidenceFailsClosed() {
         for (String input : new String[]{
             "",

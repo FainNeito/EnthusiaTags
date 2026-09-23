@@ -37,7 +37,7 @@ final class CommendAdvancementBridge {
         long started = System.nanoTime();
         try {
             latest = new Snapshot(started,
-                CommendStatsReader.parse(Files.readString(file)));
+                CommendStatsReader.parse(Files.readString(file, java.nio.charset.StandardCharsets.UTF_8)));
         } catch (Exception failure) {
             latest = null;
             throw failure;
