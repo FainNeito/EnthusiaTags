@@ -9,7 +9,7 @@ import org.sqlite.JDBC;
 import java.util.Properties;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.StringJoiner;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -21,6 +21,34 @@ import java.util.UUID;
 
 /** Read-only aggregate adapter for EnthusiaExpress mail.db. */
 final class ExpressStatsReader {
+    private static final String SENDER_SQL = """
+        SELECT sender_uuid,
+               SUM(CASE WHEN type='PACKAGE' THEN 1 ELSE 0 END) AS sent_packages,
+               SUM(CASE WHEN type='LETTER' THEN 1 ELSE 0 END) AS sent_letters,
+               MAX(CASE WHEN type='PACKAGE' THEN packed_item_count ELSE 0 END) AS max_packed
+          FROM mail
+         WHERE sender_uuid IS NOT NULL
+           AND (? IS NULL OR sender_uuid IN (SELECT value FROM json_each(?)))
+         GROUP BY sender_uuid
+        """;
+    private static final String RECIPIENT_SQL = """
+        SELECT recipient_uuid,
+               SUM(CASE WHEN type='PACKAGE' AND status='CLAIMED' THEN 1 ELSE 0 END) AS claimed_packages,
+               SUM(CASE WHEN type='LETTER' AND unread=0 THEN 1 ELSE 0 END) AS read_letters,
+               SUM(CASE WHEN type='PACKAGE' AND status='RETURN_CLAIMED' THEN 1 ELSE 0 END) AS returned_claims
+          FROM mail
+         WHERE ? IS NULL OR recipient_uuid IN (SELECT value FROM json_each(?))
+         GROUP BY recipient_uuid
+        """;
+    private static final String RECIPIENT_PENDING_SQL = """
+        SELECT recipient_uuid,
+               SUM(CASE WHEN type='PACKAGE' AND status='CLAIMED' AND delivery_pending=0 THEN 1 ELSE 0 END) AS claimed_packages,
+               SUM(CASE WHEN type='LETTER' AND unread=0 THEN 1 ELSE 0 END) AS read_letters,
+               SUM(CASE WHEN type='PACKAGE' AND status='RETURN_CLAIMED' AND delivery_pending=0 THEN 1 ELSE 0 END) AS returned_claims
+          FROM mail
+         WHERE ? IS NULL OR recipient_uuid IN (SELECT value FROM json_each(?))
+         GROUP BY recipient_uuid
+        """;
     private ExpressStatsReader() {
     }
 
@@ -67,27 +95,23 @@ final class ExpressStatsReader {
         readRecipientStats(connection, players, deliveryPending, selected);
     }
 
-    private static String selection(String column, List<UUID> selected) {
-        if (!Set.of("sender_uuid", "recipient_uuid").contains(column)) {
-            throw new IllegalArgumentException("Unsupported mail ownership column");
-        }
-        if (selected == null) return "";
-        return " AND " + column + " IN (" + String.join(",", Collections.nCopies(selected.size(), "?")) + ")";
-    }
-
     private static PreparedStatement prepare(Connection connection, String sql, List<UUID> selected) throws SQLException {
         PreparedStatement statement = connection.prepareStatement(sql);
         try {
-            if (selected != null) {
-                for (int index = 0; index < selected.size(); index++) {
-                    statement.setString(index + 1, selected.get(index).toString());
-                }
-            }
+            String ids = selected == null ? null : uuidJson(selected);
+            statement.setString(1, ids);
+            statement.setString(2, ids);
             return statement;
         } catch (SQLException | RuntimeException failure) {
             try { statement.close(); } catch (SQLException closeFailure) { failure.addSuppressed(closeFailure); }
             throw failure;
         }
+    }
+
+    private static String uuidJson(List<UUID> selected) {
+        StringJoiner values = new StringJoiner(",", "[", "]");
+        for (UUID id : selected) values.add("\"" + id + "\"");
+        return values.toString();
     }
 
     private static Set<String> columns(Connection connection) throws SQLException {
@@ -119,16 +143,7 @@ final class ExpressStatsReader {
         Map<UUID, MutableStats> players,
         List<UUID> selected
     ) throws SQLException {
-        String sql = """
-            SELECT sender_uuid,
-                   SUM(CASE WHEN type='PACKAGE' THEN 1 ELSE 0 END) AS sent_packages,
-                   SUM(CASE WHEN type='LETTER' THEN 1 ELSE 0 END) AS sent_letters,
-                   MAX(CASE WHEN type='PACKAGE' THEN packed_item_count ELSE 0 END) AS max_packed
-              FROM mail
-             WHERE sender_uuid IS NOT NULL%s
-             GROUP BY sender_uuid
-            """.formatted(selection("sender_uuid", selected));
-        try (var statement = prepare(connection, sql, selected);
+        try (var statement = prepare(connection, SENDER_SQL, selected);
              ResultSet result = statement.executeQuery()) {
             while (result.next()) {
                 UUID id = uuid(result.getString("sender_uuid"));
@@ -148,17 +163,7 @@ final class ExpressStatsReader {
         // recipient_uuid is the current mailbox owner. MailRepository.expire rewrites it
         // to sender_uuid before a normal return can become RETURN_CLAIMED; see the
         // pinned provider contract in docs/express-history-contract.md.
-        String delivered = hasDeliveryPending ? " AND delivery_pending=0" : "";
-        String sql = """
-            SELECT recipient_uuid,
-                   SUM(CASE WHEN type='PACKAGE' AND status='CLAIMED'%s THEN 1 ELSE 0 END) AS claimed_packages,
-                   SUM(CASE WHEN type='LETTER' AND unread=0 THEN 1 ELSE 0 END) AS read_letters,
-                   SUM(CASE WHEN type='PACKAGE' AND status='RETURN_CLAIMED'%s THEN 1 ELSE 0 END) AS returned_claims
-              FROM mail
-             WHERE 1=1%s
-             GROUP BY recipient_uuid
-            """.formatted(delivered, delivered, selection("recipient_uuid", selected));
-        try (var statement = prepare(connection, sql, selected);
+        try (var statement = prepare(connection, hasDeliveryPending ? RECIPIENT_PENDING_SQL : RECIPIENT_SQL, selected);
              ResultSet result = statement.executeQuery()) {
             while (result.next()) {
                 UUID id = uuid(result.getString("recipient_uuid"));
