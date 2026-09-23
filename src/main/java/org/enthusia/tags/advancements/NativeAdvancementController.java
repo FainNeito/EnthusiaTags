@@ -40,7 +40,9 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
     private Map<String, RewardDefinition> definitions;
     private BukkitTask task;
     private BukkitTask duelTask;
+    private BukkitTask commendTask;
     private WarzoneAdvancementBridge duels;
+    private CommendAdvancementBridge commend;
     private long nextWarning;
     private boolean registered;
 
@@ -56,6 +58,13 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                 Bukkit.getOnlinePlayers().forEach(player -> duels.beginSession(player.getUniqueId()));
             } else plugin.getLogger().warning("Warzone Duels advancements requested but WarzoneDuels is unavailable; bridge disabled.");
         }
+        if (plugin.getConfig().getBoolean("advancements.commendation-enabled", true)) {
+            var provider = Bukkit.getPluginManager().getPlugin("EnthusiaCommend");
+            if (provider != null && provider.isEnabled()) {
+                commend = new CommendAdvancementBridge(provider.getDataFolder().toPath().resolve("data.yml"));
+                Bukkit.getOnlinePlayers().forEach(player -> commend.beginSession(player.getUniqueId()));
+            } else plugin.getLogger().warning("Reputation advancements requested but EnthusiaCommend is unavailable; bridge disabled.");
+        }
         rebuild();
         if (duels != null) duelTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, new Runnable() {
             private long warningAfter;
@@ -65,6 +74,19 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                     if (System.currentTimeMillis() >= warningAfter) {
                         warningAfter = System.currentTimeMillis() + 60000;
                         plugin.getLogger().warning("Warzone duel statistics unavailable; retaining known advancement progress: " + ex.getMessage());
+                    }
+                }
+            }
+        }, 20L, 100L);
+        if (commend != null) commendTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, new Runnable() {
+            private long warningAfter;
+            @Override public void run() {
+                try { commend.refresh(); }
+                catch (Exception ex) {
+                    if (System.currentTimeMillis() >= warningAfter) {
+                        warningAfter = System.currentTimeMillis() + 60000;
+                        plugin.getLogger().warning("Reputation advancement evidence unavailable; retaining known progress: "
+                            + ex.getMessage());
                     }
                 }
             }
@@ -105,6 +127,10 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         }
         if (duels != null) {
             nodes.addAll(WarzoneAdvancementBridge.nodes(AdvancementLayout.warzoneBaseY(row)));
+        }
+        if (commend != null) {
+            nodes.addAll(CommendAdvancementBridge.nodes(
+                AdvancementLayout.reputationBaseY(row, duels != null)));
         }
         ItemStack icon = new ItemStack(Material.PAPER);
         var meta = icon.getItemMeta();
@@ -191,7 +217,15 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
             if (value >= 0) progress.put(key(reward.getId()), value);
         }
         addDuelProgress(player, progress);
+        addCommendProgress(player, progress);
         return progress;
+    }
+    private void addCommendProgress(Player player, Map<String, Integer> progress) {
+        if (commend == null) return;
+        var update = commend.observe(player.getUniqueId());
+        progress.putAll(update.progress());
+        if (!update.celebrate().isEmpty()) pendingCelebrations
+            .computeIfAbsent(player.getUniqueId(), ignored -> new HashSet<>()).addAll(update.celebrate());
     }
     private void addDuelProgress(Player player, Map<String, Integer> progress) {
         if (duels == null) return;
@@ -214,17 +248,21 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         }
     }
     @EventHandler public void onJoin(PlayerJoinEvent event) {
-        if (duels != null) duels.beginSession(event.getPlayer().getUniqueId());
+        UUID id = event.getPlayer().getUniqueId();
+        if (duels != null) duels.beginSession(id);
+        if (commend != null) commend.beginSession(id);
     }
     @EventHandler public void onQuit(PlayerQuitEvent event) {
         UUID id = event.getPlayer().getUniqueId();
         pendingCelebrations.remove(id);
         if (duels != null) duels.forget(id);
+        if (commend != null) commend.forget(id);
         queue.removeIf(id::equals);
     }
     @Override public void close() {
         if (task != null) task.cancel();
         if (duelTask != null) duelTask.cancel();
+        if (commendTask != null) commendTask.cancel();
         rewards.setAdvancementNotifications(null);
         HandlerList.unregisterAll(this);
         try {

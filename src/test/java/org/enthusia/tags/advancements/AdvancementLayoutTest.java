@@ -37,6 +37,8 @@ class AdvancementLayoutTest {
 
         assertEquals(29, AdvancementLayout.warzoneBaseY(7));
         assertEquals(33, AdvancementLayout.warzoneBaseY(8));
+        assertEquals(29, AdvancementLayout.reputationBaseY(7, false));
+        assertEquals(35, AdvancementLayout.reputationBaseY(7, true));
     }
 
     @Test void unknownFutureRewardKeepsLinearFallback() {

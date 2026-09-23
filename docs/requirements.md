@@ -56,6 +56,14 @@ The user explicitly authorized the remaining non-guild WarzoneDuels advancement 
 
 - REQ-033: WHEN the native Enthusia advancement tree is rendered THE SYSTEM SHALL place all bundled challenge nodes in fixed compact category branches, preserve existing challenge identifiers and requirements, keep future unknown rewards on a deterministic fallback layout, and present Warzone Duels as three branches for mastery, spoils/peace, and special-condition victories.
 
+## Approved follow-on: EnthusiaCommend reputation advancements
+
+- REQ-034: WHEN EnthusiaCommend is available THE SYSTEM SHALL append A Good Word, Well Regarded, Pillar of the Community, Bad Reputation, Public Enemy and Redemption Arc using provider-owned durable reputation evidence without issuing rewards.
+- REQ-035: WHEN positive category high-water evidence reaches five THE SYSTEM SHALL support Kind Soul for WAS_KIND, Generous Spirit for GAVE_ITEMS, Trusted Name for TRUSTWORTHY and Merchant of Merit for GOOD_STALL, while leaving negative-behavior category achievements unimplemented.
+- REQ-036: THE SYSTEM SHALL treat +10 and +20 as the overall positive milestones, -10 and -25 as the overall negative milestones, and recovery from -12-or-lower back to zero-or-higher as Redemption Arc.
+- REQ-037: WHEN historical reputation evidence is first observed for a session THE SYSTEM SHALL restore completed reputation advancements silently and celebrate only later newly observed completions once.
+- REQ-038: IF reputation evidence is missing, unreadable or malformed THE SYSTEM SHALL retain known session progress and retry rather than substituting zero or inferring historical category peaks.
+
 ## PR cleanup safety and verification
 
 - REQ-901: WHEN a live completion is observed THE SYSTEM SHALL recognize its transition once while retaining unacknowledged live evidence across retryable persistence failures.

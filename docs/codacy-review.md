@@ -23,3 +23,7 @@ The Java foundation clean verify passed 146 tests with zero failures/errors/skip
 ## Warzone follow-on
 
 The Warzone parser has been decomposed without relaxing malformed-evidence rejection. Its overlapping-refresh test now blocks a real injected reader rather than modifying a private AtomicBoolean. Implicit-counter regressions use real storage hydration and public progress reads rather than Unsafe or private field access. Clean Java 25 verification passed 176 tests, zero failures/errors/skips; inherited Node and Python gates are run separately. The original nine advancement keys, event counters, opt-in flag and no-reward behavior are unchanged.
+
+## Commendation follow-on
+
+The lengthy test helper argument list is replaced by the existing immutable reputation Stats value, preserving every serialization field and threshold assertion. The provider remains read-only and historical/malformed-data behavior is unchanged. Inherited foundation and Warzone changes remain under the same strict gates.

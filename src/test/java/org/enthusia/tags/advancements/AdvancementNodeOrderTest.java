@@ -30,6 +30,7 @@ class AdvancementNodeOrderTest {
                 placement.y()));
         }
         nodes.addAll(WarzoneAdvancementBridge.nodes(29));
+        nodes.addAll(CommendAdvancementBridge.nodes(35));
         Collections.reverse(nodes);
 
         var ordered = AdvancementNodeOrder.parentFirst(nodes);

@@ -5,6 +5,7 @@ api-version: '26.2'
 author: Enthusia
 softdepend:
   - WarzoneDuels
+  - EnthusiaCommend
   - EnthusiaAdvancements
   - RoseChat
   - PlaceholderAPI
