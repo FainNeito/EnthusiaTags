@@ -47,6 +47,23 @@ class DiaryBridgeTest {
         assertThrows(Exception.class, bridge::refresh);
         assertEquals(live.progress(), bridge.observe(player).progress());
     }
+    @Test void malformedHistoryDoesNotSeedAFalseBaseline() throws Exception {
+        Path file = directory.resolve("shape.yml");
+        Files.writeString(file, "players: []\n");
+        var bridge = new DiaryAdvancementBridge(file);
+        bridge.beginSession(player);
+        assertThrows(IllegalArgumentException.class, bridge::refresh);
+        assertTrue(bridge.observe(player).progress().isEmpty());
+        save(file, 25, 10);
+        bridge.refresh();
+        var restored = bridge.observe(player);
+        assertEquals(1000, restored.progress().get("diary/prolific_writer"));
+        assertTrue(restored.celebrate().isEmpty());
+        Files.writeString(file, "players:\n  " + player + ":\n    issuedAt: broken\n");
+        assertThrows(IllegalArgumentException.class, bridge::refresh);
+        assertEquals(restored.progress(), bridge.observe(player).progress());
+    }
+
     @Test void nodesUseTheDiaryBranchesAndHaveNoRewards() {
         var nodes = DiaryAdvancementBridge.nodes(49, 815002);
         assertEquals(8, nodes.size());

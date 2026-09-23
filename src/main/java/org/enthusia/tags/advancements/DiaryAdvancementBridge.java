@@ -4,7 +4,6 @@ import io.github.badgersmc.advancements.pilot.ProjectionService;
 import org.bukkit.Material;
 import org.enthusia.tags.advancements.domain.DiaryMilestoneProgress;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -36,7 +35,7 @@ final class DiaryAdvancementBridge {
         if (!refreshing.compareAndSet(false, true)) return;
         long started = System.nanoTime();
         try {
-            latest = new Snapshot(started, DiaryStatsReader.parse(Files.readString(file)));
+            latest = new Snapshot(started, DiaryStatsReader.read(file));
         } catch (Exception failure) {
             latest = null;
             throw failure;

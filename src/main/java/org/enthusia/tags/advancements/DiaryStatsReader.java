@@ -7,6 +7,9 @@ import org.enthusia.tags.advancements.domain.DiaryMilestoneProgress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /** Strict read-only adapter for DiaryKeeper's persisted advancement evidence. */
 final class DiaryStatsReader {
@@ -16,7 +19,20 @@ final class DiaryStatsReader {
     static Map<UUID, DiaryMilestoneProgress.Stats> parse(String yaml) throws Exception {
         YamlConfiguration config = new YamlConfiguration();
         config.loadFromString(yaml);
-        ConfigurationSection players = config.getConfigurationSection("players");
+        return parseConfiguration(config);
+    }
+
+    static Map<UUID, DiaryMilestoneProgress.Stats> read(Path file) throws Exception {
+        YamlConfiguration config = new YamlConfiguration();
+        // load(Reader) propagates malformed input; loadConfiguration(File) would log and return defaults.
+        try (var reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+            config.load(reader);
+        }
+        return parseConfiguration(config);
+    }
+
+    private static Map<UUID, DiaryMilestoneProgress.Stats> parseConfiguration(YamlConfiguration config) {
+        ConfigurationSection players = optionalSection(config, "players");
         if (players == null) {
             return Map.of();
         }
@@ -27,7 +43,9 @@ final class DiaryStatsReader {
             if (!player.toString().equalsIgnoreCase(key)) {
                 throw new IllegalArgumentException("Invalid DiaryKeeper player UUID");
             }
-            result.put(player, parsePlayer(players.getConfigurationSection(key)));
+            if (result.putIfAbsent(player, parsePlayer(players.getConfigurationSection(key))) != null) {
+                throw new IllegalArgumentException("Duplicate player UUID in DiaryKeeper evidence");
+            }
         }
         return Map.copyOf(result);
     }
@@ -35,8 +53,8 @@ final class DiaryStatsReader {
         if (player == null) {
             throw new IllegalArgumentException("Invalid DiaryKeeper player record");
         }
-        long issuedAt = player.getLong("issuedAt", 0L);
-        ConfigurationSection evidence = player.getConfigurationSection("advancements");
+        long issuedAt = issuanceTimestamp(player.get("issuedAt"));
+        ConfigurationSection evidence = optionalSection(player, "advancements");
         if (evidence == null) {
             return new DiaryMilestoneProgress.Stats(
                 issuedAt > 0, 0, 0, 0, 0, 0);
@@ -53,6 +71,21 @@ final class DiaryStatsReader {
             counter(evidence, "containerAttempts"),
             counter(evidence, "groundPickups")
         );
+    }
+
+    private static ConfigurationSection optionalSection(ConfigurationSection parent, String key) {
+        ConfigurationSection result = parent.getConfigurationSection(key);
+        if (result == null && parent.contains(key)) {
+            throw new IllegalArgumentException("Invalid DiaryKeeper section: " + key);
+        }
+        return result;
+    }
+
+    private static long issuanceTimestamp(Object value) {
+        if (value == null) return 0L;
+        if (value instanceof Integer number && number >= 0) return number.longValue();
+        if (value instanceof Long number && number >= 0L) return number;
+        throw new IllegalArgumentException("Invalid DiaryKeeper issuance timestamp");
     }
 
     private static int counter(ConfigurationSection section, String key) {
