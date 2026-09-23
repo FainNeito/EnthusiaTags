@@ -95,17 +95,10 @@ final class ExpressStatsReader {
         readRecipientStats(connection, players, deliveryPending, selected);
     }
 
-    private static PreparedStatement prepare(Connection connection, String sql, List<UUID> selected) throws SQLException {
-        PreparedStatement statement = connection.prepareStatement(sql);
-        try {
-            String ids = selected == null ? null : uuidJson(selected);
-            statement.setString(1, ids);
-            statement.setString(2, ids);
-            return statement;
-        } catch (SQLException | RuntimeException failure) {
-            try { statement.close(); } catch (SQLException closeFailure) { failure.addSuppressed(closeFailure); }
-            throw failure;
-        }
+    private static void bindSelection(PreparedStatement statement, List<UUID> selected) throws SQLException {
+        String ids = selected == null ? null : uuidJson(selected);
+        statement.setString(1, ids);
+        statement.setString(2, ids);
     }
 
     private static String uuidJson(List<UUID> selected) {
@@ -143,14 +136,16 @@ final class ExpressStatsReader {
         Map<UUID, MutableStats> players,
         List<UUID> selected
     ) throws SQLException {
-        try (var statement = prepare(connection, SENDER_SQL, selected);
-             ResultSet result = statement.executeQuery()) {
-            while (result.next()) {
-                UUID id = uuid(result.getString("sender_uuid"));
-                MutableStats stats = players.computeIfAbsent(id, ignored -> new MutableStats());
-                stats.sentPackages = safeInt(result.getLong("sent_packages"));
-                stats.sentLetters = safeInt(result.getLong("sent_letters"));
-                stats.maxPackedItems = safeInt(result.getLong("max_packed"));
+        try (var statement = connection.prepareStatement(SENDER_SQL)) {
+            bindSelection(statement, selected);
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) {
+                    UUID id = uuid(result.getString("sender_uuid"));
+                    MutableStats stats = players.computeIfAbsent(id, ignored -> new MutableStats());
+                    stats.sentPackages = safeInt(result.getLong("sent_packages"));
+                    stats.sentLetters = safeInt(result.getLong("sent_letters"));
+                    stats.maxPackedItems = safeInt(result.getLong("max_packed"));
+                }
             }
         }
     }
@@ -163,14 +158,18 @@ final class ExpressStatsReader {
         // recipient_uuid is the current mailbox owner. MailRepository.expire rewrites it
         // to sender_uuid before a normal return can become RETURN_CLAIMED; see the
         // pinned provider contract in docs/express-history-contract.md.
-        try (var statement = prepare(connection, hasDeliveryPending ? RECIPIENT_PENDING_SQL : RECIPIENT_SQL, selected);
-             ResultSet result = statement.executeQuery()) {
-            while (result.next()) {
-                UUID id = uuid(result.getString("recipient_uuid"));
-                MutableStats stats = players.computeIfAbsent(id, ignored -> new MutableStats());
-                stats.claimedPackages = safeInt(result.getLong("claimed_packages"));
-                stats.readLetters = safeInt(result.getLong("read_letters"));
-                stats.returnedClaims = safeInt(result.getLong("returned_claims"));
+        try (var statement = hasDeliveryPending
+            ? connection.prepareStatement(RECIPIENT_PENDING_SQL)
+            : connection.prepareStatement(RECIPIENT_SQL)) {
+            bindSelection(statement, selected);
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) {
+                    UUID id = uuid(result.getString("recipient_uuid"));
+                    MutableStats stats = players.computeIfAbsent(id, ignored -> new MutableStats());
+                    stats.claimedPackages = safeInt(result.getLong("claimed_packages"));
+                    stats.readLetters = safeInt(result.getLong("read_letters"));
+                    stats.returnedClaims = safeInt(result.getLong("returned_claims"));
+                }
             }
         }
     }
