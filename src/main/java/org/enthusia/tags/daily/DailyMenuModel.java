@@ -20,7 +20,7 @@ final class DailyMenuModel {
 
         int nextDay = DailyRules.nextStreak(state.lastClaimDate(), currentDate, state.currentStreak());
         int activeDay = nextDay == 0 ? Math.max(1, state.currentStreak()) : nextDay;
-        int completedDays = completedDays(state, currentDate);
+        int completedDays = completedDays(state, currentDate, nextDay);
         List<Day> days = new ArrayList<>(TRACK_LENGTH);
         int claimIndex = -1;
 
@@ -52,13 +52,13 @@ final class DailyMenuModel {
         };
     }
 
-    private static int completedDays(DailyState state, LocalDate currentDate) {
+    private static int completedDays(DailyState state, LocalDate currentDate, int nextDay) {
         LocalDate lastClaim = state.lastClaimDate();
         if (lastClaim == null) {
             return 0;
         }
         boolean streakStillActive = lastClaim.equals(currentDate)
-            || lastClaim.plusDays(1).equals(currentDate);
+            || (state.currentStreak() >= 1 && nextDay == state.currentStreak() + 1);
         return streakStillActive ? Math.max(0, state.currentStreak()) : 0;
     }
 

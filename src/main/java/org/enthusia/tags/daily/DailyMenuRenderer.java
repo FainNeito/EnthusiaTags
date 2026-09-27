@@ -26,6 +26,7 @@ final class DailyMenuRenderer {
 
     DailyMenuRenderer(JavaPlugin plugin) {
         this.plugin = plugin;
+        DailyMaintenancePolicy.initialize(plugin);
     }
 
     Inventory createMenu(DailyMenuModel.View view) {
@@ -59,17 +60,22 @@ final class DailyMenuRenderer {
 
     ItemStack dayItem(DailyMenuModel.Day day) {
         DailyMenuModel.Status status = day.status();
+        boolean maintenancePaused = status.claimable() && DailyMaintenancePolicy.claimsPaused();
+        NamedTextColor displayColor = maintenancePaused ? NamedTextColor.YELLOW : statusColor(status);
         List<Component> lore = new ArrayList<>(3);
         lore.add(Component.text("Amount: ", NamedTextColor.GRAY)
             .append(Component.text(formatAmount(day.amount()) + " " + currencyLabel(), NamedTextColor.GOLD)));
         if (day.rolling()) {
             lore.add(Component.text("Day 7+ streak reward", NamedTextColor.LIGHT_PURPLE));
         }
-        lore.add(Component.text(statusText(status), statusColor(status)));
+        lore.add(Component.text(maintenancePaused
+            ? "Paused for maintenance — your streak is protected"
+            : statusText(status), displayColor));
 
-        Material material = day.rolling() ? Material.NETHER_STAR : statusMaterial(status);
-        return item(material, Component.text("Day " + day.number(), statusColor(status)),
-            lore, status.claimable());
+        Material material = maintenancePaused ? Material.CLOCK
+            : day.rolling() ? Material.NETHER_STAR : statusMaterial(status);
+        return item(material, Component.text("Day " + day.number(), displayColor),
+            lore, status.claimable() && !maintenancePaused);
     }
 
     ItemStack decorativeItem(Material material, String name, NamedTextColor color, boolean glowing) {
@@ -91,6 +97,9 @@ final class DailyMenuRenderer {
     }
 
     private int claimSlot(DailyMenuModel.View view) {
+        if (DailyMaintenancePolicy.claimsPaused()) {
+            return -1;
+        }
         return view.claimIndex() < 0 ? -1 : DAY_SLOTS.get(view.claimIndex());
     }
 

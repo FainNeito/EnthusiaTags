@@ -8,9 +8,15 @@ public final class DailyRules {
     }
 
     public static int nextStreak(LocalDate lastClaim, LocalDate today, int currentStreak) {
+        return nextStreak(lastClaim, today, currentStreak, DailyMaintenancePolicy.windowsSnapshot());
+    }
+
+    static int nextStreak(LocalDate lastClaim, LocalDate today, int currentStreak,
+                          List<DailyMaintenanceWindow> maintenanceWindows) {
         if (lastClaim == null) return 1;
         if (lastClaim.equals(today)) return 0;
-        return lastClaim.plusDays(1).equals(today) ? Math.max(1, currentStreak + 1) : 1;
+        return DailyMaintenancePolicy.streakContinues(lastClaim, today, maintenanceWindows)
+            ? Math.max(1, currentStreak + 1) : 1;
     }
 
     public static double payout(int streak, List<Double> schedule) {
