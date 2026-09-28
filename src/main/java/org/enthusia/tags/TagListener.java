@@ -24,17 +24,24 @@ import org.bukkit.potion.PotionEffectType;
 import org.enthusia.tags.rewards.RewardMenu;
 import org.enthusia.tags.rewards.RewardService;
 
+import java.util.Locale;
+
 public final class TagListener implements Listener {
     private final TagService tagService;
     private final TagMenu tagMenu;
     private final RewardMenu rewardMenu;
     private final RewardService rewardService;
+    private final LuckPermsPortableEntitlementGateway portableEntitlements;
 
     public TagListener(TagService tagService, RewardService rewardService) {
         this.tagService = tagService;
         this.tagMenu = new TagMenu(tagService);
         this.rewardMenu = new RewardMenu(rewardService, tagService);
         this.rewardService = rewardService;
+        this.portableEntitlements = new LuckPermsPortableEntitlementGateway(tagService.getPlugin());
+        if (FrontierPortableTagCatalog.ensureInstalled(tagService.getPlugin())) {
+            tagService.reloadAll();
+        }
     }
 
     @EventHandler
@@ -44,7 +51,9 @@ public final class TagListener implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        tagService.loadPlayer(event.getPlayer());
+        Player player = event.getPlayer();
+        tagService.loadPlayer(player);
+        Bukkit.getScheduler().runTask(tagService.getPlugin(), () -> reconcilePortableEntitlements(player));
     }
 
     @EventHandler
@@ -118,6 +127,46 @@ public final class TagListener implements Listener {
         boolean updated = tagService.setSelectedTag(player, tagId);
         player.closeInventory();
         player.sendMessage(updated ? message("tag-selected-self") : message("tag-not-owned-self"));
+    }
+
+    private void reconcilePortableEntitlements(Player player) {
+        if (!player.isOnline()) {
+            return;
+        }
+        PlayerTagData data = tagService.getPlayerData(player.getUniqueId());
+        for (FrontierPortableTagCatalog.SystemTag tag : FrontierPortableTagCatalog.tags()) {
+            reconcilePortableEntitlement(player, data, tag);
+        }
+    }
+
+    private void reconcilePortableEntitlement(Player player, PlayerTagData data,
+                                              FrontierPortableTagCatalog.SystemTag tag) {
+        String tagId = tag.id().toLowerCase(Locale.ROOT);
+        LuckPermsPortableEntitlementGateway.Status status =
+            portableEntitlements.status(player.getUniqueId(), tag.permission());
+        if (status == LuckPermsPortableEntitlementGateway.Status.UNKNOWN) {
+            return;
+        }
+
+        boolean owned = data.getOwnedTags().contains(tagId);
+        if (status == LuckPermsPortableEntitlementGateway.Status.PRESENT) {
+            if (!owned) {
+                grantPortableTag(player, tag, tagId);
+            }
+            return;
+        }
+        if (owned) {
+            tagService.revokeTag(player.getUniqueId(), tagId);
+        }
+    }
+
+    private void grantPortableTag(Player player, FrontierPortableTagCatalog.SystemTag tag, String tagId) {
+        tagService.grantTagPersisted(player.getUniqueId(), tagId).thenAccept(success -> {
+            if (!success) {
+                tagService.getPlugin().getLogger().warning(
+                    "Could not project portable entitlement " + tag.permission() + " into tag " + tagId);
+            }
+        });
     }
 
     private Component message(String key) {
