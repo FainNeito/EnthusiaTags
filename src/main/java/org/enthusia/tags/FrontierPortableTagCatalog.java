@@ -9,7 +9,7 @@ import java.util.List;
  * Missing values are installed without overwriting administrator edits.
  */
 final class FrontierPortableTagCatalog {
-    private static final List<SystemTag> TAGS = List.of(
+    private static final List<SystemTag> DEFINITIONS = List.of(
         tag("frontier_first_diamonds", "<bold><#5FD3FF>Diamond Pioneer", "DIAMOND",
             "&7First to obtain Diamonds on Frontier Test.", "enthusia.frontier.first.diamonds"),
         tag("frontier_first_nether", "<bold><#FF6B6B>Nether Pioneer", "NETHERRACK",
@@ -60,7 +60,7 @@ final class FrontierPortableTagCatalog {
     static boolean ensureInstalled(EnthusiaTagsPlugin plugin) {
         FileConfiguration config = plugin.getConfig();
         boolean changed = false;
-        for (SystemTag tag : TAGS) {
+        for (SystemTag tag : DEFINITIONS) {
             String root = "tags." + tag.id();
             changed |= setIfMissing(config, root + ".display-name", tag.displayName());
             changed |= setIfMissing(config, root + ".tag-text", tag.displayName());
@@ -76,7 +76,7 @@ final class FrontierPortableTagCatalog {
     }
 
     static List<SystemTag> tags() {
-        return TAGS;
+        return DEFINITIONS;
     }
 
     private static boolean setIfMissing(FileConfiguration config, String path, Object value) {
