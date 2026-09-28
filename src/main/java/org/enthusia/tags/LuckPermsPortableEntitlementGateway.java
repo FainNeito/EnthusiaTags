@@ -13,6 +13,8 @@ import java.util.UUID;
  * wildcard/inherited permissions are intentionally ignored.
  */
 final class LuckPermsPortableEntitlementGateway {
+    private static final String LUCKPERMS_API_CLASS = "net.luckperms.api.LuckPerms";
+
     enum Status {
         PRESENT,
         ABSENT,
@@ -31,28 +33,7 @@ final class LuckPermsPortableEntitlementGateway {
             return Status.UNKNOWN;
         }
         try {
-            Object api = api(luckPerms);
-            Object userManager = call(api, "getUserManager");
-            Object user = userManager.getClass().getMethod("getUser", UUID.class).invoke(userManager, uuid);
-            if (user == null) {
-                return Status.UNKNOWN;
-            }
-            Object nodesValue = call(user, "getNodes");
-            if (!(nodesValue instanceof Collection<?> nodes)) {
-                return Status.UNKNOWN;
-            }
-            for (Object node : nodes) {
-                Object key = call(node, "getKey");
-                Object value = call(node, "getValue");
-                Object contexts = call(node, "getContexts");
-                Object empty = call(contexts, "isEmpty");
-                if (permission.equalsIgnoreCase(String.valueOf(key))
-                    && Boolean.TRUE.equals(value)
-                    && Boolean.TRUE.equals(empty)) {
-                    return Status.PRESENT;
-                }
-            }
-            return Status.ABSENT;
+            return statusFromLoadedUser(uuid, permission);
         } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
             plugin.getLogger().warning("Portable LuckPerms entitlement verification failed: "
                 + exception.getMessage());
@@ -60,15 +41,59 @@ final class LuckPermsPortableEntitlementGateway {
         }
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    private Object api(Plugin luckPerms) throws ReflectiveOperationException {
-        Class<?> apiClass = Class.forName(
-            "net.luckperms.api.LuckPerms", true, luckPerms.getClass().getClassLoader());
-        RegisteredServiceProvider registration = Bukkit.getServicesManager().getRegistration((Class) apiClass);
-        if (registration == null || registration.getProvider() == null) {
-            throw new ReflectiveOperationException("LuckPerms service unavailable");
+    private Status statusFromLoadedUser(UUID uuid, String permission) throws ReflectiveOperationException {
+        Object api = api();
+        Object userManager = call(api, "getUserManager");
+        Object user = userManager.getClass().getMethod("getUser", UUID.class).invoke(userManager, uuid);
+        if (user == null) {
+            return Status.UNKNOWN;
         }
-        return registration.getProvider();
+        Collection<?> nodes = nodes(user);
+        return ownsExactGlobalNode(nodes, permission) ? Status.PRESENT : Status.ABSENT;
+    }
+
+    private Collection<?> nodes(Object user) throws ReflectiveOperationException {
+        Object nodesValue = call(user, "getNodes");
+        if (nodesValue instanceof Collection<?> nodes) {
+            return nodes;
+        }
+        throw new ReflectiveOperationException("LuckPerms getNodes returned unexpected type");
+    }
+
+    private boolean ownsExactGlobalNode(Collection<?> nodes, String permission)
+            throws ReflectiveOperationException {
+        for (Object node : nodes) {
+            if (isExactGlobalPositiveNode(node, permission)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isExactGlobalPositiveNode(Object node, String permission)
+            throws ReflectiveOperationException {
+        Object key = call(node, "getKey");
+        Object value = call(node, "getValue");
+        Object contexts = call(node, "getContexts");
+        Object empty = call(contexts, "isEmpty");
+        return permission.equalsIgnoreCase(String.valueOf(key))
+            && Boolean.TRUE.equals(value)
+            && Boolean.TRUE.equals(empty);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private Object api() throws ReflectiveOperationException {
+        for (Class<?> serviceClass : Bukkit.getServicesManager().getKnownServices()) {
+            if (!LUCKPERMS_API_CLASS.equals(serviceClass.getName())) {
+                continue;
+            }
+            RegisteredServiceProvider registration =
+                Bukkit.getServicesManager().getRegistration((Class) serviceClass);
+            if (registration != null && registration.getProvider() != null) {
+                return registration.getProvider();
+            }
+        }
+        throw new ReflectiveOperationException("LuckPerms service unavailable");
     }
 
     private Object call(Object target, String method) throws ReflectiveOperationException {
