@@ -135,24 +135,38 @@ public final class TagListener implements Listener {
         }
         PlayerTagData data = tagService.getPlayerData(player.getUniqueId());
         for (FrontierPortableTagCatalog.SystemTag tag : FrontierPortableTagCatalog.tags()) {
-            String tagId = tag.id().toLowerCase(Locale.ROOT);
-            LuckPermsPortableEntitlementGateway.Status status =
-                portableEntitlements.status(player.getUniqueId(), tag.permission());
-            if (status == LuckPermsPortableEntitlementGateway.Status.UNKNOWN) {
-                continue;
-            }
-            boolean owned = data.getOwnedTags().contains(tagId);
-            if (status == LuckPermsPortableEntitlementGateway.Status.PRESENT && !owned) {
-                tagService.grantTagPersisted(player.getUniqueId(), tagId).thenAccept(success -> {
-                    if (!success) {
-                        tagService.getPlugin().getLogger().warning(
-                            "Could not project portable entitlement " + tag.permission() + " into tag " + tagId);
-                    }
-                });
-            } else if (status == LuckPermsPortableEntitlementGateway.Status.ABSENT && owned) {
-                tagService.revokeTag(player.getUniqueId(), tagId);
-            }
+            reconcilePortableEntitlement(player, data, tag);
         }
+    }
+
+    private void reconcilePortableEntitlement(Player player, PlayerTagData data,
+                                              FrontierPortableTagCatalog.SystemTag tag) {
+        String tagId = tag.id().toLowerCase(Locale.ROOT);
+        LuckPermsPortableEntitlementGateway.Status status =
+            portableEntitlements.status(player.getUniqueId(), tag.permission());
+        if (status == LuckPermsPortableEntitlementGateway.Status.UNKNOWN) {
+            return;
+        }
+
+        boolean owned = data.getOwnedTags().contains(tagId);
+        if (status == LuckPermsPortableEntitlementGateway.Status.PRESENT) {
+            if (!owned) {
+                grantPortableTag(player, tag, tagId);
+            }
+            return;
+        }
+        if (owned) {
+            tagService.revokeTag(player.getUniqueId(), tagId);
+        }
+    }
+
+    private void grantPortableTag(Player player, FrontierPortableTagCatalog.SystemTag tag, String tagId) {
+        tagService.grantTagPersisted(player.getUniqueId(), tagId).thenAccept(success -> {
+            if (!success) {
+                tagService.getPlugin().getLogger().warning(
+                    "Could not project portable entitlement " + tag.permission() + " into tag " + tagId);
+            }
+        });
     }
 
     private Component message(String key) {
