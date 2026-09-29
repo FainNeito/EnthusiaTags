@@ -36,7 +36,7 @@ final class CommendStatsReader {
                 throw new IllegalArgumentException("Invalid reputation evidence record");
             }
             if (result.putIfAbsent(playerId, parsePlayer(player)) != null) {
-                throw new IllegalArgumentException("Duplicate player UUID in reputation evidence");
+                throw new IllegalArgumentException("Duplicate reputation player UUID");
             }
         }
         return Map.copyOf(result);

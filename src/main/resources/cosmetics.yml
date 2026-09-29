@@ -1,4 +1,5 @@
 config-version: 3
+supporter-presentation-version: 1
 
 categories:
   kill:
@@ -721,3 +722,131 @@ cosmetics:
     message: "&#7bdc5f{player} &7peace out."
     icon: "LIME_DYE"
     permission: "enthusia.cosmetics.quit_peace"
+
+  # Permanent supporter and legacy entitlement cosmetics.
+  join_prologue_champion:
+    name: "&#b56cff&lPrologue Champion Arrival"
+    category: "join"
+    type: JOIN_MESSAGE
+    message: "<dark_red><bold>Billionaire Redstone Genius philosopher leading Mart Clan; Flomish has arrived</bold></dark_red>"
+    icon: "AMETHYST_SHARD"
+    permission: "enthusiatags.entitlement.prologue_champion"
+  quit_prologue_champion:
+    name: "&#ff3b30&lFlomish Farewell"
+    category: "quit"
+    type: QUIT_MESSAGE
+    message: "&#ff0000Y&#ff2b2bo&#ff5555u&#ff8080T&#ffaaaau&#ffd5d5b&#ffffffe &f[Flomish] &7has left\n&7please come back soon king"
+    icon: "RED_DYE"
+    permission: "enthusiatags.entitlement.prologue_champion"
+
+  trail_bug_hunter:
+    name: "&#55ff55&lBug Hunter"
+    category: "trail"
+    type: TRAIL_PARTICLE
+    particle: "HAPPY_VILLAGER"
+    icon: "SLIME_BALL"
+    count: 4
+    spread: 0.18
+    speed: 0.01
+    permission: "enthusiatags.entitlement.bug_hunter"
+
+  join_avid_supporter:
+    name: "&#ffb347&lAvid Arrival"
+    category: "join"
+    type: JOIN_MESSAGE
+    message: "<green>+</green> {prefix}{player} #00b9e8has spawned in."
+    icon: "GOLD_NUGGET"
+    permission: "enthusiatags.entitlement.donor_avid"
+  quit_avid_supporter:
+    name: "&#ffb347&lAvid Farewell"
+    category: "quit"
+    type: QUIT_MESSAGE
+    message: "<red>-</red> {prefix}{player} #00b9e8has despawned."
+    icon: "GOLD_NUGGET"
+    permission: "enthusiatags.entitlement.donor_avid"
+
+  join_founding_avid:
+    name: "&#ffd166&lFounding Avid Arrival"
+    category: "join"
+    type: JOIN_MESSAGE
+    message: "<green>+</green> {prefix}{player} #00b9e8has spawned in."
+    icon: "CLOCK"
+    permission: "enthusiatags.entitlement.donor_avid_founder"
+  quit_founding_avid:
+    name: "&#ffd166&lFounding Avid Farewell"
+    category: "quit"
+    type: QUIT_MESSAGE
+    message: "<red>-</red> {prefix}{player} #00b9e8has despawned."
+    icon: "CLOCK"
+    permission: "enthusiatags.entitlement.donor_avid_founder"
+
+  join_devotee_supporter:
+    name: "&#d16bff&lDevotee Arrival"
+    category: "join"
+    type: JOIN_MESSAGE
+    message: "<green>+</green> {prefix}{player} #0034FFhas arrived!"
+    icon: "AMETHYST_SHARD"
+    permission: "enthusiatags.entitlement.donor_devotee"
+  quit_devotee_supporter:
+    name: "&#d16bff&lDevotee Farewell"
+    category: "quit"
+    type: QUIT_MESSAGE
+    message: "<red>-</red> {prefix}{player} #0034FFhas departed."
+    icon: "AMETHYST_SHARD"
+    permission: "enthusiatags.entitlement.donor_devotee"
+
+  join_founding_devotee:
+    name: "&#ffd166&lFounding Devotee Arrival"
+    category: "join"
+    type: JOIN_MESSAGE
+    message: "<green>+</green> {prefix}{player} #0034FFhas arrived!"
+    icon: "NETHER_STAR"
+    permission: "enthusiatags.entitlement.donor_devotee_founder"
+  quit_founding_devotee:
+    name: "&#ffd166&lFounding Devotee Farewell"
+    category: "quit"
+    type: QUIT_MESSAGE
+    message: "<red>-</red> {prefix}{player} #0034FFhas departed."
+    icon: "NETHER_STAR"
+    permission: "enthusiatags.entitlement.donor_devotee_founder"
+
+  join_glorious_legacy:
+    name: "&#ffd700&lGlorious Arrival"
+    category: "join"
+    type: JOIN_MESSAGE
+    message: "<green>+</green> {prefix}{player} #ef6a1ehas joined the server!"
+    icon: "GOLD_BLOCK"
+    permission: "enthusiatags.entitlement.donor_glorious"
+  quit_glorious_legacy:
+    name: "&#ffd700&lGlorious Farewell"
+    category: "quit"
+    type: QUIT_MESSAGE
+    message: "<red>-</red> {prefix}{player} #ef6a1ehas left the server."
+    icon: "GOLD_BLOCK"
+    permission: "enthusiatags.entitlement.donor_glorious"
+
+  join_founding_glorious:
+    name: "&#ffb000&lFounding Glorious Arrival"
+    category: "join"
+    type: JOIN_MESSAGE
+    message: "<green>+</green> {prefix}{player} #ef6a1ehas joined the server!"
+    icon: "BEACON"
+    permission: "enthusiatags.entitlement.donor_glorious_founder"
+  quit_founding_glorious:
+    name: "&#ffb000&lFounding Glorious Farewell"
+    category: "quit"
+    type: QUIT_MESSAGE
+    message: "<red>-</red> {prefix}{player} #ef6a1ehas left the server."
+    icon: "BEACON"
+    permission: "enthusiatags.entitlement.donor_glorious_founder"
+
+  trail_glorious_current:
+    name: "&#ffd700&lGlorious Aura"
+    category: "trail"
+    type: TRAIL_PARTICLE
+    particle: "TOTEM"
+    icon: "TOTEM_OF_UNDYING"
+    count: 5
+    spread: 0.22
+    speed: 0.01
+    permission: "enthusiatags.reward.glorious"

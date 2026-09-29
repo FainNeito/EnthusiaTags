@@ -1,0 +1,354 @@
+definitions:
+  beta_tester:
+    source: "Legacy: Beta Tester - 4+ hours during Enthusia betas"
+    permanent: true
+    tags: [beta_tester]
+    cosmetics: []
+  prologue_champion:
+    source: "Legacy: Prologue EOTW Champion"
+    permanent: true
+    tags: [prologue_champion]
+    cosmetics: [join_prologue_champion, quit_prologue_champion]
+  bug_hunter_hall_of_fame:
+    source: "Legacy: Bug Hunter's Hall of Fame"
+    permanent: true
+    tags: [exterminator]
+    cosmetics: [trail_bug_hunter]
+  donor_avid:
+    source: "Supporter: Avid"
+    permanent: true
+    tags: [avid]
+    cosmetics: [join_avid_supporter, quit_avid_supporter]
+    active-cosmetics: [kill_sparks, kill_arc, kill_blaze, death_smoke, death_cloud, trail_mist, trail_glow, trail_leaf, proj_spark, proj_flame, trail_spiral_glow, join_clean, quit_clean, km_gg]
+    qualification:
+      permission: "enthusiatags.reward.avid"
+      groups: [avid, avid-founder, devotee, devotee-founder, glorious, glorious-founders, media, media-founder]
+  donor_avid_founder:
+    source: "Legacy Supporter: Avid Founder"
+    permanent: true
+    tags: [founding_avid]
+    cosmetics: [join_founding_avid, quit_founding_avid]
+    qualification:
+      permission: "enthusiatags.reward.avid-founder"
+      groups: [avid-founder, devotee-founder, glorious-founders]
+  donor_devotee:
+    source: "Supporter: Devotee"
+    permanent: true
+    tags: [devotee]
+    cosmetics: [join_devotee_supporter, quit_devotee_supporter]
+    active-cosmetics: [kill_soul, kill_dragon, kill_portal, kill_totem, kill_starfall, death_frost, death_soulfire, death_tnt, trail_dragon, trail_portal, trail_totem, proj_dragon, proj_portal, trail_spiral_portal, join_flashy, quit_smoke, km_obliterated, km_cancelled]
+    qualification:
+      permission: "enthusiatags.reward.devotee"
+      groups: [devotee, devotee-founder, glorious, glorious-founders, media, media-founder]
+  donor_devotee_founder:
+    source: "Legacy Supporter: Devotee Founder"
+    permanent: true
+    tags: [founding_devotee]
+    cosmetics: [join_founding_devotee, quit_founding_devotee]
+    qualification:
+      permission: "enthusiatags.reward.devotee-founder"
+      groups: [devotee-founder, glorious-founders]
+  donor_glorious:
+    source: "Achievement: Glorious - Top Donor of the Month"
+    permanent: true
+    tags: [glorious_fellow]
+    cosmetics: [join_glorious_legacy, quit_glorious_legacy]
+    active-cosmetics: [trail_glorious_current]
+    qualification:
+      permission: "enthusiatags.reward.glorious"
+      groups: [glorious, glorious-founders]
+  donor_glorious_founder:
+    source: "Legacy Supporter: Glorious Founder"
+    permanent: true
+    tags: [founding_glorious]
+    cosmetics: [join_founding_glorious, quit_founding_glorious]
+    qualification:
+      permission: "enthusiatags.reward.glorious-founder"
+      groups: [glorious-founders]
+
+legacy-grants:
+  ea04ab7f-3378-4660-81de-6747e5a70008:
+    name: "BaLIneA"
+    entitlements: [beta_tester]
+  9cd51410-5674-479e-8799-31f7c7a74a0c:
+    name: "Stinky04XD"
+    entitlements: [beta_tester]
+  9ea84cce-9fea-4a22-bdcf-301509b8de10:
+    name: "ToxikFlame11"
+    entitlements: [beta_tester, bug_hunter_hall_of_fame]
+    metadata:
+      bug_hunter_hall_of_fame: "placement=3;bugs=6"
+  22e816d0-c749-4dcf-b797-3f26507488bd:
+    name: "Rafffff3282"
+    entitlements: [beta_tester]
+  51dd6d58-af99-41ac-8985-e55f11561cc6:
+    name: "SleepingOnCheese"
+    entitlements: [beta_tester]
+  0a51c4ef-89b4-4560-ac2f-1f554ae28add:
+    name: "LavKun"
+    entitlements: [beta_tester]
+  7149067a-53b8-4ec5-8885-0dcbd8b0caa4:
+    name: "RadiOwO_"
+    entitlements: [beta_tester]
+  c582d6ad-f112-47d4-883e-03874a438601:
+    name: "Ayn4rch"
+    entitlements: [beta_tester]
+  735f6bdc-45ef-4dd9-b8ed-d59097eb9134:
+    name: "SirBobert"
+    entitlements: [beta_tester]
+  a8147485-8e54-46f7-b265-599175ff57d8:
+    name: "pahvilaatikko564"
+    entitlements: [beta_tester]
+  ec20699f-c3cd-4eaf-bd42-001e3261f726:
+    name: "Techno_theDev"
+    entitlements: [beta_tester]
+  68aacf87-855e-4e83-8cc7-d134cd7cbc1b:
+    name: "Za_Reaper"
+    entitlements: [beta_tester]
+  018512b3-9bd5-43cd-8983-855edd8f64c1:
+    name: "DakLord3"
+    entitlements: [beta_tester]
+  cb074c87-e3bd-4314-85d1-ddd87f17dec4:
+    name: "oakWho0d"
+    entitlements: [beta_tester]
+  a368d767-e196-4a3b-9726-8edf7948b61f:
+    name: "FainNeito"
+    entitlements: [beta_tester]
+  79c0a9e1-3887-48a1-822c-c27dbf8ce898:
+    name: "mr_RAAAAH"
+    entitlements: [beta_tester]
+  3adf20fe-5127-47d4-bce4-b94d37815150:
+    name: "SarahNovaSpring"
+    entitlements: [beta_tester]
+  d679973f-9a61-4650-9851-2433ca3314d9:
+    name: "Zom_B_Kitty_26"
+    entitlements: [beta_tester]
+  cabdb4e5-4f1d-42e7-9f88-b8914ffecbe7:
+    name: "FainNoir"
+    entitlements: [beta_tester]
+  44baffa8-88d0-4f6a-8eb1-2f4edfc35c76:
+    name: "ShadowGamerz0"
+    entitlements: [beta_tester]
+  dfd0b0d3-7374-43c2-aca5-7f420f0a16b1:
+    name: "WavingBird"
+    entitlements: [beta_tester]
+  8ee68ce2-b557-4a44-9c58-61e32f91d101:
+    name: "Solan231"
+    entitlements: [beta_tester]
+  5677bd81-d0ec-4ad8-b772-2aa418d91fe0:
+    name: "Tenshinhan25"
+    entitlements: [beta_tester]
+  f53b9522-15e1-405c-bb2e-8170b55b20ca:
+    name: "kostpits13_"
+    entitlements: [beta_tester]
+  fd2f8832-322f-4ede-b5e3-1f9eb5ba7001:
+    name: "bslcheat"
+    entitlements: [beta_tester]
+  a7e041ad-b0fd-4479-b607-15d73e907cad:
+    name: "Aquaticcs"
+    entitlements: [beta_tester]
+  00000000-0000-0000-0009-01f7bc9d4677:
+    name: "MHDYASEENMC"
+    entitlements: [beta_tester]
+  e77df059-089a-4da3-9d2c-a09a92b88787:
+    name: "PoploxPlays123"
+    entitlements: [beta_tester]
+  1ae1afd3-7bac-4570-b583-1830c624b4d7:
+    name: "WyresBoi"
+    entitlements: [beta_tester]
+  9fff3c66-f86a-430a-92b4-e782309d692a:
+    name: "Fille21"
+    entitlements: [beta_tester]
+  7ccc3217-21bb-4e61-a055-e756e29e2cc3:
+    name: "Aquariom"
+    entitlements: [beta_tester]
+  79ad5240-aea7-40f1-a7c8-c5649dc14144:
+    name: "sam_sam_bam_dam"
+    entitlements: [beta_tester]
+  55306c12-a187-4160-b9da-91798c84492c:
+    name: "OrbitzX"
+    entitlements: [beta_tester]
+  d5eea402-b99c-400b-a95e-5dc478dc70a1:
+    name: "shluckss"
+    entitlements: [beta_tester]
+  00000000-0000-0000-0009-01f7f73154f1:
+    name: "SINAN4732"
+    entitlements: [beta_tester]
+  aff43171-336c-49ff-947b-c48daa8da812:
+    name: "demimeow"
+    entitlements: [beta_tester, bug_hunter_hall_of_fame]
+    metadata:
+      bug_hunter_hall_of_fame: "placement=2;bugs=13"
+  7661e686-7a39-4ff4-a740-0d977121b418:
+    name: "jakifree"
+    entitlements: [beta_tester]
+  38640f06-b332-42e8-9dc4-a3bfc2405295:
+    name: "Glitched2012"
+    entitlements: [beta_tester]
+  89901d6b-a095-4fec-8401-d099722899de:
+    name: "YariQ2010"
+    entitlements: [beta_tester]
+  3af163cf-2187-4d85-b27b-aa9cd48d3669:
+    name: "Eclipse1960Yt"
+    entitlements: [beta_tester]
+  f101c71c-6549-4be9-b953-9ae4a535c146:
+    name: "Xiiii222333X"
+    entitlements: [beta_tester]
+  96cefbc8-470b-40ce-9620-ea5ecfb11fc2:
+    name: "jake867"
+    entitlements: [beta_tester]
+  e84d55f2-8043-4d68-aa9a-469b38d5db85:
+    name: "abcxp"
+    entitlements: [beta_tester]
+  128e96cc-abda-45f4-8d86-d498d27d26bd:
+    name: "aeggi"
+    entitlements: [beta_tester]
+  0d84a867-c84d-4bcc-8d36-0c51750b0d04:
+    name: "IceDags"
+    entitlements: [beta_tester]
+  e6a94ee5-cb9e-47b1-b32c-06b16d6781d5:
+    name: "p2wn"
+    entitlements: [beta_tester]
+  9d7a07b7-2f21-4e6d-ba63-b9f8859c9651:
+    name: "IWasLaggingBruh"
+    entitlements: [beta_tester]
+  6c707075-6c79-49ba-989f-34532056e0bb:
+    name: "Bruzly"
+    entitlements: [beta_tester]
+  ad7c309a-918b-4b2f-915e-f79cb33a204a:
+    name: "FutureBonBot"
+    entitlements: [beta_tester]
+  1aa50ca2-a806-4d5c-ae8e-a553fd1a8b7d:
+    name: "tokenCryptid"
+    entitlements: [beta_tester]
+  0f67675b-74f0-471d-b748-63d4a18f42f3:
+    name: "Townielol"
+    entitlements: [beta_tester]
+  5495df07-2704-4eb3-9bbd-1172cd3658eb:
+    name: "QuickAndFastMan"
+    entitlements: [beta_tester]
+  8ab94f3d-f820-4f3e-be45-a486ac51f25b:
+    name: "HUT"
+    entitlements: [beta_tester]
+  fb81b15b-dd7b-4b8f-bf5a-0beae43fdbef:
+    name: "CoFone"
+    entitlements: [beta_tester]
+  d32234d6-de77-4e35-b7a7-95b30fcdba93:
+    name: "AstralPioneer"
+    entitlements: [beta_tester]
+  c2a5ce8c-5a82-4aa9-9c29-77980ae7a048:
+    name: "sn1psnip"
+    entitlements: [beta_tester]
+  30574201-76af-4a1b-b6b1-322ab72b9787:
+    name: "snickered"
+    entitlements: [beta_tester]
+  12d162fa-2df8-49a2-97ee-1dbcbf624809:
+    name: "Zatherah"
+    entitlements: [beta_tester]
+  00000000-0000-0000-0009-01f9bdf35425:
+    name: "Pahvilaatikk693"
+    entitlements: [beta_tester]
+  e577de1a-e81e-4e2b-bae0-e5ccf4596768:
+    name: "zTrigg3r"
+    entitlements: [beta_tester]
+  5e91b996-2391-4087-a4e5-c45586d980a5:
+    name: "Borlyn"
+    entitlements: [beta_tester]
+  250c332f-c0d1-408a-9c08-086e0818800e:
+    name: "Architect_01_"
+    entitlements: [beta_tester]
+  f138c5f3-cd18-426a-a615-db0f4e4e7c97:
+    name: "FlashStrength"
+    entitlements: [beta_tester]
+  6b251522-2294-46c2-ac22-3f2bbaa17b8d:
+    name: "nico10203040"
+    entitlements: [beta_tester]
+  5a14d26d-864a-43d0-9443-d85eb16abea6:
+    name: "BadgersMC"
+    entitlements: [beta_tester]
+  8042f1c4-b41b-443b-bdcf-c0433f2b206b:
+    name: "RedstoneIsGreat"
+    entitlements: [beta_tester, bug_hunter_hall_of_fame]
+    metadata:
+      bug_hunter_hall_of_fame: "placement=1;bugs=49"
+  00000000-0000-0000-0009-01fd79d31d0f:
+    name: "BaByTrUe82"
+    entitlements: [beta_tester]
+  c8d03832-42f4-4878-a1e1-ae6dc39f554c:
+    name: "Nicusormeow"
+    entitlements: [beta_tester]
+  68de491b-3d3e-4053-b0db-90d2a29d51b6:
+    name: "KyoSoup"
+    entitlements: [beta_tester]
+  73f79832-a5fd-41eb-95d6-d532488656a3:
+    name: "NOGacke"
+    entitlements: [beta_tester]
+  28a66977-c4be-45e2-810d-8a837219915a:
+    name: "ShieldSpammer"
+    entitlements: [beta_tester]
+  aa87508d-7e13-407b-82fa-d845b8b06e52:
+    name: "AAAAAAAColony"
+    entitlements: [beta_tester]
+  99c6ace1-d855-489d-8c4f-ded7fe0916cb:
+    name: "AFKWaffle"
+    entitlements: [beta_tester]
+  1e1ad841-1bd6-44d3-8ba1-71f964841493:
+    name: "Drobicus"
+    entitlements: [beta_tester]
+  fa1170ee-d7e3-42a5-a8c8-73f0a10e6222:
+    name: "Pbe"
+    entitlements: [beta_tester]
+  00000000-0000-0000-0009-01f69664715f:
+    name: "MimicLemon01004"
+    entitlements: [beta_tester]
+  1a6746f4-86a4-4801-bef0-2453cb4e223e:
+    name: "hooota"
+    entitlements: [beta_tester]
+  00000000-0000-0000-0009-01fcaad708af:
+    name: "DraftComet90654"
+    entitlements: [beta_tester]
+  00000000-0000-0000-0009-01f2a3f58823:
+    name: "ProWitje"
+    entitlements: [beta_tester]
+  c80f180e-02c5-4b1d-891c-c13388a4a175:
+    name: "OscaMoney"
+    entitlements: [beta_tester]
+  07878d33-e225-4fbb-b762-103b30329827:
+    name: "Wallodee_D"
+    entitlements: [beta_tester]
+  ca2eab64-4b89-4278-81cf-f56ef9a6a163:
+    name: "Petar2192"
+    entitlements: [beta_tester]
+  00000000-0000-0000-0009-01f29d3656fa:
+    name: "planegoat823746"
+    entitlements: [beta_tester]
+  00000000-0000-0000-0009-01fbfd782855:
+    name: "Luizmpxjw"
+    entitlements: [beta_tester]
+  8c502778-f789-4367-a3eb-03ebca043d31:
+    name: "Imaginaryy_"
+    entitlements: [beta_tester]
+  d1793cd6-29dd-4583-ab80-d65bd52d747b:
+    name: "BewussterYT"
+    entitlements: [beta_tester]
+  6fb3a7c4-66b0-4808-8670-e6f5068ca5c4:
+    name: "Frez"
+    entitlements: [beta_tester]
+  dca8fa68-fdaf-4ad3-8485-8dfbe423006f:
+    name: "THESHADYWILLOW"
+    entitlements: [beta_tester]
+  07ed83c9-e53f-4f6f-9e33-d2a0b8e5972e:
+    name: "jasmine_carter"
+    entitlements: [beta_tester]
+  332c982a-7167-4f64-9159-35bba653d618:
+    name: "ShuuNaX"
+    entitlements: [beta_tester]
+  d0400c8a-fe54-4d62-91e6-155c03a4fe19:
+    name: "zanytheblackcat"
+    entitlements: [beta_tester]
+  a878f992-e3c3-4a49-b028-d1f2b49b3b9b:
+    name: "Meat_Ball_Man"
+    entitlements: [beta_tester]
+  28ccd780-76f7-4f68-95f6-195b41eaae10:
+    name: "Flomish"
+    entitlements: [prologue_champion]

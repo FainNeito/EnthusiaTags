@@ -55,14 +55,13 @@ public final class RoseChatPresenceHook {
         Player player = (Player) type.getMethod("getPlayer").invoke(event);
         String kind = (String) type.getMethod("getKind").invoke(event);
         String message = switch (kind) {
-            case "join" -> cosmetics.getJoinMessage(player);
-            case "quit" -> cosmetics.getQuitMessage(player);
+            case "join", "quit" -> cosmetics.getPresenceTemplate(player, kind);
             default -> null;
         };
         // Original or inaccessible selections leave every original template intact.
         if (message != null && !message.isBlank()) {
             Method setter = type.getMethod("setLines", List.class);
-            setter.invoke(event, List.of(message));
+            setter.invoke(event, java.util.Arrays.asList(message.split("\\n", -1)));
         }
     }
 }

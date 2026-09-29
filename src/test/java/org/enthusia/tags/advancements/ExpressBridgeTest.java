@@ -15,6 +15,67 @@ class ExpressBridgeTest {
     private final UUID player = UUID.randomUUID();
     private final UUID other = UUID.randomUUID();
 
+    @Test void idleBridgeDoesNotOpenProviderDatabase() {
+        var bridge = new ExpressAdvancementBridge(directory.resolve("missing.db"));
+        assertDoesNotThrow(bridge::refresh);
+        bridge.beginSession(player);
+        assertThrows(Exception.class, bridge::refresh);
+        bridge.forget(player);
+        assertDoesNotThrow(bridge::refresh);
+    }
+
+    @Test void offlineEvidenceDoesNotEnterActiveSnapshot() throws Exception {
+        Path database = directory.resolve("selected.db");
+        createSchema(database);
+        insert(database, player, player, "PACKAGE", "CLAIMED", 64, 0, 0);
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + database);
+             var statement = connection.createStatement()) {
+            statement.execute("INSERT INTO mail VALUES('invalid-offline-uuid','invalid-offline-uuid','PACKAGE','CLAIMED',1,0,0)");
+        }
+        var bridge = new ExpressAdvancementBridge(database);
+        bridge.beginSession(player);
+        assertDoesNotThrow(bridge::refresh);
+        assertEquals(1000, bridge.observe(player).progress().get("express/first_class"));
+        assertTrue(bridge.observe(player).celebrate().isEmpty());
+    }
+
+    @Test void joiningAfterSnapshotWaitsForOwnSilentHistory() throws Exception {
+        Path database = directory.resolve("joining.db");
+        createSchema(database);
+        insert(database, other, player, "PACKAGE", "CLAIMED", 64, 0, 0);
+        var bridge = new ExpressAdvancementBridge(database);
+        bridge.beginSession(player);
+        bridge.refresh();
+        bridge.beginSession(other);
+        assertTrue(bridge.observe(other).progress().isEmpty());
+        bridge.refresh();
+        var restored = bridge.observe(other);
+        assertEquals(1000, restored.progress().get("express/first_class"));
+        assertTrue(restored.celebrate().isEmpty());
+    }
+
+    @Test void selectionSupportsMoreThanOneParameterBatch() throws Exception {
+        Path database = directory.resolve("batch.db");
+        createSchema(database);
+        var bridge = new ExpressAdvancementBridge(database);
+        var players = new java.util.ArrayList<UUID>();
+        for (int i = 0; i < 505; i++) {
+            UUID id = UUID.randomUUID();
+            players.add(id);
+            bridge.beginSession(id);
+            insert(database, id, id, "PACKAGE", "CLAIMED", 64, 0, 0);
+        }
+        byte[] before = Files.readAllBytes(database);
+        bridge.refresh();
+        for (UUID id : players) {
+            var history = bridge.observe(id);
+            assertEquals(1000, history.progress().get("express/first_class"));
+            assertEquals(1000, history.progress().get("express/youve_got_mail"));
+            assertTrue(history.celebrate().isEmpty());
+        }
+        assertArrayEquals(before, Files.readAllBytes(database));
+    }
+
     @Test void historyIsSilentThenNewMailCelebrates() throws Exception {
         Path database = directory.resolve("mail.db");
         createSchema(database);
@@ -35,15 +96,6 @@ class ExpressBridgeTest {
             java.util.Set.of("express/frequent_shipper"),
             bridge.observe(player).celebrate());
     }
-    @Test void idleBridgeDoesNotOpenTheProviderDatabase() {
-        var bridge = new ExpressAdvancementBridge(directory.resolve("missing.db"));
-        assertDoesNotThrow(bridge::refresh);
-        bridge.beginSession(player);
-        assertThrows(Exception.class, bridge::refresh);
-        bridge.forget(player);
-        assertDoesNotThrow(bridge::refresh);
-    }
-
     @Test void nodesAreBranchedAndRewardless() {
         var nodes = ExpressAdvancementBridge.nodes(42);
         assertEquals(11, nodes.size());
@@ -66,7 +118,7 @@ class ExpressBridgeTest {
 
         for (var node : nodes) {
             assertTrue(node.description().stream().anyMatch(s -> s.contains("Requirements:")));
-            assertTrue(node.description().stream().anyMatch(s -> s.contains("Rewards: None")));
+            assertTrue(node.description().stream().anyMatch(s -> s.contains("Rewards: Claim with /rewards.")));
         }
     }
 

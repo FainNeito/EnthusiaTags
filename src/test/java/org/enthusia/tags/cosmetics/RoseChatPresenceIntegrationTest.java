@@ -32,10 +32,10 @@ class RoseChatPresenceIntegrationTest {
             var fixture = PresenceLifecycleTest.fixture(id, "custom");
             CosmeticsService service = fixture.service();
             service.getCosmetics().put("custom", new CosmeticDefinition("custom", "custom", "quit",
-                CosmeticType.QUIT_MESSAGE, null, null, null, null, "&6{player} left", "test", 0, 0, 0, 0));
+                CosmeticType.QUIT_MESSAGE, null, null, null, null, "&6{player} left\n&7come back soon", "test", 0, 0, 0, 0));
             Event event = (Event) constructor.newInstance(subject, viewer, "quit", List.of("default1", "default2"));
             RoseChatPresenceHook.applyReplacement( event, service);
-            assertEquals(List.of("&6Tester left"), type.getMethod("getLines").invoke(event));
+            assertEquals(List.of("&6{player} left", "&7come back soon"), type.getMethod("getLines").invoke(event));
             assertSame(viewer, type.getMethod("getViewer").invoke(event));
             assertSame(subject, type.getMethod("getPlayer").invoke(event));
 

@@ -109,7 +109,7 @@ class WarzoneBridgeTest {
         for (var node : nodes) {
             assertTrue(node.key().startsWith("warzone_duels/"));
             assertTrue(node.description().stream().anyMatch(s -> s.contains("Requirements:")));
-            assertTrue(node.description().stream().anyMatch(s -> s.contains("Rewards: None")));
+            assertTrue(node.description().stream().anyMatch(s -> s.contains("Rewards: Claim with /rewards.")));
         }
     }
     @Test void joiningMustNotTreatAnOldCachedSnapshotAsLiveBaseline() throws Exception {

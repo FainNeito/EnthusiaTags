@@ -1,6 +1,6 @@
 name: EnthusiaTags
 main: org.enthusia.tags.EnthusiaTagsPlugin
-version: 2.2.2-pilot.2
+version: 2.2.2-supporter-test.10
 api-version: '26.2'
 author: Enthusia
 softdepend:
@@ -11,6 +11,7 @@ softdepend:
   - EnthusiaAdvancements
   - RoseChat
   - PlaceholderAPI
+  - LuckPerms
   - UnlimitedNametags
   - Vault
   - EnthusiaCurrency
@@ -108,6 +109,24 @@ permissions:
       enthusia.cosmetics.join_clean: true
       enthusia.cosmetics.quit_clean: true
       enthusia.cosmetics.km_gg: true
+  enthusiatags.reward.avid:
+    description: Qualifies the player for permanent Avid supporter rewards.
+    default: false
+  enthusiatags.reward.avid-founder:
+    description: Qualifies the player for permanent Avid Founder rewards.
+    default: false
+  enthusiatags.reward.devotee:
+    description: Qualifies the player for permanent Devotee supporter rewards.
+    default: false
+  enthusiatags.reward.devotee-founder:
+    description: Qualifies the player for permanent Devotee Founder rewards.
+    default: false
+  enthusiatags.reward.glorious:
+    description: Qualifies the player for Glorious rewards and active Glorious perks.
+    default: false
+  enthusiatags.reward.glorious-founder:
+    description: Qualifies the player for permanent Glorious Founder rewards.
+    default: false
   enthusia.tags.admin:
     description: Allows managing player tags and administrative plugin operations.
     default: op

@@ -51,6 +51,14 @@ public final class TagsCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(message("players-only"));
             return true;
         }
+        if (args.length == 1 && args[0].equalsIgnoreCase("preview")) {
+            if (!sender.hasPermission("enthusia.tags.admin")) {
+                sender.sendMessage(message("no-permission"));
+                return true;
+            }
+            player.openInventory(tagMenu.create(player, true));
+            return true;
+        }
         player.openInventory(tagMenu.create(player));
         return true;
     }
@@ -59,7 +67,7 @@ public final class TagsCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             if (sender.hasPermission("enthusia.tags.admin")) {
-                return List.of("reload", "cosmetics");
+                return List.of("reload", "cosmetics", "preview");
             }
             return List.of("cosmetics");
         }

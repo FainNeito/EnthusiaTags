@@ -1026,6 +1026,17 @@ public final class RewardService {
         };
     }
 
+    /** Read-only GUI view; unavailable or stale readings must not appear as authoritative zero. */
+    java.util.OptionalLong getVerifiedMenuProgress(Player player, RewardCriterion criterion, ProgressSnapshot snapshot) {
+        if (!isAvailable() || criterion == null || !criterion.isValid() || snapshot == null)
+            return java.util.OptionalLong.empty();
+        RewardPlayerState state = getLoadedState(player.getUniqueId());
+        if (state == null || !state.isLoaded() || !isCriterionAvailable(criterion)) return java.util.OptionalLong.empty();
+        long value = getProgress(player, criterion, snapshot);
+        if (value < 0 || snapshot.unavailableCriteria().contains(criterionCacheKey(criterion))) return java.util.OptionalLong.empty();
+        return java.util.OptionalLong.of(value);
+    }
+
     public String formatProgress(Player player, RewardCriterion criterion) {
         long current = getProgress(player, criterion);
         long goal = criterion.getAmount();
@@ -1130,6 +1141,31 @@ public final class RewardService {
         state.setCounter(key, value);
         invalidateProgress(playerId);
         queueUnlockCheck(playerId);
+    }
+
+    public boolean latchCounter(UUID playerId, String key) {
+        if (!isAvailable() || key == null || key.isBlank()) return false;
+        RewardPlayerState state = getLoadedState(playerId);
+        if (state == null || !state.isLoaded() || state.getCounter(key) >= 1L) return false;
+        state.raiseCounter(key, 1L);
+        invalidateProgress(playerId);
+        queueUnlockCheck(playerId);
+        return true;
+    }
+
+    /** Latch an externally verified entitlement as soon as the player's durable reward state is ready. */
+    public void latchCounterWhenLoaded(UUID playerId, String key) {
+        if (!isAvailable() || playerId == null || key == null || key.isBlank()) return;
+        preloadPlayer(playerId);
+        CompletableFuture<Void> pending = pendingLoads.get(playerId);
+        if (pending == null) {
+            latchCounter(playerId, key);
+            return;
+        }
+        pending.whenComplete((ignored, error) -> {
+            if (error != null || !isAvailable()) return;
+            scheduleMain(() -> latchCounter(playerId, key));
+        });
     }
 
     public boolean isPlayerStateLoaded(UUID playerId) {

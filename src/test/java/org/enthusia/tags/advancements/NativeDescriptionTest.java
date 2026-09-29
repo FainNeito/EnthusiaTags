@@ -25,5 +25,7 @@ class NativeDescriptionTest {
         assertTrue(text.contains("3000"));
         assertTrue(text.contains("one account per challenge/IP"));
         assertTrue(text.contains("/rewards"));
+        assertFalse(text.contains("\u00C2"));
+        assertFalse(text.contains("\u00C2\u00A7"));
     }
 }

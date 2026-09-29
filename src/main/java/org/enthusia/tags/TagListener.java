@@ -15,12 +15,14 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffectType;
+import org.enthusia.tags.cosmetics.CosmeticsMenu;
 import org.enthusia.tags.rewards.RewardMenu;
 import org.enthusia.tags.rewards.RewardService;
 
@@ -69,30 +71,22 @@ public final class TagListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInvisibilityChange(EntityPotionEffectEvent event) {
-        if (!(event.getEntity() instanceof Player player)) {
-            return;
-        }
-        if (event.getModifiedType() != PotionEffectType.INVISIBILITY) {
-            return;
-        }
+        if (!(event.getEntity() instanceof Player player)) return;
+        if (event.getModifiedType() != PotionEffectType.INVISIBILITY) return;
         Bukkit.getScheduler().runTask(tagService.getPlugin(), () -> tagService.requestNametagRefresh(player));
     }
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        InventoryHolder holder = event.getView().getTopInventory().getHolder();
-        if (!(holder instanceof TagMenuHolder)) {
-            return;
-        }
+        Inventory top = event.getView().getTopInventory();
+        InventoryHolder rawHolder = top.getHolder();
+        if (!(rawHolder instanceof TagMenuHolder holder) || holder.getTagService() != tagService) return;
         event.setCancelled(true);
-        if (!(event.getWhoClicked() instanceof Player player)) {
-            return;
-        }
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        if (event.getClickedInventory() != top || event.getRawSlot() < 0 || event.getRawSlot() >= top.getSize()) return;
 
         ItemStack clicked = event.getCurrentItem();
-        if (clicked == null || !clicked.hasItemMeta()) {
-            return;
-        }
+        if (clicked == null || !clicked.hasItemMeta()) return;
         ItemMeta meta = clicked.getItemMeta();
         PersistentDataContainer data = meta.getPersistentDataContainer();
 
@@ -104,20 +98,57 @@ public final class TagListener implements Listener {
             player.openInventory(rewardMenu.create(player));
             return;
         }
-        if (data.has(tagMenu.getClearKey(), PersistentDataType.BYTE)) {
-            tagService.setSelectedTag(player, null);
+        if (data.has(tagMenu.getCosmeticsKey(), PersistentDataType.BYTE)) {
+            CosmeticsMenu cosmetics = new CosmeticsMenu(
+                tagService.getPlugin().getCosmeticsService(), tagService, tagService.getMessages());
+            player.openInventory(cosmetics.createMain(player, holder.isPreview()));
+            return;
+        }
+        if (data.has(tagMenu.getCloseKey(), PersistentDataType.BYTE)) {
             player.closeInventory();
+            return;
+        }
+        if (data.has(tagMenu.getPreviewKey(), PersistentDataType.BYTE)) {
+            if (!player.hasPermission("enthusia.tags.admin")) {
+                player.sendMessage(message("no-permission"));
+                return;
+            }
+            player.openInventory(tagMenu.create(player, holder.getFilter(), holder.getPage(), !holder.isPreview()));
+            return;
+        }
+        String filter = data.get(tagMenu.getFilterKey(), PersistentDataType.STRING);
+        if (filter != null) {
+            player.openInventory(tagMenu.create(player, filter, 0, holder.isPreview()));
+            return;
+        }
+        if (data.has(tagMenu.getPrevKey(), PersistentDataType.BYTE)) {
+            player.openInventory(tagMenu.create(player, holder.getFilter(), holder.getPage() - 1, holder.isPreview()));
+            return;
+        }
+        if (data.has(tagMenu.getNextKey(), PersistentDataType.BYTE)) {
+            player.openInventory(tagMenu.create(player, holder.getFilter(), holder.getPage() + 1, holder.isPreview()));
+            return;
+        }
+        if (data.has(tagMenu.getClearKey(), PersistentDataType.BYTE)) {
+            if (holder.isPreview()) {
+                player.sendMessage(message("admin-preview-readonly"));
+                return;
+            }
+            tagService.setSelectedTag(player, null);
             player.sendMessage(message("tag-cleared-self"));
+            player.openInventory(tagMenu.create(player, holder.getFilter(), holder.getPage(), false));
             return;
         }
 
         String tagId = data.get(tagMenu.getTagIdKey(), PersistentDataType.STRING);
-        if (tagId == null) {
+        if (tagId == null) return;
+        if (holder.isPreview()) {
+            player.sendMessage(message("admin-preview-readonly"));
             return;
         }
         boolean updated = tagService.setSelectedTag(player, tagId);
-        player.closeInventory();
         player.sendMessage(updated ? message("tag-selected-self") : message("tag-not-owned-self"));
+        player.openInventory(tagMenu.create(player, holder.getFilter(), holder.getPage(), false));
     }
 
     private Component message(String key) {
