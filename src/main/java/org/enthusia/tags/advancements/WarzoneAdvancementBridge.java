@@ -27,7 +27,7 @@ final class WarzoneAdvancementBridge {
         sessionStarted.put(player, System.nanoTime());
     }
     WarzoneAdvancementBridge(Path file) {
-        this(file, path -> WarzoneStatsReader.parse(Files.readString(path, java.nio.charset.StandardCharsets.UTF_8)));
+        this(file, path -> WarzoneStatsReader.parse(Files.readString(path)));
     }
     WarzoneAdvancementBridge(Path file, StatsReader reader) {
         this.file = file;
@@ -70,6 +70,6 @@ final class WarzoneAdvancementBridge {
                                                 Material icon, String frame, int x, int y) {
         return new ProjectionService.Node("warzone_duels/" + id, parent == null ? null : "warzone_duels/" + parent,
             title, List.of("§7Warzone Duels", "§7Requirements:", "§f" + requirement,
-                "§7Progress is read from WarzoneDuels.", "§7Rewards: None (advancement only)."), icon, frame, x, y);
+                "§7Progress is read from WarzoneDuels.", "§7Rewards: Claim with /rewards."), icon, frame, x, y);
     }
 }

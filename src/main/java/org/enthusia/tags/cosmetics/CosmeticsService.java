@@ -38,6 +38,7 @@ public final class CosmeticsService {
     private final java.util.Set<UUID> activeTrailPlayers = ConcurrentHashMap.newKeySet();
     private final Map<UUID, Double> spiralAngles = new ConcurrentHashMap<>();
     private final Map<UUID, org.bukkit.Location> lastTrailLocations = new ConcurrentHashMap<>();
+    private volatile java.util.function.BiPredicate<Player, String> entitlementAccess = (player, cosmeticId) -> false;
 
     private CosmeticsStorage storage;
     private BukkitTask trailTask;
@@ -149,13 +150,29 @@ public final class CosmeticsService {
         return map.get(category);
     }
 
+    public void setEntitlementAccess(java.util.function.BiPredicate<Player, String> access) {
+        entitlementAccess = access == null ? (player, cosmeticId) -> false : access;
+    }
+
+    public boolean canUseCosmetic(Player player, CosmeticDefinition cosmetic) {
+        if (player == null || cosmetic == null) return false;
+        if (cosmetic.getPermission().startsWith("enthusiatags.entitlement.")) {
+            return entitlementAccess.test(player, cosmetic.getId());
+        }
+        return player.hasPermission(cosmetic.getPermission()) || entitlementAccess.test(player, cosmetic.getId());
+    }
+
+    public void refreshEntitlementAccess(Player player) {
+        if (player != null && player.isOnline()) refreshActiveTrail(player);
+    }
+
     public String getActiveSelection(UUID playerId, String category, Player player) {
         String selection = getSelection(playerId, category);
         if (selection == null) {
             return null;
         }
         CosmeticDefinition cosmetic = cosmetics.get(selection.toLowerCase(Locale.ROOT));
-        if (cosmetic == null || !player.hasPermission(cosmetic.getPermission())) {
+        if (cosmetic == null || !canUseCosmetic(player, cosmetic)) {
             return null;
         }
         return selection;
@@ -168,7 +185,7 @@ public final class CosmeticsService {
         if (current != null && current.equalsIgnoreCase(next)) {
             return setSelection(player, category, null);
         }
-        if (!player.hasPermission(cosmetic.getPermission())) {
+        if (!canUseCosmetic(player, cosmetic)) {
             return false;
         }
         return setSelection(player, category, next);
@@ -231,6 +248,13 @@ public final class CosmeticsService {
             .replace("{victim}", victim.getName());
     }
 
+    /** Keep RoseChat placeholders for its per-viewer renderer; do not substitute usernames early. */
+    public String getPresenceTemplate(Player player, String kind) {
+        if (!"join".equals(kind) && !"quit".equals(kind)) return null;
+        CosmeticDefinition cosmetic = getActiveCosmetic(player, kind);
+        return cosmetic == null ? null : cosmetic.getMessage();
+    }
+
     public String getJoinMessage(Player player) {
         CosmeticDefinition cosmetic = getActiveCosmetic(player, "join");
         if (cosmetic == null || cosmetic.getMessage() == null) {
@@ -285,7 +309,7 @@ public final class CosmeticsService {
             return null;
         }
         CosmeticDefinition cosmetic = cosmetics.get(cosmeticId.toLowerCase(Locale.ROOT));
-        if (cosmetic == null || !player.hasPermission(cosmetic.getPermission())) {
+        if (cosmetic == null || !canUseCosmetic(player, cosmetic)) {
             return null;
         }
         return cosmetic;

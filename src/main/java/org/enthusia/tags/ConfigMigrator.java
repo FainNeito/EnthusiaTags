@@ -16,8 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class ConfigMigrator {
-    public static final int CURRENT_CONFIG_VERSION = 5;
-    private static final int REWARDS_CONFIG_VERSION = 5;
+    public static final int CURRENT_CONFIG_VERSION = 6;
+    private static final int REWARDS_CONFIG_VERSION = 7;
     private static final DateTimeFormatter BACKUP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
 
     private final JavaPlugin plugin;
@@ -62,6 +62,10 @@ public final class ConfigMigrator {
                 report.migrated(resourceName + ": config-version " + existingVersion + " -> " + targetVersion);
                 changed = true;
             }
+            if (SupporterPresentationMigration.needsUpdate(resourceName, config)) {
+                backup(file, resourceName, report);
+                changed |= SupporterPresentationMigration.migrate(resourceName, config, defaults, report);
+            }
             changed |= copyMissing(defaults, config, "", resourceName, report);
             if (changed) {
                 config.save(file);
@@ -85,12 +89,15 @@ public final class ConfigMigrator {
                                        YamlConfiguration defaults, int existingVersion,
                                        MigrationReport report) {
         if ("config.yml".equals(resourceName)) {
-            return migrateConfigValues(config, existingVersion, report);
+            return migrateConfigValues(config, defaults, existingVersion, report);
         }
         if ("rewards.yml".equals(resourceName) && existingVersion < REWARDS_CONFIG_VERSION) {
             boolean changed = existingVersion < 4 && migrateRewardValues(config, report);
             if (existingVersion < 5) {
                 changed |= RewardConfigV5Migration.migrateRewards(config, defaults, report);
+            }
+            if (existingVersion < 7) {
+                changed |= AdvancementRewardConfigV6Migration.migrateRewards(config, defaults, report);
             }
             return changed;
         }
@@ -100,7 +107,7 @@ public final class ConfigMigrator {
         return false;
     }
 
-    private boolean migrateConfigValues(YamlConfiguration config, int existingVersion,
+    private boolean migrateConfigValues(YamlConfiguration config, YamlConfiguration defaults, int existingVersion,
                                         MigrationReport report) {
         boolean changed = false;
         if (existingVersion < 3) {
@@ -112,6 +119,9 @@ public final class ConfigMigrator {
         }
         if (existingVersion < 5) {
             changed |= TagConfigV5Migration.migrate(config, report);
+        }
+        if (existingVersion < 6) {
+            changed |= AdvancementRewardConfigV6Migration.migrateTags(config, defaults, report);
         }
         return changed;
     }
@@ -241,8 +251,7 @@ public final class ConfigMigrator {
     private void backup(File file, String resourceName, MigrationReport report) throws IOException {
         File backupDir = new File(plugin.getDataFolder(), "backups");
         if (!backupDir.exists() && !backupDir.mkdirs()) {
-            report.warning(resourceName + ": failed to create backup directory");
-            return;
+            throw new IOException(resourceName + ": failed to create backup directory");
         }
         String stamp = LocalDateTime.now().format(BACKUP_FORMAT);
         File backup = new File(backupDir, resourceName + "." + stamp + ".bak");

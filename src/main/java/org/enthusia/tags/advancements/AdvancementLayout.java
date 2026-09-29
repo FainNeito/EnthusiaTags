@@ -33,7 +33,9 @@ final class AdvancementLayout {
     }
 
     static int reputationBaseY(int categoryCount, boolean hasWarzone) {
-        return warzoneBaseY(categoryCount) + (hasWarzone ? 6 : 0);
+        int naturalBase = Math.max(WARZONE_BASE_Y, categoryCount * 4 + 1);
+        return hasWarzone ? Math.max(naturalBase + 6, warzoneBaseY(categoryCount) + 6)
+            : naturalBase;
     }
 
     static int expressBaseY(

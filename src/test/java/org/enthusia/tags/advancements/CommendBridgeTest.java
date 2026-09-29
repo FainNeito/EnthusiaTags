@@ -91,7 +91,7 @@ class CommendBridgeTest {
 
         for (var node : nodes) {
             assertTrue(node.description().stream().anyMatch(s -> s.contains("Requirements:")));
-            assertTrue(node.description().stream().anyMatch(s -> s.contains("Rewards: None")));
+            assertTrue(node.description().stream().anyMatch(s -> s.contains("Rewards: Claim with /rewards.")));
         }
     }
     @Test void nativeWiringIsEnabledAsyncAndOptional() throws Exception {

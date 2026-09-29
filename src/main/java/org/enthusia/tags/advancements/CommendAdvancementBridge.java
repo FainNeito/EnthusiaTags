@@ -37,7 +37,7 @@ final class CommendAdvancementBridge {
         long started = System.nanoTime();
         try {
             latest = new Snapshot(started,
-                CommendStatsReader.parse(Files.readString(file, java.nio.charset.StandardCharsets.UTF_8)));
+                CommendStatsReader.parse(Files.readString(file)));
         } catch (Exception failure) {
             latest = null;
             throw failure;
@@ -119,7 +119,7 @@ final class CommendAdvancementBridge {
                 "§7Requirements:",
                 "§f" + requirement,
                 "§7Progress is read from EnthusiaCommend.",
-                "§7Rewards: None (advancement only)."
+                "§7Rewards: Claim with /rewards."
             ),
             icon,
             frame,

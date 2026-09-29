@@ -15,26 +15,35 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffectType;
+import org.enthusia.tags.cosmetics.CosmeticsMenu;
 import org.enthusia.tags.rewards.RewardMenu;
 import org.enthusia.tags.rewards.RewardService;
+
+import java.util.Locale;
 
 public final class TagListener implements Listener {
     private final TagService tagService;
     private final TagMenu tagMenu;
     private final RewardMenu rewardMenu;
     private final RewardService rewardService;
+    private final LuckPermsPortableEntitlementGateway portableEntitlements;
 
     public TagListener(TagService tagService, RewardService rewardService) {
         this.tagService = tagService;
         this.tagMenu = new TagMenu(tagService);
         this.rewardMenu = new RewardMenu(rewardService, tagService);
         this.rewardService = rewardService;
+        this.portableEntitlements = new LuckPermsPortableEntitlementGateway(tagService.getPlugin());
+        if (FrontierPortableTagCatalog.ensureInstalled(tagService.getPlugin())) {
+            tagService.reloadAll();
+        }
     }
 
     @EventHandler
@@ -44,7 +53,9 @@ public final class TagListener implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        tagService.loadPlayer(event.getPlayer());
+        Player player = event.getPlayer();
+        tagService.loadPlayer(player);
+        Bukkit.getScheduler().runTask(tagService.getPlugin(), () -> reconcilePortableEntitlements(player));
     }
 
     @EventHandler
@@ -69,30 +80,22 @@ public final class TagListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInvisibilityChange(EntityPotionEffectEvent event) {
-        if (!(event.getEntity() instanceof Player player)) {
-            return;
-        }
-        if (event.getModifiedType() != PotionEffectType.INVISIBILITY) {
-            return;
-        }
+        if (!(event.getEntity() instanceof Player player)) return;
+        if (event.getModifiedType() != PotionEffectType.INVISIBILITY) return;
         Bukkit.getScheduler().runTask(tagService.getPlugin(), () -> tagService.requestNametagRefresh(player));
     }
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        InventoryHolder holder = event.getView().getTopInventory().getHolder();
-        if (!(holder instanceof TagMenuHolder)) {
-            return;
-        }
+        Inventory top = event.getView().getTopInventory();
+        InventoryHolder rawHolder = top.getHolder();
+        if (!(rawHolder instanceof TagMenuHolder holder) || holder.getTagService() != tagService) return;
         event.setCancelled(true);
-        if (!(event.getWhoClicked() instanceof Player player)) {
-            return;
-        }
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        if (event.getClickedInventory() != top || event.getRawSlot() < 0 || event.getRawSlot() >= top.getSize()) return;
 
         ItemStack clicked = event.getCurrentItem();
-        if (clicked == null || !clicked.hasItemMeta()) {
-            return;
-        }
+        if (clicked == null || !clicked.hasItemMeta()) return;
         ItemMeta meta = clicked.getItemMeta();
         PersistentDataContainer data = meta.getPersistentDataContainer();
 
@@ -104,20 +107,97 @@ public final class TagListener implements Listener {
             player.openInventory(rewardMenu.create(player));
             return;
         }
-        if (data.has(tagMenu.getClearKey(), PersistentDataType.BYTE)) {
-            tagService.setSelectedTag(player, null);
+        if (data.has(tagMenu.getCosmeticsKey(), PersistentDataType.BYTE)) {
+            CosmeticsMenu cosmetics = new CosmeticsMenu(
+                tagService.getPlugin().getCosmeticsService(), tagService, tagService.getMessages());
+            player.openInventory(cosmetics.createMain(player, holder.isPreview()));
+            return;
+        }
+        if (data.has(tagMenu.getCloseKey(), PersistentDataType.BYTE)) {
             player.closeInventory();
+            return;
+        }
+        if (data.has(tagMenu.getPreviewKey(), PersistentDataType.BYTE)) {
+            if (!player.hasPermission("enthusia.tags.admin")) {
+                player.sendMessage(message("no-permission"));
+                return;
+            }
+            player.openInventory(tagMenu.create(player, holder.getFilter(), holder.getPage(), !holder.isPreview()));
+            return;
+        }
+        String filter = data.get(tagMenu.getFilterKey(), PersistentDataType.STRING);
+        if (filter != null) {
+            player.openInventory(tagMenu.create(player, filter, 0, holder.isPreview()));
+            return;
+        }
+        if (data.has(tagMenu.getPrevKey(), PersistentDataType.BYTE)) {
+            player.openInventory(tagMenu.create(player, holder.getFilter(), holder.getPage() - 1, holder.isPreview()));
+            return;
+        }
+        if (data.has(tagMenu.getNextKey(), PersistentDataType.BYTE)) {
+            player.openInventory(tagMenu.create(player, holder.getFilter(), holder.getPage() + 1, holder.isPreview()));
+            return;
+        }
+        if (data.has(tagMenu.getClearKey(), PersistentDataType.BYTE)) {
+            if (holder.isPreview()) {
+                player.sendMessage(message("admin-preview-readonly"));
+                return;
+            }
+            tagService.setSelectedTag(player, null);
             player.sendMessage(message("tag-cleared-self"));
+            player.openInventory(tagMenu.create(player, holder.getFilter(), holder.getPage(), false));
             return;
         }
 
         String tagId = data.get(tagMenu.getTagIdKey(), PersistentDataType.STRING);
-        if (tagId == null) {
+        if (tagId == null) return;
+        if (holder.isPreview()) {
+            player.sendMessage(message("admin-preview-readonly"));
             return;
         }
         boolean updated = tagService.setSelectedTag(player, tagId);
-        player.closeInventory();
         player.sendMessage(updated ? message("tag-selected-self") : message("tag-not-owned-self"));
+        player.openInventory(tagMenu.create(player, holder.getFilter(), holder.getPage(), false));
+    }
+
+    private void reconcilePortableEntitlements(Player player) {
+        if (!player.isOnline()) {
+            return;
+        }
+        PlayerTagData data = tagService.getPlayerData(player.getUniqueId());
+        for (FrontierPortableTagCatalog.SystemTag tag : FrontierPortableTagCatalog.tags()) {
+            reconcilePortableEntitlement(player, data, tag);
+        }
+    }
+
+    private void reconcilePortableEntitlement(Player player, PlayerTagData data,
+                                              FrontierPortableTagCatalog.SystemTag tag) {
+        String tagId = tag.id().toLowerCase(Locale.ROOT);
+        LuckPermsPortableEntitlementGateway.Status status =
+            portableEntitlements.status(player.getUniqueId(), tag.permission());
+        if (status == LuckPermsPortableEntitlementGateway.Status.UNKNOWN) {
+            return;
+        }
+
+        boolean owned = data.getOwnedTags().contains(tagId);
+        if (status == LuckPermsPortableEntitlementGateway.Status.PRESENT) {
+            if (!owned) {
+                grantPortableTag(player, tag, tagId);
+            }
+            return;
+        }
+        if (owned) {
+            tagService.revokeTag(player.getUniqueId(), tagId);
+        }
+    }
+
+    private void grantPortableTag(Player player, FrontierPortableTagCatalog.SystemTag tag, String tagId) {
+        tagService.grantTagPersisted(player.getUniqueId(), tagId).thenAccept(success -> {
+            if (!success) {
+                tagService.getPlugin().getLogger().warning(
+                    "Could not project portable entitlement " + tag.permission() + " into tag " + tagId);
+            }
+        });
     }
 
     private Component message(String key) {

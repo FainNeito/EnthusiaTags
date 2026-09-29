@@ -18,6 +18,8 @@ import org.enthusia.tags.rewards.RewardsCommand;
 import org.enthusia.tags.rewards.loreitems.LoreItemRewardAdmin;
 import org.enthusia.tags.rewards.loreitems.LoreItemRewardRuntime;
 import org.enthusia.tags.daily.DailyService;
+import org.enthusia.tags.entitlements.EntitlementListener;
+import org.enthusia.tags.entitlements.EntitlementService;
 
 public final class EnthusiaTagsPlugin extends JavaPlugin {
     private static final int SINGLE_ARGUMENT_COUNT = 1;
@@ -35,6 +37,7 @@ public final class EnthusiaTagsPlugin extends JavaPlugin {
     private LoreItemRewardRuntime loreItemRewardRuntime;
     private LoreItemRewardAdmin loreItemRewardAdmin;
     private NativeAdvancementController nativeAdvancements;
+    private EntitlementService entitlementService;
 
     @Override
     public void onEnable() {
@@ -57,11 +60,13 @@ public final class EnthusiaTagsPlugin extends JavaPlugin {
         tagService = new TagService(this, messages, performanceMonitor);
         cosmeticsService = new CosmeticsService(this, messages, performanceMonitor);
         rewardService = new RewardService(this, tagService, messages, performanceMonitor);
+        entitlementService = new EntitlementService(this, tagService, cosmeticsService, rewardService);
         dailyService = new DailyService(this);
 
         tagService.enable();
         cosmeticsService.enable();
         rewardService.enable();
+        entitlementService.enable();
         if (rewardService.isAvailable()) {
             rewardTracker = new RewardTracker(this, rewardService);
             rewardTracker.start(this);
@@ -113,6 +118,7 @@ public final class EnthusiaTagsPlugin extends JavaPlugin {
             }
         }
         if (dailyService != null) dailyService.disable();
+        if (entitlementService != null) entitlementService.disable();
         if (rewardService != null) {
             rewardService.disable();
         }
@@ -150,6 +156,10 @@ public final class EnthusiaTagsPlugin extends JavaPlugin {
         return performanceMonitor;
     }
 
+    public EntitlementService getEntitlementService() {
+        return entitlementService;
+    }
+
     public LoreItemRewardRuntime getLoreItemRewardRuntime() {
         return loreItemRewardRuntime;
     }
@@ -161,23 +171,26 @@ public final class EnthusiaTagsPlugin extends JavaPlugin {
         messages.reload();
         tagService.reloadAll();
         rewardService.reload();
+        cosmeticsService.reload();
+        if (entitlementService != null) entitlementService.reload();
         if (loreItemRewardRuntime != null) {
             loreItemRewardRuntime.kickRetries();
         }
         if (dailyService != null) {
             dailyService.reload();
         }
-        cosmeticsService.reload();
         migrationReport.summaryLines().forEach(line -> getLogger().info("Reload summary: " + line));
     }
 
     private void registerListeners() {
         Bukkit.getPluginManager().registerEvents(new TagListener(tagService, rewardService), this);
         Bukkit.getPluginManager().registerEvents(new CosmeticsListener(cosmeticsService, tagService, messages, rewardService), this);
+        Bukkit.getPluginManager().registerEvents(new EntitlementListener(entitlementService), this);
         RoseChatPresenceHook.register(this, cosmeticsService);
         RewardsCommand rewardsCommand = new RewardsCommand(rewardService, tagService, messages, this);
         if (rewardService.isAvailable()) {
             Bukkit.getPluginManager().registerEvents(new RewardListener(rewardService, rewardsCommand.getRewardMenu()), this);
+            rewardsCommand.getRewardMenu().startRefresh();
             Bukkit.getPluginManager().registerEvents(rewardTracker, this);
             if (naturalBlockTracker != null) {
                 Bukkit.getPluginManager().registerEvents(naturalBlockTracker, this);

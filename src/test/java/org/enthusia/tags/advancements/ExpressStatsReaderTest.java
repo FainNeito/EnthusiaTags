@@ -6,6 +6,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.DriverManager;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -14,6 +15,12 @@ class ExpressStatsReaderTest {
     @TempDir Path directory;
     private final UUID sender = UUID.randomUUID();
     private final UUID recipient = UUID.randomUUID();
+
+    @Test void queryIdentifiersAreAllowlistedAndPlayerIdsRemainBoundParameters() {
+        assertEquals(" AND sender_uuid IN (?)", ExpressStatsReader.selection("sender_uuid", List.of(sender)));
+        assertThrows(IllegalArgumentException.class,
+            () -> ExpressStatsReader.selection("sender_uuid); DROP TABLE mail; --", List.of(sender)));
+    }
 
     @Test void readsHistoricalMailAggregatesWithoutWritingDatabase() throws Exception {
         Path database = directory.resolve("mail.db");

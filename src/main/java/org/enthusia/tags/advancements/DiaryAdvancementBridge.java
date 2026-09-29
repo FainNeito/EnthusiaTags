@@ -4,6 +4,7 @@ import io.github.badgersmc.advancements.pilot.ProjectionService;
 import org.bukkit.Material;
 import org.enthusia.tags.advancements.domain.DiaryMilestoneProgress;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -35,7 +36,7 @@ final class DiaryAdvancementBridge {
         if (!refreshing.compareAndSet(false, true)) return;
         long started = System.nanoTime();
         try {
-            latest = new Snapshot(started, DiaryStatsReader.read(file));
+            latest = new Snapshot(started, DiaryStatsReader.parse(Files.readString(file)));
         } catch (Exception failure) {
             latest = null;
             throw failure;
@@ -103,7 +104,7 @@ final class DiaryAdvancementBridge {
             title,
             List.of("§7DiaryKeeper", "§7Requirements:", "§f" + requirement,
                 "§7Progress is read from DiaryKeeper.",
-                "§7Rewards: None (advancement only)."),
+                "§7Rewards: Claim with /rewards."),
             icon, frame, x, y);
     }
 
@@ -117,7 +118,7 @@ final class DiaryAdvancementBridge {
             title,
             List.of("§7DiaryKeeper", "§7Requirements:", "§f" + requirement,
                 "§7Progress is read from DiaryKeeper.",
-                "§7Rewards: None (advancement only)."),
+                "§7Rewards: Claim with /rewards."),
             icon, customModelData, frame, x, y);
     }
 }

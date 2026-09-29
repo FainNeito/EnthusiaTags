@@ -1,18 +1,29 @@
 package org.enthusia.tags.advancements;
 
 import io.github.badgersmc.advancements.pilot.ProjectionService;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import org.bukkit.Material;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class AdvancementNodeOrderTest {
     @Test void completeBundledGraphIsParentFirstEvenWhenInputIsReversed() throws Exception {
-        var rewards = BundledRewardFixture.rewards();
+        YamlConfiguration config;
+        try (var in = getClass().getClassLoader().getResourceAsStream("rewards.yml")) {
+            assertNotNull(in);
+            config = YamlConfiguration.loadConfiguration(
+                new InputStreamReader(in, StandardCharsets.UTF_8));
+        }
+
+        var rewards = config.getConfigurationSection("rewards");
+        assertNotNull(rewards);
         List<ProjectionService.Node> nodes = new ArrayList<>();
         for (String id : rewards.getKeys(false)) {
             var placement = AdvancementLayout.placement(id, null, 99, 99);

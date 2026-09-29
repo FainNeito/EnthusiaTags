@@ -17,7 +17,7 @@ final class WarzoneStatsReader {
         Map<UUID, DuelMilestoneProgress.Stats> result = new HashMap<>();
         for (String key : players.getKeys(false)) {
             if (result.putIfAbsent(playerId(key), playerStats(players.getConfigurationSection(key))) != null) {
-                throw new IllegalArgumentException("Duplicate player UUID in duel evidence");
+                throw new IllegalArgumentException("Duplicate duel player UUID");
             }
         }
         return Map.copyOf(result);

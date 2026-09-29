@@ -1,5 +1,6 @@
 package org.enthusia.tags.cosmetics;
 
+import java.util.Locale;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -13,6 +14,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -20,14 +22,14 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.enthusia.tags.TagMenu;
 import org.enthusia.tags.TagService;
+import org.enthusia.tags.rewards.RewardMenu;
 import org.enthusia.tags.rewards.RewardService;
-
-import java.util.Locale;
 
 public final class CosmeticsListener implements Listener {
     private final CosmeticsService cosmeticsService;
     private final CosmeticsMenu cosmeticsMenu;
     private final TagMenu tagMenu;
+    private final RewardMenu rewardMenu;
     private final RewardService rewardService;
     private final java.util.function.BooleanSupplier roseChatOwnsPresence;
 
@@ -38,6 +40,7 @@ public final class CosmeticsListener implements Listener {
         this.cosmeticsService = cosmeticsService;
         this.cosmeticsMenu = new CosmeticsMenu(cosmeticsService, tagService, messages);
         this.tagMenu = new TagMenu(tagService);
+        this.rewardMenu = new RewardMenu(rewardService, tagService);
         this.rewardService = rewardService;
         this.roseChatOwnsPresence = () -> org.bukkit.Bukkit.getPluginManager().isPluginEnabled("RoseChat");
     }
@@ -54,25 +57,21 @@ public final class CosmeticsListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onJoin(PlayerJoinEvent event) {
-        if (roseChatOwnsPresence != null && roseChatOwnsPresence.getAsBoolean())
-            return;
-        if (event.joinMessage() == null)
-            return;
+        if (roseChatOwnsPresence != null && roseChatOwnsPresence.getAsBoolean()) return;
+        if (event.joinMessage() == null) return;
         String message = cosmeticsService.getJoinMessage(event.getPlayer());
         if (message != null && !message.isBlank()) {
-            event.joinMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(message));
+            event.joinMessage(org.enthusia.tags.TagTextFormat.deserializeCompat(message));
         }
     }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onQuit(PlayerQuitEvent event) {
-        if (roseChatOwnsPresence != null && roseChatOwnsPresence.getAsBoolean())
-            return;
-        if (event.quitMessage() == null)
-            return;
+        if (roseChatOwnsPresence != null && roseChatOwnsPresence.getAsBoolean()) return;
+        if (event.quitMessage() == null) return;
         String message = cosmeticsService.getQuitMessage(event.getPlayer());
         if (message != null && !message.isBlank()) {
-            event.quitMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(message));
+            event.quitMessage(org.enthusia.tags.TagTextFormat.deserializeCompat(message));
         }
     }
 
@@ -90,7 +89,7 @@ public final class CosmeticsListener implements Listener {
             cosmeticsService.applyKillEffect(killer, victim);
             String message = cosmeticsService.getKillMessage(killer, victim);
             if (event.deathMessage() != null && message != null && !message.isBlank()) {
-                event.deathMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(message));
+                event.deathMessage(org.enthusia.tags.TagTextFormat.deserializeCompat(message));
             }
         }
     }
@@ -98,20 +97,12 @@ public final class CosmeticsListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onProjectileLaunch(ProjectileLaunchEvent event) {
         Projectile projectile = event.getEntity();
-        if (!(projectile.getShooter() instanceof Player player)) {
-            return;
-        }
-        if (projectile.getType() == org.bukkit.entity.EntityType.WIND_CHARGE) {
-            return;
-        }
+        if (!(projectile.getShooter() instanceof Player player)) return;
+        if (projectile.getType() == org.bukkit.entity.EntityType.WIND_CHARGE) return;
         String selected = cosmeticsService.getActiveSelection(player.getUniqueId(), "projectile", player);
-        if (selected == null) {
-            return;
-        }
+        if (selected == null) return;
         CosmeticDefinition cosmetic = cosmeticsService.getCosmetics().get(selected.toLowerCase(Locale.ROOT));
-        if (cosmetic == null || cosmetic.getType() != CosmeticType.PROJECTILE_TRAIL) {
-            return;
-        }
+        if (cosmetic == null || cosmetic.getType() != CosmeticType.PROJECTILE_TRAIL) return;
         cosmeticsService.registerProjectile(projectile, cosmetic);
     }
 
@@ -122,47 +113,88 @@ public final class CosmeticsListener implements Listener {
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        InventoryHolder holder = event.getView().getTopInventory().getHolder();
-        if (!(holder instanceof CosmeticsMenuHolder)) {
-            return;
-        }
+        Inventory top = event.getView().getTopInventory();
+        InventoryHolder rawHolder = top.getHolder();
+        if (!(rawHolder instanceof CosmeticsMenuHolder holder)
+            || holder.getCosmeticsService() != cosmeticsService) return;
         event.setCancelled(true);
-        if (!(event.getWhoClicked() instanceof Player player)) {
-            return;
-        }
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        if (event.getClickedInventory() != top || event.getRawSlot() < 0 || event.getRawSlot() >= top.getSize()) return;
+
         ItemStack clicked = event.getCurrentItem();
-        if (clicked == null || !clicked.hasItemMeta()) {
-            return;
-        }
+        if (clicked == null || !clicked.hasItemMeta()) return;
         ItemMeta meta = clicked.getItemMeta();
         PersistentDataContainer data = meta.getPersistentDataContainer();
-        if (data.has(cosmeticsMenu.getBackKey(), PersistentDataType.BYTE)) {
-            player.openInventory(cosmeticsMenu.createMain(player));
+
+        if (data.has(cosmeticsMenu.getCloseKey(), PersistentDataType.BYTE)) {
+            player.closeInventory();
+            return;
+        }
+        if (data.has(cosmeticsMenu.getRewardsKey(), PersistentDataType.BYTE)) {
+            if (!rewardService.isAvailable()) {
+                player.sendMessage(LegacyComponentSerializer.legacyAmpersand()
+                    .deserialize(cosmeticsService.formatMessage("rewards-service-unavailable")));
+                return;
+            }
+            player.openInventory(rewardMenu.create(player));
             return;
         }
         if (data.has(cosmeticsMenu.getTagsKey(), PersistentDataType.BYTE)) {
-            player.openInventory(tagMenu.create(player));
+            player.openInventory(tagMenu.create(player, holder.isPreview()));
             return;
         }
+        if (data.has(cosmeticsMenu.getPreviewKey(), PersistentDataType.BYTE)) {
+            if (!player.hasPermission("enthusia.tags.admin")) {
+                player.sendMessage(LegacyComponentSerializer.legacyAmpersand()
+                    .deserialize(cosmeticsService.formatMessage("no-permission")));
+                return;
+            }
+            if (holder.getCategory() == null) {
+                player.openInventory(cosmeticsMenu.createMain(player, !holder.isPreview()));
+            } else {
+                player.openInventory(cosmeticsMenu.createCategory(
+                    player, holder.getCategory(), holder.getPage(), !holder.isPreview()));
+            }
+            return;
+        }
+        if (data.has(cosmeticsMenu.getBackKey(), PersistentDataType.BYTE)) {
+            player.openInventory(cosmeticsMenu.createMain(player, holder.isPreview()));
+            return;
+        }
+        if (data.has(cosmeticsMenu.getPrevKey(), PersistentDataType.BYTE)) {
+            player.openInventory(cosmeticsMenu.createCategory(
+                player, holder.getCategory(), holder.getPage() - 1, holder.isPreview()));
+            return;
+        }
+        if (data.has(cosmeticsMenu.getNextKey(), PersistentDataType.BYTE)) {
+            player.openInventory(cosmeticsMenu.createCategory(
+                player, holder.getCategory(), holder.getPage() + 1, holder.isPreview()));
+            return;
+        }
+
         String categoryId = data.get(cosmeticsMenu.getCategoryKey(), PersistentDataType.STRING);
         if (categoryId != null) {
-            player.openInventory(cosmeticsMenu.createCategory(player, categoryId));
+            player.openInventory(cosmeticsMenu.createCategory(player, categoryId, 0, holder.isPreview()));
             return;
         }
+
         String cosmeticId = data.get(cosmeticsMenu.getCosmeticKey(), PersistentDataType.STRING);
-        if (cosmeticId == null) {
+        if (cosmeticId == null) return;
+        if (holder.isPreview()) {
+            player.sendMessage(LegacyComponentSerializer.legacyAmpersand()
+                .deserialize(cosmeticsService.formatMessage("admin-preview-readonly")));
             return;
         }
+
         CosmeticDefinition cosmetic = cosmeticsService.getCosmetics().get(cosmeticId.toLowerCase(Locale.ROOT));
-        if (cosmetic == null) {
-            return;
-        }
+        if (cosmetic == null) return;
         boolean ok = cosmeticsService.toggleCosmetic(player, cosmetic);
         if (!ok) {
             player.sendMessage(LegacyComponentSerializer.legacyAmpersand()
                 .deserialize(cosmeticsService.formatMessage("cosmetics-locked-msg")));
             return;
         }
-        player.openInventory(cosmeticsMenu.createCategory(player, cosmetic.getCategory()));
+        player.openInventory(cosmeticsMenu.createCategory(
+            player, cosmetic.getCategory(), holder.getPage(), false));
     }
 }

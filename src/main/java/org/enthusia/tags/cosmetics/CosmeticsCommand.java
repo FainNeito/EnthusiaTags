@@ -47,6 +47,14 @@ public final class CosmeticsCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(message("no-permission"));
             return true;
         }
+        if (args.length == 1 && args[0].equalsIgnoreCase("preview")) {
+            if (!sender.hasPermission("enthusia.tags.admin")) {
+                sender.sendMessage(message("no-permission"));
+                return true;
+            }
+            player.openInventory(cosmeticsMenu.createMain(player, true));
+            return true;
+        }
         player.openInventory(cosmeticsMenu.createMain(player));
         return true;
     }
@@ -54,7 +62,7 @@ public final class CosmeticsCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1 && sender.hasPermission("enthusia.tags.admin")) {
-            return List.of("reload");
+            return List.of("reload", "preview");
         }
         return Collections.emptyList();
     }

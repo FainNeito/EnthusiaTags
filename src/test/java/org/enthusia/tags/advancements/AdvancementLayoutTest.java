@@ -1,14 +1,26 @@
 package org.enthusia.tags.advancements;
 
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class AdvancementLayoutTest {
     @Test void everyBundledRewardHasAnIntentionalPlacement() throws Exception {
-        var rewards = BundledRewardFixture.rewards();
+        YamlConfiguration config;
+        try (var in = getClass().getClassLoader().getResourceAsStream("rewards.yml")) {
+            assertNotNull(in);
+            config = YamlConfiguration.loadConfiguration(
+                new InputStreamReader(in, StandardCharsets.UTF_8));
+        }
+
+        var rewards = config.getConfigurationSection("rewards");
+        assertNotNull(rewards);
         for (String id : rewards.getKeys(false)) {
+            if (!NativeAdvancementController.isNativeTrackCategory(config.getString("rewards." + id + ".category"))) continue;
             assertTrue(AdvancementLayout.hasFixed(id), id);
         }
     }
@@ -45,6 +57,15 @@ class AdvancementLayoutTest {
         assertEquals(49, AdvancementLayout.diaryBaseY(7, true, true, true));
     }
 
+    @Test void supporterLegacyAndEventRewardsStayOutOfNativeTrack() {
+        assertTrue(NativeAdvancementController.isNativeTrackCategory("playtime"));
+        assertTrue(NativeAdvancementController.isNativeTrackCategory("combat"));
+        assertFalse(NativeAdvancementController.isNativeTrackCategory("advancements"));
+        assertFalse(NativeAdvancementController.isNativeTrackCategory("supporter"));
+        assertFalse(NativeAdvancementController.isNativeTrackCategory("legacy"));
+        assertFalse(NativeAdvancementController.isNativeTrackCategory("events"));
+    }
+
     @Test void unknownFutureRewardKeepsLinearFallback() {
         var fallback = AdvancementLayout.placement("future_reward", "previous", 7, 31);
         assertEquals("previous", fallback.parentId());
@@ -52,7 +73,16 @@ class AdvancementLayoutTest {
         assertEquals(31, fallback.y());
     }
     private String[] bundledIds() throws Exception {
-        var rewards = BundledRewardFixture.rewards();
-        return rewards.getKeys(false).toArray(String[]::new);
+        YamlConfiguration config;
+        try (var in = getClass().getClassLoader().getResourceAsStream("rewards.yml")) {
+            assertNotNull(in);
+            config = YamlConfiguration.loadConfiguration(
+                new InputStreamReader(in, StandardCharsets.UTF_8));
+        }
+        var rewards = config.getConfigurationSection("rewards");
+        assertNotNull(rewards);
+        return rewards.getKeys(false).stream()
+            .filter(id -> NativeAdvancementController.isNativeTrackCategory(config.getString("rewards." + id + ".category")))
+            .toArray(String[]::new);
     }
 }

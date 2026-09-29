@@ -8,23 +8,23 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 final class ExpressAdvancementBridge {
     private final Path database;
     private record Snapshot(
         long readStarted,
+        Set<UUID> selected,
         Map<UUID, ExpressMilestoneProgress.Stats> players
     ) {}
 
     private volatile Snapshot latest;
     private final AtomicBoolean refreshing = new AtomicBoolean();
     private final Map<UUID, ExpressMilestoneProgress> sessions = new HashMap<>();
-    private final Map<UUID, Long> sessionStarted = new HashMap<>();
-    private final Set<UUID> trackedPlayers = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, Long> sessionStarted = new ConcurrentHashMap<>();
 
     ExpressAdvancementBridge(Path database) {
         this.database = database;
@@ -33,13 +33,13 @@ final class ExpressAdvancementBridge {
     void beginSession(UUID player) {
         sessions.remove(player);
         sessionStarted.put(player, System.nanoTime());
-        trackedPlayers.add(player);
     }
     void refresh() throws Exception {
         if (!refreshing.compareAndSet(false, true)) return;
         long started = System.nanoTime();
         try {
-            latest = new Snapshot(started, ExpressStatsReader.read(database, trackedPlayers));
+            Set<UUID> selected = Set.copyOf(sessionStarted.keySet());
+            latest = new Snapshot(started, selected, ExpressStatsReader.read(database, selected));
         } catch (Exception failure) {
             latest = null;
             throw failure;
@@ -52,7 +52,8 @@ final class ExpressAdvancementBridge {
         Snapshot snapshot = latest;
         Long joined = sessionStarted.get(player);
         ExpressMilestoneProgress.Stats stats =
-            snapshot == null || (joined != null && snapshot.readStarted() - joined < 0)
+            snapshot == null || !snapshot.selected().contains(player)
+                || (joined != null && snapshot.readStarted() - joined < 0)
                 ? null
                 : snapshot.players().getOrDefault(player, emptyStats());
         return sessions.computeIfAbsent(
@@ -62,7 +63,6 @@ final class ExpressAdvancementBridge {
     void forget(UUID player) {
         sessions.remove(player);
         sessionStarted.remove(player);
-        trackedPlayers.remove(player);
     }
 
     private static ExpressMilestoneProgress.Stats emptyStats() {
@@ -116,7 +116,7 @@ final class ExpressAdvancementBridge {
             title,
             List.of("§7EnthusiaExpress", "§7Requirements:", "§f" + requirement,
                 "§7Progress is read from mail history.",
-                "§7Rewards: None (advancement only)."),
+                "§7Rewards: Claim with /rewards."),
             icon, frame, x, y);
     }
 }

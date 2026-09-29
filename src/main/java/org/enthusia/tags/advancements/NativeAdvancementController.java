@@ -32,6 +32,8 @@ import org.enthusia.tags.rewards.RewardService;
 
 /** Main-thread, bounded display projection. No reward delivery or SQL in this adapter. */
 public final class NativeAdvancementController implements Listener, AutoCloseable {
+    private static final Set<String> NATIVE_REWARD_CATEGORIES = Set.of(
+        "playtime", "mining", "combat", "deaths", "economy", "exploration", "misc");
     private final JavaPlugin plugin;
     private final RewardService rewards;
     private final ProjectionService projection;
@@ -55,25 +57,6 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         this.rewards = rewards;
         projection = Bukkit.getServicesManager().load(ProjectionService.class);
         if (projection == null) throw new IllegalStateException("EnthusiaAdvancements projection service unavailable; install the pilot companion build");
-        initializeBridges();
-        rebuild();
-        scheduleBridgeRefreshes();
-        Bukkit.getPluginManager().registerEvents(this, plugin);
-        rewards.setAdvancementNotifications((player, completed) -> {
-            Set<String> pending = pendingCelebrations.computeIfAbsent(player.getUniqueId(), ignored -> new HashSet<>());
-            completed.forEach(reward -> pending.add(key(reward.getId())));
-        });
-        task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 20L, 20L);
-    }
-
-    private void initializeBridges() {
-        initializeDuels();
-        initializeCommend();
-        initializeExpress();
-        initializeDiary();
-    }
-
-    private void initializeDuels() {
         if (plugin.getConfig().getBoolean("advancements.warzone-duels-enabled", false)) {
             var provider = Bukkit.getPluginManager().getPlugin("WarzoneDuels");
             if (provider != null && provider.isEnabled()) {
@@ -81,9 +64,6 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                 Bukkit.getOnlinePlayers().forEach(player -> duels.beginSession(player.getUniqueId()));
             } else plugin.getLogger().warning("Warzone Duels advancements requested but WarzoneDuels is unavailable; bridge disabled.");
         }
-    }
-
-    private void initializeCommend() {
         if (plugin.getConfig().getBoolean("advancements.commendation-enabled", true)) {
             var provider = Bukkit.getPluginManager().getPlugin("EnthusiaCommend");
             if (provider != null && provider.isEnabled()) {
@@ -91,9 +71,6 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                 Bukkit.getOnlinePlayers().forEach(player -> commend.beginSession(player.getUniqueId()));
             } else plugin.getLogger().warning("Reputation advancements requested but EnthusiaCommend is unavailable; bridge disabled.");
         }
-    }
-
-    private void initializeExpress() {
         if (plugin.getConfig().getBoolean("advancements.express-enabled", true)) {
             var provider = Bukkit.getPluginManager().getPlugin("EnthusiaExpress");
             if (provider != null && provider.isEnabled()) {
@@ -101,9 +78,6 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                 Bukkit.getOnlinePlayers().forEach(player -> express.beginSession(player.getUniqueId()));
             } else plugin.getLogger().warning("EnthusiaExpress advancements requested but EnthusiaExpress is unavailable; bridge disabled.");
         }
-    }
-
-    private void initializeDiary() {
         if (plugin.getConfig().getBoolean("advancements.diary-enabled", true)) {
             var provider = Bukkit.getPluginManager().getPlugin("DiaryKeeper");
             if (provider != null && provider.isEnabled()) {
@@ -111,16 +85,7 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                 Bukkit.getOnlinePlayers().forEach(player -> diary.beginSession(player.getUniqueId()));
             } else plugin.getLogger().warning("DiaryKeeper advancements requested but DiaryKeeper is unavailable; bridge disabled.");
         }
-    }
-
-    private void scheduleBridgeRefreshes() {
-        scheduleDuelRefresh();
-        scheduleCommendRefresh();
-        scheduleExpressRefresh();
-        scheduleDiaryRefresh();
-    }
-
-    private void scheduleDuelRefresh() {
+        rebuild();
         if (duels != null) duelTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, new Runnable() {
             private long warningAfter;
             @Override public void run() {
@@ -133,9 +98,6 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                 }
             }
         }, 20L, 100L);
-    }
-
-    private void scheduleCommendRefresh() {
         if (commend != null) commendTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, new Runnable() {
             private long warningAfter;
             @Override public void run() {
@@ -149,9 +111,6 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                 }
             }
         }, 20L, 100L);
-    }
-
-    private void scheduleExpressRefresh() {
         if (express != null) expressTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, new Runnable() {
             private long warningAfter;
             @Override public void run() {
@@ -165,9 +124,6 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                 }
             }
         }, 20L, 100L);
-    }
-
-    private void scheduleDiaryRefresh() {
         if (diary != null) diaryTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, new Runnable() {
             private long warningAfter;
             @Override public void run() {
@@ -181,6 +137,14 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                 }
             }
         }, 20L, 100L);
+        Bukkit.getPluginManager().registerEvents(this, plugin);
+        rewards.setAdvancementNotifications((player, completed) -> {
+            Set<String> pending = pendingCelebrations.computeIfAbsent(player.getUniqueId(), ignored -> new HashSet<>());
+            completed.stream()
+                .filter(NativeAdvancementController::isNativeTrackReward)
+                .forEach(reward -> pending.add(key(reward.getId())));
+        });
+        task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 20L, 20L);
     }
 
     public static String key(String rewardId) {
@@ -192,7 +156,11 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         List<ProjectionService.Node> nodes = new ArrayList<>();
         Map<String, List<RewardDefinition>> categories = new LinkedHashMap<>();
         Map<String, RewardDefinition> next = rewards.getRewards();
-        for (RewardDefinition reward : next.values()) categories.computeIfAbsent(reward.getCategory(), ignored -> new ArrayList<>()).add(reward);
+        for (RewardDefinition reward : next.values()) {
+            if (isNativeTrackReward(reward)) {
+                categories.computeIfAbsent(reward.getCategory(), ignored -> new ArrayList<>()).add(reward);
+            }
+        }
         int row = 0;
         for (List<RewardDefinition> group : categories.values()) {
             String fallbackParentId = null;
@@ -301,14 +269,22 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
     private void projectPlayer(Player player) {
         if (player == null) return;
         rewards.queueProgressRefresh(player);
-        if (!projection.ready(player)) return;
         Map<String, Integer> progress = collectProgress(player);
+        latchAdvancementRewards(player, progress);
+        if (!projection.ready(player)) return;
         projection.project(plugin, "enthusia", player, progress);
         celebratePending(player, progress);
+    }
+
+    private void latchAdvancementRewards(Player player, Map<String, Integer> progress) {
+        for (String completed : AdvancementRewardEvidence.completed(progress)) {
+            rewards.latchCounter(player.getUniqueId(), AdvancementRewardEvidence.counterKey(completed));
+        }
     }
     private Map<String, Integer> collectProgress(Player player) {
         Map<String, Integer> progress = new LinkedHashMap<>();
         for (RewardDefinition reward : definitions.values()) {
+            if (!isNativeTrackReward(reward)) continue;
             int value = rewards.getAdvancementProgress(player, reward);
             if (value >= 0) progress.put(key(reward.getId()), value);
         }
@@ -353,6 +329,15 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
             pending, progress, key -> projection.celebrate(plugin, "enthusia", player, key));
         if (pending.isEmpty()) pendingCelebrations.remove(player.getUniqueId());
     }
+    static boolean isNativeTrackReward(RewardDefinition reward) {
+        return reward != null && isNativeTrackCategory(reward.getCategory());
+    }
+
+    static boolean isNativeTrackCategory(String category) {
+        return category != null && NATIVE_REWARD_CATEGORIES.contains(category.toLowerCase(Locale.ROOT));
+    }
+
+
     private void warnAndRetry(Throwable error) {
         if (System.currentTimeMillis() >= nextWarning) {
             nextWarning = System.currentTimeMillis() + 60000;
