@@ -89,20 +89,7 @@ public final class CosmeticsMenu {
             adminPreview ? "" : "&7Choose a category below.",
             adminPreview ? "&eADMIN PREVIEW &7- read-only" : ""));
 
-        if (player.hasPermission("enthusia.tags.admin")) {
-            inventory.setItem(14, action(Material.SPYGLASS,
-                adminPreview ? "&eAdmin Preview: &aON" : "&eAdmin Preview: &cOFF",
-                List.of(adminPreview
-                    ? "&7Browsing the complete cosmetic catalog."
-                    : "&7Browse every cosmetic without unlocking it.",
-                    "&7Preview mode never changes selections or ownership.",
-                    "",
-                    "&eClick to toggle"), previewKey));
-        }
-        inventory.setItem(10, action(Material.NAME_TAG, "&bTags",
-            List.of("&7Open your tag collection.", "&eClick to open"), tagsKey));
-        inventory.setItem(16, action(Material.CHEST, "&6Rewards",
-            List.of("&7Open the rewards browser.", "&eClick to open"), rewardsKey));
+        populateMainNavigation(player, inventory, adminPreview);
 
         List<CosmeticsCategory> categories = new ArrayList<>(cosmeticsService.getCategories().values());
         categories.sort(Comparator.comparing(CosmeticsCategory::id));
@@ -123,6 +110,23 @@ public final class CosmeticsMenu {
             "&7Admin preview is read-only."));
         inventory.setItem(53, action(Material.BARRIER, "&cClose", List.of("&7Close this menu."), closeKey));
         return inventory;
+    }
+
+    private void populateMainNavigation(Player player, Inventory inventory, boolean adminPreview) {
+        if (player.hasPermission("enthusia.tags.admin")) {
+            inventory.setItem(14, action(Material.SPYGLASS,
+                adminPreview ? "&eAdmin Preview: &aON" : "&eAdmin Preview: &cOFF",
+                List.of(adminPreview
+                    ? "&7Browsing the complete cosmetic catalog."
+                    : "&7Browse every cosmetic without unlocking it.",
+                    "&7Preview mode never changes selections or ownership.",
+                    "",
+                    "&eClick to toggle"), previewKey));
+        }
+        inventory.setItem(10, action(Material.NAME_TAG, "&bTags",
+            List.of("&7Open your tag collection.", "&eClick to open"), tagsKey));
+        inventory.setItem(16, action(Material.CHEST, "&6Rewards",
+            List.of("&7Open the rewards browser.", "&eClick to open"), rewardsKey));
     }
 
     public Inventory createCategory(Player player, String categoryId) {

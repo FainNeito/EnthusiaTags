@@ -366,6 +366,11 @@ public final class EntitlementService {
     private void loadConfig() {
         File file = new File(plugin.getDataFolder(), "entitlements.yml");
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+        definitions = Map.copyOf(loadDefinitions(config));
+        legacyGrants = Map.copyOf(loadLegacyGrants(config));
+    }
+
+    private static Map<String, EntitlementDefinition> loadDefinitions(YamlConfiguration config) {
         Map<String, EntitlementDefinition> loadedDefinitions = new LinkedHashMap<>();
         ConfigurationSection definitionsSection = config.getConfigurationSection("definitions");
         if (definitionsSection != null) {
@@ -389,7 +394,10 @@ public final class EntitlementService {
                 ));
             }
         }
+        return loadedDefinitions;
+    }
 
+    private Map<UUID, LegacyGrant> loadLegacyGrants(YamlConfiguration config) {
         Map<UUID, LegacyGrant> loadedGrants = new LinkedHashMap<>();
         ConfigurationSection grantsSection = config.getConfigurationSection("legacy-grants");
         if (grantsSection != null) {
@@ -414,8 +422,7 @@ public final class EntitlementService {
                 }
             }
         }
-        definitions = Map.copyOf(loadedDefinitions);
-        legacyGrants = Map.copyOf(loadedGrants);
+        return loadedGrants;
     }
 
     private static Set<String> normalizeSet(java.util.Collection<String> values) {
