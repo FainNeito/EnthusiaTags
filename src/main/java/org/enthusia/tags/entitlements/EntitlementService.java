@@ -174,7 +174,7 @@ public final class EntitlementService {
             }
             read.whenComplete((ids, error) -> {
                 synchronized (pendingLoads) {
-                    if (enabled && pendingLoads.get(playerId) == token) {
+                    if (enabled && token.equals(pendingLoads.get(playerId))) {
                         if (error == null) installLoaded(playerId, ids);
                         else plugin.getLogger().warning("Failed to load entitlements for " + playerId + ": " + error.getMessage());
                     }
