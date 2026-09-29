@@ -17,7 +17,7 @@ class AdvancementRewardConfigV6MigrationTest {
         YamlConfiguration config = resource("config.yml");
         YamlConfiguration rewards = resource("rewards.yml");
         assertEquals(6, config.getInt("config-version"));
-        assertEquals(6, rewards.getInt("config-version"));
+        assertEquals(7, rewards.getInt("config-version"));
         assertTrue(rewards.isConfigurationSection("categories.advancements"));
 
         ConfigurationSection rewardSection = rewards.getConfigurationSection("rewards");
@@ -65,6 +65,27 @@ class AdvancementRewardConfigV6MigrationTest {
         assertTrue(config.isConfigurationSection("tags.adv_postmaster"));
         assertTrue(rewards.isConfigurationSection("rewards.adv_diary_void_walker"));
         assertTrue(rewards.isConfigurationSection("categories.advancements"));
+        for (String id : Set.of("legacy_beta_tester", "legacy_bug_hunter", "event_prologue_champion",
+            "donor_avid", "donor_avid_founder", "donor_devotee", "donor_devotee_founder",
+            "donor_glorious", "donor_glorious_founder")) {
+            assertTrue(rewards.isConfigurationSection("rewards." + id), id);
+        }
+        assertTrue(rewards.isConfigurationSection("categories.supporter"));
+        assertTrue(rewards.isConfigurationSection("categories.legacy"));
+        assertTrue(rewards.isConfigurationSection("categories.events"));
+    }
+
+    @Test
+    void existingV6RewardsGainNewEntriesWithoutReplacingCustomSupporterReward() {
+        YamlConfiguration rewards = new YamlConfiguration();
+        rewards.set("config-version", 6);
+        rewards.set("rewards.donor_avid.name", "Custom Avid");
+        var report = new ConfigMigrator.MigrationReport();
+
+        assertTrue(AdvancementRewardConfigV6Migration.migrateRewards(
+            rewards, resource("rewards.yml"), report));
+        assertEquals("Custom Avid", rewards.getString("rewards.donor_avid.name"));
+        assertTrue(rewards.isConfigurationSection("rewards.donor_glorious_founder"));
     }
 
     private static YamlConfiguration resource(String name) {

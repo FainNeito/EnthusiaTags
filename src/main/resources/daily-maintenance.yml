@@ -1,5 +1,7 @@
 # Daily reward maintenance windows.
-# Times use the timezone below. A window is active from start (inclusive) to end (exclusive).
+# Times use daily.timezone from config.yml so claim dates and maintenance dates agree.
+# The timezone below is retained for operator reference; a mismatch logs a warning.
+# A window is active from start (inclusive) to end (exclusive).
 # Keep completed windows in this file so their dates remain valid streak-exemption history.
 # Add a new named section under `windows` for future maintenance periods.
 

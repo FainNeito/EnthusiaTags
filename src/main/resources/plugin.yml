@@ -109,6 +109,22 @@ permissions:
       enthusia.cosmetics.join_clean: true
       enthusia.cosmetics.quit_clean: true
       enthusia.cosmetics.km_gg: true
+  enthusiatags.entitlement.prologue_champion:
+    default: false
+  enthusiatags.entitlement.bug_hunter:
+    default: false
+  enthusiatags.entitlement.donor_avid:
+    default: false
+  enthusiatags.entitlement.donor_avid_founder:
+    default: false
+  enthusiatags.entitlement.donor_devotee:
+    default: false
+  enthusiatags.entitlement.donor_devotee_founder:
+    default: false
+  enthusiatags.entitlement.donor_glorious:
+    default: false
+  enthusiatags.entitlement.donor_glorious_founder:
+    default: false
   enthusiatags.reward.avid:
     description: Qualifies the player for permanent Avid supporter rewards.
     default: false

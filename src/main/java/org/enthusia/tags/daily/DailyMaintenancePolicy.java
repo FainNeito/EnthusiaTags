@@ -106,17 +106,25 @@ public final class DailyMaintenancePolicy {
     }
 
     private static ZoneId configuredZone(YamlConfiguration configuration, JavaPlugin owner) {
-        String configured = configuration.getString("timezone", DEFAULT_TIMEZONE);
-        if (configured == null || configured.isBlank()) {
-            return ZoneId.of(DEFAULT_TIMEZONE);
-        }
+        return claimZone(owner.getConfig().getString("daily.timezone", DEFAULT_TIMEZONE),
+            configuration.getString("timezone", DEFAULT_TIMEZONE), owner.getLogger());
+    }
+
+    static ZoneId claimZone(String dailyZone, String maintenanceZone, java.util.logging.Logger logger) {
+        String configured = dailyZone == null || dailyZone.isBlank() ? DEFAULT_TIMEZONE : dailyZone.trim();
+        ZoneId zone;
         try {
-            return ZoneId.of(configured.trim());
+            zone = ZoneId.of(configured);
         } catch (DateTimeException ex) {
-            owner.getLogger().warning("Invalid daily maintenance timezone " + configured
+            logger.warning("Invalid daily timezone " + configured
                 + "; using " + DEFAULT_TIMEZONE + ".");
-            return ZoneId.of(DEFAULT_TIMEZONE);
+            zone = ZoneId.of(DEFAULT_TIMEZONE);
         }
+        if (maintenanceZone != null && !maintenanceZone.isBlank() && !zone.getId().equals(maintenanceZone.trim())) {
+            logger.warning("Daily maintenance timezone " + maintenanceZone
+                + " differs from daily.timezone; interpreting maintenance windows in " + zone + ".");
+        }
+        return zone;
     }
 
     private static List<DailyMaintenanceWindow> configuredWindows(YamlConfiguration configuration,

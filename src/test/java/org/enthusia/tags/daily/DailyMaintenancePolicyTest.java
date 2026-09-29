@@ -66,4 +66,11 @@ class DailyMaintenancePolicyTest {
 
         assertEquals(1, next);
     }
+
+    @Test
+    void maintenanceWindowDatesUseTheSameZoneAsDailyClaims() {
+        ZoneId claimZone = ZoneId.of("America/New_York");
+        assertEquals(claimZone, DailyMaintenancePolicy.claimZone(
+            claimZone.getId(), "UTC", java.util.logging.Logger.getAnonymousLogger()));
+    }
 }

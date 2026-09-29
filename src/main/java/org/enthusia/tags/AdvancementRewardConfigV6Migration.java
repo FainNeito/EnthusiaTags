@@ -30,7 +30,10 @@ final class AdvancementRewardConfigV6Migration {
         "adv_express_read_all_about_it", "adv_express_avid_reader",
         "adv_diary_dear_diary", "adv_diary_first_entry", "adv_diary_prolific_writer",
         "adv_diary_finders_keepers", "adv_diary_indestructible", "adv_diary_stubborn",
-        "adv_diary_void_walker", "adv_diary_nice_try"
+        "adv_diary_void_walker", "adv_diary_nice_try",
+        "legacy_beta_tester", "legacy_bug_hunter", "event_prologue_champion",
+        "donor_avid", "donor_avid_founder", "donor_devotee", "donor_devotee_founder",
+        "donor_glorious", "donor_glorious_founder"
     );
 
     private AdvancementRewardConfigV6Migration() {}
@@ -48,6 +51,9 @@ final class AdvancementRewardConfigV6Migration {
                                   ConfigMigrator.MigrationReport report) {
         boolean changed = copyMissingSection(
             defaults, target, "categories.advancements", "rewards.yml", report);
+        for (String category : List.of("supporter", "legacy", "events")) {
+            changed |= copyMissingSection(defaults, target, "categories." + category, "rewards.yml", report);
+        }
         for (String id : REWARD_IDS) {
             changed |= copyMissingSection(defaults, target, "rewards." + id, "rewards.yml", report);
         }

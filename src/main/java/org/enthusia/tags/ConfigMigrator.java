@@ -17,7 +17,7 @@ import java.util.List;
 
 public final class ConfigMigrator {
     public static final int CURRENT_CONFIG_VERSION = 6;
-    private static final int REWARDS_CONFIG_VERSION = 6;
+    private static final int REWARDS_CONFIG_VERSION = 7;
     private static final DateTimeFormatter BACKUP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
 
     private final JavaPlugin plugin;
@@ -96,7 +96,7 @@ public final class ConfigMigrator {
             if (existingVersion < 5) {
                 changed |= RewardConfigV5Migration.migrateRewards(config, defaults, report);
             }
-            if (existingVersion < 6) {
+            if (existingVersion < 7) {
                 changed |= AdvancementRewardConfigV6Migration.migrateRewards(config, defaults, report);
             }
             return changed;

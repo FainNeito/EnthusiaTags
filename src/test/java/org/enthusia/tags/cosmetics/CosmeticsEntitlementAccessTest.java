@@ -39,4 +39,19 @@ class CosmeticsEntitlementAccessTest {
 
         assertTrue(service.canUseCosmetic(player, cosmetic));
     }
+
+    @Test
+    void operatorPermissionDoesNotBypassEntitlementCosmeticOwnership() {
+        CosmeticsService service = new CosmeticsService(
+            mock(JavaPlugin.class), mock(Messages.class), mock(PerformanceMonitor.class));
+        Player player = mock(Player.class);
+        when(player.hasPermission("enthusiatags.entitlement.donor_avid")).thenReturn(true);
+        CosmeticDefinition cosmetic = new CosmeticDefinition(
+            "join_avid_supporter", "Avid", "join", CosmeticType.JOIN_MESSAGE,
+            Material.PAPER, null, null, null, "&aHi", "enthusiatags.entitlement.donor_avid", 0, 0, 0, 0);
+
+        assertFalse(service.canUseCosmetic(player, cosmetic));
+        service.setEntitlementAccess((subject, cosmeticId) -> "join_avid_supporter".equals(cosmeticId));
+        assertTrue(service.canUseCosmetic(player, cosmetic));
+    }
 }

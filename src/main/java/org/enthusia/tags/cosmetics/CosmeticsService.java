@@ -156,6 +156,9 @@ public final class CosmeticsService {
 
     public boolean canUseCosmetic(Player player, CosmeticDefinition cosmetic) {
         if (player == null || cosmetic == null) return false;
+        if (cosmetic.getPermission().startsWith("enthusiatags.entitlement.")) {
+            return entitlementAccess.test(player, cosmetic.getId());
+        }
         return player.hasPermission(cosmetic.getPermission()) || entitlementAccess.test(player, cosmetic.getId());
     }
 
