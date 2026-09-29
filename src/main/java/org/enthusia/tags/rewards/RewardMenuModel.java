@@ -7,9 +7,9 @@ import java.util.OptionalLong;
 
 /** Pure presentation rules; RewardService remains the sole authority for claiming. */
 public final class RewardMenuModel {
-    private RewardMenuModel() {}
     public static final List<Integer> REWARD_SLOTS = List.of(19,20,21,22,23,24,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43);
     public static final List<Integer> DASHBOARD_SLOTS = List.of(10,12,14,16,20,22,24);
+    private RewardMenuModel() {}
     public enum DisplayState { NOT_STARTED, IN_PROGRESS, READY, CLAIMED, PENDING, QUEUED, RETRY, REVIEW, WITHHELD, UNAVAILABLE }
     public record Reading(RewardCriterion criterion, OptionalLong value) {
         public Reading { if (criterion == null || value == null) throw new IllegalArgumentException("Missing progress reading"); }
@@ -64,7 +64,10 @@ public final class RewardMenuModel {
         return new Page<>(index, count, values.subList(start, (int) Math.min(values.size(), start + (long) size)));
     }
     public static Summary summary(List<Entry> rows) {
-        int claimed=0, ready=0, unavailable=0, attention=0;
+        int claimed=0;
+        int ready=0;
+        int unavailable=0;
+        int attention=0;
         for (Entry row : rows) {
             if (row.claimed()) claimed++;
             if (row.ready()) ready++;
@@ -76,24 +79,31 @@ public final class RewardMenuModel {
     public static List<Entry> select(List<Entry> rows, RewardMenuState state) {
         List<Entry> selected = new ArrayList<>();
         for (Entry row : rows) {
-            if (state.view() == RewardMenuState.View.CATEGORY && !row.reward().getCategory().equalsIgnoreCase(state.category())) continue;
-            if (!matches(row, state.filter())) continue;
-            if (state.group() != RewardMenuState.Group.ALL && row.group() != state.group()) continue;
-            selected.add(row);
+            if (included(row, state)) selected.add(row);
         }
+        selected.sort(comparator(state.sort(), progressionOrder()));
+        return List.copyOf(selected);
+    }
+    private static boolean included(Entry row, RewardMenuState state) {
+        if (state.view() == RewardMenuState.View.CATEGORY && !row.reward().getCategory().equalsIgnoreCase(state.category())) return false;
+        if (!matches(row, state.filter())) return false;
+        return state.group() == RewardMenuState.Group.ALL || row.group() == state.group();
+    }
+    private static Comparator<Entry> progressionOrder() {
         Comparator<Entry> fallback = Comparator.comparingInt(Entry::categoryOrder)
             .thenComparingInt(e -> "playtime".equalsIgnoreCase(e.reward().getCategory()) ? e.group().ordinal() : 0)
             .thenComparingLong(e -> "playtime".equalsIgnoreCase(e.reward().getCategory()) && e.reward().getCriteria().size() == 1
                 ? e.reward().getCriteria().getFirst().getAmount() : e.order())
             .thenComparingInt(Entry::order).thenComparing(Entry::id);
-        Comparator<Entry> comparator = switch(state.sort()) {
+        return fallback;
+    }
+    private static Comparator<Entry> comparator(RewardMenuState.Sort sort, Comparator<Entry> fallback) {
+        return switch(sort) {
             case PROGRESSION -> fallback;
             case NAME -> Comparator.comparing((Entry e) -> RewardMenuText.plain(e.reward().getName()), String.CASE_INSENSITIVE_ORDER).thenComparing(fallback);
             case CLOSEST -> Comparator.comparing(Entry::claimed)
                 .thenComparing(Comparator.comparingDouble(Entry::fraction).reversed()).thenComparing(fallback);
         };
-        selected.sort(comparator);
-        return List.copyOf(selected);
     }
     private static boolean matches(Entry row, RewardMenuState.Filter filter) {
         return switch(filter) { case ALL -> true; case READY -> row.ready(); case UNCLAIMED -> !row.claimed(); case CLAIMED -> row.claimed(); };

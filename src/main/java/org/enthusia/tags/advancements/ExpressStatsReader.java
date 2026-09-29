@@ -67,7 +67,9 @@ final class ExpressStatsReader {
         readRecipientStats(connection, players, deliveryPending, selected);
     }
 
-    private static String selection(String column, List<UUID> selected) {
+    // The only SQL identifier admitted here is one of two fixed, internal column names.
+    // UUIDs are bound separately by prepare(); no player or database value enters SQL text.
+    static String selection(String column, List<UUID> selected) {
         if (!Set.of("sender_uuid", "recipient_uuid").contains(column)) {
             throw new IllegalArgumentException("Unsupported mail ownership column");
         }

@@ -74,7 +74,7 @@ public final class TagMenu {
 
         frame(inventory);
         PlayerTagData data = tagService.getPlayerData(player.getUniqueId());
-        inventory.setItem(4, header(player, data, tags.size(), normalizedFilter, adminPreview));
+        inventory.setItem(4, header(data, tags.size(), normalizedFilter, adminPreview));
         putFilter(inventory, 10, "all", Material.NAME_TAG, "&fAll Tags", normalizedFilter);
         putFilter(inventory, 12, "legacy", Material.ECHO_SHARD, "&bLegacy", normalizedFilter);
         putFilter(inventory, 14, "supporter", Material.GOLD_INGOT, "&6Supporter", normalizedFilter);
@@ -94,7 +94,7 @@ public final class TagMenu {
         int to = Math.min(tags.size(), from + PAGE_SIZE);
         for (int i = from; i < to; i++) {
             TagDefinition definition = tags.get(i);
-            inventory.setItem(CONTENT_SLOTS.get(i - from), tagItem(player, data, definition, adminPreview));
+            inventory.setItem(CONTENT_SLOTS.get(i - from), tagItem(data, definition, adminPreview));
         }
         if (tags.isEmpty()) {
             inventory.setItem(31, plain(Material.PAPER, "&fNo tags in this view",
@@ -119,7 +119,8 @@ public final class TagMenu {
         ItemStack gray = plain(Material.GRAY_STAINED_GLASS_PANE, " ");
         ItemStack orange = plain(Material.ORANGE_STAINED_GLASS_PANE, " ");
         for (int slot = 0; slot < 54; slot++) {
-            int row = slot / 9, column = slot % 9;
+            int row = slot / 9;
+            int column = slot % 9;
             if (row == 0 || row == 5 || column == 0 || column == 8) inventory.setItem(slot, black);
         }
         for (int slot = 9; slot <= 17; slot++) inventory.setItem(slot, gray);
@@ -127,7 +128,7 @@ public final class TagMenu {
         inventory.setItem(5, orange);
     }
 
-    private ItemStack header(Player player, PlayerTagData data, int visible, String filter, boolean preview) {
+    private ItemStack header(PlayerTagData data, int visible, String filter, boolean preview) {
         String selected = data.getSelectedTag();
         TagDefinition selectedDefinition = selected == null ? null : tagService.getRegistry().get(selected);
         List<String> lore = new ArrayList<>();
@@ -144,7 +145,7 @@ public final class TagMenu {
         return plain(Material.NAME_TAG, preview ? "&eTag Catalog Preview" : "&6Your Tags", lore.toArray(String[]::new));
     }
 
-    private ItemStack tagItem(Player player, PlayerTagData data, TagDefinition tag, boolean preview) {
+    private ItemStack tagItem(PlayerTagData data, TagDefinition tag, boolean preview) {
         boolean owned = data.getOwnedTags().contains(tag.getId().toLowerCase(Locale.ROOT));
         boolean selected = tag.getId().equalsIgnoreCase(data.getSelectedTag());
         List<String> lore = new ArrayList<>(tag.getDescription());
