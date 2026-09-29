@@ -25,7 +25,11 @@ public final class RewardMenu {
     private final Plugin plugin;
     private final TagService tags;
     private final RewardMenuItems items;
-    private final NamespacedKey rewardKey, categoryKey, backKey, nextKey, prevKey;
+    private final NamespacedKey rewardKey;
+    private final NamespacedKey categoryKey;
+    private final NamespacedKey backKey;
+    private final NamespacedKey nextKey;
+    private final NamespacedKey prevKey;
     private final Set<ClaimKey> inFlight = ConcurrentHashMap.newKeySet();
     private BukkitTask refreshTask;
     private long warningAfter;
@@ -130,7 +134,8 @@ public final class RewardMenu {
         ItemStack border = RewardMenuItems.item(Material.BLACK_STAINED_GLASS_PANE," ");
         int lastRow = inventory.getSize() / 9 - 1;
         for(int slot=0;slot<inventory.getSize();slot++) {
-            int row=slot/9, column=slot%9;
+            int row=slot/9;
+            int column=slot%9;
             if(row==0 || row==lastRow || column==0 || column==8) inventory.setItem(slot,border);
         }
         if(inventory.getSize()==54) {

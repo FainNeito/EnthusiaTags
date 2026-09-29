@@ -281,7 +281,8 @@ public final class CosmeticsMenu {
         ItemStack gray = plain(Material.GRAY_STAINED_GLASS_PANE, " ");
         ItemStack orange = plain(Material.ORANGE_STAINED_GLASS_PANE, " ");
         for (int slot = 0; slot < 54; slot++) {
-            int row = slot / 9, column = slot % 9;
+            int row = slot / 9;
+            int column = slot % 9;
             if (row == 0 || row == 5 || column == 0 || column == 8) inventory.setItem(slot, black);
         }
         for (int slot = 9; slot <= 17; slot++) inventory.setItem(slot, gray);
