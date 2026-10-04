@@ -1,5 +1,12 @@
 # SPEAR tasks
 
+## T-914 [TDD] Active playtime requirement policy
+
+References: REQ-914, REQ-915; implementation.md Presentation and Persistence.
+Evidence: local pilot patch passed 327 tests and was staged inactive on October 3; that is not canonical-source delivery. Current canonical main c0d9162 still bundles three total-minute requirements and schema version 5. A schema-independent migration is necessary for existing pilot configs at versions 7/8.
+Acceptance: all time requirements use active minutes; thresholds, payouts, custom non-time criteria, custom descriptions and existing earned data remain intact; repeated migration is a no-op; higher config versions are not downgraded.
+Status: local spec/prove/engine/arch/refine complete; canonical PR and hosted verification pending. Actual canonical regressions failed two assertions before implementation; clean verify now passes 250 tests. See docs/evidence/active-playtime-policy.md. Current user agreements authorize PR delivery and supersede older local-only delivery notes.
+
 ## T-010 [TDD] Optional Warzone Duels statistics advancements
 
 Naming correction approved after the initial build: duel display titles are Arena Initiate and Arena Win Streak, avoiding existing combat titles First Blood and Unstoppable. Stable duel keys, thresholds, existing combat definitions and reward history are unchanged; node tests assert the corrected titles and preserved keys.

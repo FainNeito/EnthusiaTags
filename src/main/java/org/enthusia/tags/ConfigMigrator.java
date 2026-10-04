@@ -63,6 +63,11 @@ public final class ConfigMigrator {
                 changed = true;
             }
             changed |= copyMissing(defaults, config, "", resourceName, report);
+            if ("rewards.yml".equals(resourceName)
+                && ActivePlaytimeRewardMigration.needsUpdate(config, defaults)) {
+                if (existingVersion >= targetVersion) backup(file, resourceName, report);
+                changed |= ActivePlaytimeRewardMigration.migrate(config, defaults, report);
+            }
             if (changed) {
                 config.save(file);
             }
