@@ -1,6 +1,8 @@
 # SPEAR tasks
 
 ## T-928 [TDD] Voluntary newcomer reward guide
+
+Hosted Codacy refinement: exact head 8789d61 passed verify/Sentinel but gate 112034708449 failed on duplicated guide literal and a conditional argument-count literal in RewardsCommand. Extracted GUIDE_COMMAND and TARGET_ARGUMENTS without changing dispatch, permissions or tab suggestions. Existing behavior suite rerun: clean verify passes 259 tests, EARS/refine assertion/diff check and final shaded SQLite probe pass (guide-codacy-verify.log). Superseding unmerged local JAR SHA256 1A2A1D5C5870B02890897618A775413FD64206B2DC15E59F303178CCBF14B8CC. Static-review refinement, no invented new behavioral red/green cycle; hosted new-head reanalysis remains required.
 References: REQ-928 through REQ-932.
 Evidence: current canonical main 28048ca fetched; isolated codex/newcomer-reward-guide; production network/reward audit and operational guide specification. Gold ownership includes legacy reservations and ignores legacy sibling exemptions. Existing evaluate does not verify monetary eligibility; focused reward menu already exists.
 Acceptance: default-disabled manual `/rewards guide` interest paths; one available goal; immutable progress and read-only Gold preview; no claim, payment, auto-message or gameplay actions; fail closed on unknown evidence and stale session/reload; preserve reward configuration and ordinary claim flow.
