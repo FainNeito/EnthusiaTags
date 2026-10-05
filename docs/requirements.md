@@ -1,5 +1,7 @@
 # EnthusiaTags advancement pilot
 
+- REQ-916: WHEN companion sources are verified THE SYSTEM SHALL use the canonical merged advancement presentation provider with matching Maven coordinates and reject unapproved repositories, versions or commits without changing reward behavior.
+
 - REQ-914: WHEN playtime reward requirements are loaded THE SYSTEM SHALL use active playtime for every bundled and existing total or AFK minute criterion, retaining thresholds, payouts, custom non-time criteria, historical claims, and administrator descriptions.
 - REQ-915: WHEN an existing reward configuration uses active-time-incompatible criteria THE SYSTEM SHALL migrate them idempotently even if its schema version is newer than the canonical bundled configuration without lowering that version.
 

@@ -1,5 +1,12 @@
 # SPEAR tasks
 
+## T-916 [INFRA] Canonical advancement presentation dependency
+
+References: REQ-916; implementation.md Presentation and Verification and rollout.
+Evidence: network PR #149 provider af9cd7772d14fce201d58df28c3ef5c32e335319 declares 1.0.0-pilot.6-chat-colors-test.4 while this consumer and companion validator require pilot.5. Canonical main c0d9162 is an ancestor of this ongoing PR branch. The repository's strict version guard reproduces the mismatch; no gameplay red/green history is invented.
+Acceptance: canonical repository and immutable merged source pin, exact consumer/provider version agreement, narrow accepted version grammar and rejection tests, real companion build and full consumer verification; reward state, permissions and presentation ownership unchanged.
+Status: local spec/prove/engine/arch/refine complete. Canonical-provider validator regression rejected the approved repository before implementation; after the narrow repository/version update all 10 Python bootstrap tests pass. Clean merged provider Maven install passes 40 tests; Tags clean verify against that exact API passes 250 tests; EARS and all 12 Node tooling tests pass. No runtime source, reward data or permissions changed. Hosted exact-head verification and actual player/client acceptance remain separate gates. No production changes.
+
 ## T-914 [TDD] Active playtime requirement policy
 
 References: REQ-914, REQ-915; implementation.md Presentation and Persistence.
