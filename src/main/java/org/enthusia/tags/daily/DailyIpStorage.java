@@ -97,10 +97,12 @@ final class DailyIpStorage implements AutoCloseable {
         }
     }
 
-    synchronized boolean canReserve(UUID playerId, LocalDate date, String ipAddress) throws SQLException {
-        Set<UUID> existing = owners(date, ipAddress);
-        return existing.isEmpty() || existing.contains(playerId)
-            || siblingGroup(playerId).containsAll(existing);
+    boolean canReserve(UUID playerId, LocalDate date, String ipAddress) throws SQLException {
+        synchronized (this) {
+            Set<UUID> existing = owners(date, ipAddress);
+            return existing.isEmpty() || existing.contains(playerId)
+                || siblingGroup(playerId).containsAll(existing);
+        }
     }
 
     synchronized void release(UUID playerId, LocalDate date, String ipAddress) throws SQLException {

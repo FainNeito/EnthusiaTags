@@ -24,6 +24,8 @@ final class DailyReminder {
     private final Function<Player, CompletableFuture<Optional<Offer>>> load;
     private final Predicate<Player> ready;
     private final Supplier<LocalDate> today;
+    // Join/claim/quit events and scheduled callbacks access this only on the Paper main thread.
+    @SuppressWarnings("PMD.UseConcurrentHashMap")
     private final Map<UUID, Session> sessions = new HashMap<>();
 
     DailyReminder(JavaPlugin plugin, Function<Player, CompletableFuture<Optional<Offer>>> load,
