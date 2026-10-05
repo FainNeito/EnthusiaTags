@@ -43,12 +43,12 @@ rewards:
   first_hour:
     name: '&aFirst Hour'
     description:
-      - '&7Spend your first hour on the server.'
+      - '&7Spend your first active hour on the server.'
     icon: CLOCK
     category: playtime
     criteria:
       time:
-        type: PLAYTIME_TOTAL_MINUTES
+        type: PLAYTIME_ACTIVE_MINUTES
         amount: 60
     rewards:
       payout:
@@ -57,11 +57,11 @@ rewards:
   payday:
     name: "&aPayday"
     description:
-      - "&7Play 5 hours total."
+      - "&7Play 5 active hours."
     icon: "SUNFLOWER"
     criteria:
       c1:
-        type: PLAYTIME_TOTAL_MINUTES
+        type: PLAYTIME_ACTIVE_MINUTES
         amount: 300
     rewards:
       r1:
@@ -85,11 +85,11 @@ rewards:
   market_access:
     name: "&eMarket Access"
     description:
-      - "&7Unlock stall access."
+      - "&7Unlock stall access with active playtime."
     icon: "LECTERN"
     criteria:
       c1:
-        type: PLAYTIME_TOTAL_MINUTES
+        type: PLAYTIME_ACTIVE_MINUTES
         amount: 600
     rewards:
       r1:

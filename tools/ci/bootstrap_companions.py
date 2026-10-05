@@ -39,7 +39,7 @@ def require_hex(value, size):
 def load_pins(root):
     pins = json.loads(read_bounded(bounded_file(root, "tools/ci/companions.json")))
     expected = {
-        "renderer": "FainNeito/EnthusiaAdvancements",
+        "renderer": "BadgersMC/EnthusiaAdvancements",
         "rosechat": "FainNeito/Enthusia-RoseChat",
     }
     if not isinstance(pins, dict) or set(pins) != set(expected):
@@ -54,7 +54,9 @@ def load_pins(root):
         raise ValueError("Only the published presence contract is allowed")
     require_hex(rose.get("sha256"), 64)
     version = pins["renderer"].get("version")
-    if not isinstance(version, str) or not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+-pilot\.[0-9]+", version):
+    if not isinstance(version, str) or not re.fullmatch(
+        r"[0-9]+\.[0-9]+\.[0-9]+-pilot\.[0-9]+(?:-chat-colors-test\.[0-9]+)?", version
+    ):
         raise ValueError("Unexpected renderer version")
     return pins
 

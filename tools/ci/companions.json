@@ -1,8 +1,8 @@
 {
   "renderer": {
-    "repository": "FainNeito/EnthusiaAdvancements",
-    "sha": "139177ccba8f37b2d568f2e4d8fb7e5e0b864db8",
-    "version": "1.0.0-pilot.5"
+    "repository": "BadgersMC/EnthusiaAdvancements",
+    "sha": "af9cd7772d14fce201d58df28c3ef5c32e335319",
+    "version": "1.0.0-pilot.6-chat-colors-test.4"
   },
   "rosechat": {
     "repository": "FainNeito/Enthusia-RoseChat",
