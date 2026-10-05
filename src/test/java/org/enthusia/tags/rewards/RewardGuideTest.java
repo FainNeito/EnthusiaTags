@@ -116,4 +116,16 @@ class RewardGuideTest {
         verify(service, never()).previewGuideGold(any(), any());
         assertEquals(1, messages.size());
     }
+
+    @Test void allowedGoldShowsConfiguredAmountWithoutPayingOrOpeningInventory() {
+        RewardGuide guide = ready();
+        when(service.previewGuideGold(player, goal)).thenReturn(CompletableFuture.completedFuture(GoldEligibility.ALLOWED));
+        guide.open(player, "build");
+        callbacks.get(0).run();
+        String text = messages.stream().map(PlainTextComponentSerializer.plainText()::serialize).reduce("", String::concat);
+        assertTrue(text.contains("100 Gold"));
+        assertTrue(text.contains("checked again when you claim"));
+        verify(service, never()).claimAsync(any(Player.class), any(RewardDefinition.class));
+        verify(player, never()).openInventory(any(org.bukkit.inventory.Inventory.class));
+    }
 }

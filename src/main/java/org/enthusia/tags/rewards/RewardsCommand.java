@@ -48,6 +48,10 @@ public final class RewardsCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(message("players-only"));
             return true;
         }
+        return handlePlayerCommand(player, args);
+    }
+
+    private boolean handlePlayerCommand(Player player, String[] args) {
         if (args.length >= 1 && args[0].equalsIgnoreCase("guide")) {
             guide.open(player, args.length == 1 ? null : args[1]);
             return true;
@@ -58,16 +62,20 @@ public final class RewardsCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("open")) {
-            RewardDefinition reward = rewardService.getRewards().get(args[1].toLowerCase(java.util.Locale.ROOT));
-            if (reward == null) {
-                player.sendMessage(Component.text("Unknown reward."));
-                return true;
-            }
-            player.openInventory(rewardMenu.createFocused(player, reward));
+            openFocused(player, args[1]);
             return true;
         }
         player.openInventory(rewardMenu.create(player));
         return true;
+    }
+
+    private void openFocused(Player player, String id) {
+        RewardDefinition reward = rewardService.getRewards().get(id.toLowerCase(java.util.Locale.ROOT));
+        if (reward == null) {
+            player.sendMessage(Component.text("Unknown reward."));
+        } else {
+            player.openInventory(rewardMenu.createFocused(player, reward));
+        }
     }
 
     @Override

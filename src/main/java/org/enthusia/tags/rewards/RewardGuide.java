@@ -50,7 +50,7 @@ final class RewardGuide {
         RewardDefinition target = findGoal(player, selected);
         if (target == null) {
             pending.remove(player.getUniqueId(), player);
-            player.sendMessage(Component.text("No verified unclaimed goal is available for this path right now. Use /rewards to browse rewards."));
+            player.sendMessage(Component.text("No new goal is available for this path right now. Use /rewards to browse your progress."));
             return;
         }
         preview(player, target);
@@ -66,11 +66,16 @@ final class RewardGuide {
     private void showPaths(Player player) {
         player.sendMessage(Component.text("Choose a goal: Build and earn, Social and explore, or Fight and compete.", NamedTextColor.GOLD));
         for (String choice : PATHS) {
-            Component label = Component.text("[" + choice + "]", NamedTextColor.GREEN);
+            String name = switch (choice) {
+                case "build" -> "Build and earn";
+                case "social" -> "Social and explore";
+                default -> "Fight and compete";
+            };
+            Component label = Component.text("[" + name + "]", NamedTextColor.GREEN);
             if (findGoal(player, choice) != null) {
                 label = label.clickEvent(ClickEvent.runCommand("/rewards guide " + choice));
             } else {
-                label = Component.text(choice + ": no verified unclaimed goal available right now", NamedTextColor.GRAY);
+                label = Component.text(name + ": no new goal available right now", NamedTextColor.GRAY);
             }
             player.sendMessage(label);
         }
@@ -117,9 +122,11 @@ final class RewardGuide {
             }
         }
         if (goal.getActions().stream().anyMatch(RewardAction::isGoldNetworkLimited)) {
-            String text = gold == GoldEligibility.ALLOWED
-                ? "Gold eligibility is checked again when you claim. Completing a goal does not pay automatically."
-                : "Gold is not confirmed for this goal. Shared-network limits may apply; other components can still be available.";
+            String text = switch (gold) {
+                case ALLOWED -> "Gold eligibility is checked again when you claim. Completing a goal does not pay automatically.";
+                case BLOCKED -> "Gold is unavailable for this goal on this account. Other rewards may still be available.";
+                case UNKNOWN -> "Gold eligibility is unavailable right now. Check the reward screen for details.";
+            };
             player.sendMessage(Component.text(text, NamedTextColor.GRAY));
         }
     }

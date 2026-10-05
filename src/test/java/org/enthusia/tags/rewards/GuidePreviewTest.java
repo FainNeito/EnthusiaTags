@@ -57,6 +57,10 @@ class GuidePreviewTest {
         storage.init();
         try {
             UUID owner = UUID.randomUUID(), other = UUID.randomUUID();
+            assertEquals(GoldEligibility.ALLOWED, storage.previewGoldActionNow(other, "race", GOLD, "fp", ADDRESS));
+            assertTrue(storage.reserveGoldActionNow(owner, "race", GOLD, "fp", ADDRESS));
+            assertFalse(storage.reserveGoldActionNow(other, "race", GOLD, "fp", ADDRESS),
+                "An allowed preview cannot bypass a competing reservation made before claim");
             assertTrue(storage.reserveIpClaimNow(owner, "goal", ADDRESS));
             assertEquals(GoldEligibility.BLOCKED, storage.previewGoldActionNow(other, "goal", GOLD, "fp", ADDRESS));
             storage.saveActionLedgerNow(other, "goal", GOLD, "fp", RewardStatus.WITHHELD_NETWORK_LIMIT, null, null);
