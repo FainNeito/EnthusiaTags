@@ -19,12 +19,14 @@ public final class RewardsCommand implements CommandExecutor, TabCompleter {
     private final Messages messages;
     private final EnthusiaTagsPlugin plugin;
     private final RewardService rewardService;
+    private final RewardGuide guide;
 
     public RewardsCommand(RewardService rewardService, TagService tagService, Messages messages, EnthusiaTagsPlugin plugin) {
         this.rewardMenu = new RewardMenu(rewardService, tagService);
         this.rewardService = rewardService;
         this.messages = messages;
         this.plugin = plugin;
+        this.guide = new RewardGuide(plugin, rewardService);
     }
 
     @Override
@@ -44,6 +46,10 @@ public final class RewardsCommand implements CommandExecutor, TabCompleter {
         }
         if (!(sender instanceof Player player)) {
             sender.sendMessage(message("players-only"));
+            return true;
+        }
+        if (args.length >= 1 && args[0].equalsIgnoreCase("guide")) {
+            guide.open(player, args.length == 1 ? null : args[1]);
             return true;
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("retryitems")) {
@@ -66,6 +72,11 @@ public final class RewardsCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (sender instanceof Player player && guide.allowed(player)) {
+            if (args.length == 2 && args[0].equalsIgnoreCase("guide")) return List.of("build", "social", "combat");
+            if (args.length == 1) return sender.hasPermission("enthusia.tags.admin")
+                ? List.of("reload", "open", "retryitems", "guide") : List.of("retryitems", "guide");
+        }
         if (args.length == 1) {
             return sender.hasPermission("enthusia.tags.admin")
                 ? List.of("reload", "open", "retryitems") : List.of("retryitems");

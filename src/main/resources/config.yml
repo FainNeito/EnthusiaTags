@@ -69,6 +69,13 @@ global-scan:
   debug-log-repairs: false
 
 rewards:
+  guide:
+    enabled: false
+    # Missing or unsupported provider goals are omitted, never treated as zero progress.
+    paths:
+      build: [starter_pack, tree_puncher, first_hour]
+      social: [adv_express_read_all_about_it, adv_commend_a_good_word]
+      combat: [adv_warzone_welcome_to_thunderdome, adv_warzone_first_blood]
   lore-items:
     # Automatic handoff attempts stop here and move to REVIEW; staff loreretry can try again.
     max-auto-attempts: 48

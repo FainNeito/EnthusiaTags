@@ -102,6 +102,8 @@ public final class RewardService {
 
     private RewardStorage storage;
     private ExecutorService claimExecutor;
+    private final java.util.concurrent.atomic.AtomicLong guideGeneration = new java.util.concurrent.atomic.AtomicLong();
+    private final java.util.concurrent.Semaphore guideReads = new java.util.concurrent.Semaphore(64);
     private volatile RewardsConfig config = new RewardsConfig("", "", "", "", 56, false, "", Map.of());
     private BukkitTask flushTask;
     private BukkitTask globalScanTask;
@@ -215,6 +217,7 @@ public final class RewardService {
     }
 
     private void reloadNow() {
+        guideGeneration.incrementAndGet();
         if (lifecycle.get() == ServiceLifecycle.STOPPING || lifecycle.get() == ServiceLifecycle.STOPPED) {
             return;
         }
@@ -812,6 +815,53 @@ public final class RewardService {
     public boolean isComplete(Player player, RewardDefinition reward) {
         if (!isAvailable()) return false;
         return evaluate(player, reward).claimable();
+    }
+
+    public long getGuideGeneration() { return guideGeneration.get(); }
+
+    /** Only supported source observations; unknown provider counters are not evidence of zero. */
+    public boolean isGuideGoalReady(Player player, RewardDefinition reward) {
+        if (!isAvailable() || !isPlayerStateLoaded(player.getUniqueId()) || reward.getActions().isEmpty()
+                || !areActionsAvailable(reward)) return false;
+        boolean supportedCounters = reward.getCriteria().stream().allMatch(criterion ->
+            criterion.getSourceType() != RewardSourceType.CUSTOM_COUNTER
+                || org.enthusia.tags.advancements.domain.GuideGoalPolicy.supportsCounter(criterion.getKey()));
+        return org.enthusia.tags.advancements.domain.GuideGoalPolicy.supports(
+            evaluate(player, reward).status().name(),
+            supportedCounters && verifiedAdvancementProgress(player, reward, getProgressSnapshot(player)) >= 0);
+    }
+
+    public CompletableFuture<org.enthusia.tags.advancements.domain.GoldEligibility> previewGuideGold(
+            Player player, RewardDefinition reward) {
+        var unknown = org.enthusia.tags.advancements.domain.GoldEligibility.UNKNOWN;
+        if (!isAvailable() || !guideReads.tryAcquire()) return CompletableFuture.completedFuture(unknown);
+        UUID id = player.getUniqueId();
+        String address = getPlayerIpAddress(player);
+        RewardStorage reader = storage;
+        CompletableFuture<org.enthusia.tags.advancements.domain.GoldEligibility> future = new CompletableFuture<>();
+        try {
+            claimExecutor.execute(() -> {
+                try { future.complete(readGuideGold(reader, id, address, reward)); }
+                finally { guideReads.release(); }
+            });
+            return future.completeOnTimeout(unknown, 3, TimeUnit.SECONDS);
+        } catch (java.util.concurrent.RejectedExecutionException stopped) {
+            guideReads.release();
+            return CompletableFuture.completedFuture(unknown);
+        }
+    }
+
+    private org.enthusia.tags.advancements.domain.GoldEligibility readGuideGold(
+            RewardStorage reader, UUID id, String address, RewardDefinition reward) {
+        var result = org.enthusia.tags.advancements.domain.GoldEligibility.ALLOWED;
+        try {
+            for (RewardAction action : reward.getActions()) {
+                if (!action.isGoldNetworkLimited()) continue;
+                var next = reader.previewGoldActionNow(id, reward.getId(), action, actionFingerprint(action), address);
+                if (next != org.enthusia.tags.advancements.domain.GoldEligibility.ALLOWED) result = next;
+            }
+            return result;
+        } catch (SQLException unavailable) { return org.enthusia.tags.advancements.domain.GoldEligibility.UNKNOWN; }
     }
 
     public RewardEvaluation evaluate(Player player, RewardDefinition reward) {

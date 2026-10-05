@@ -1,5 +1,17 @@
 # Implementation and safety boundaries
 
+## Voluntary reward guide
+
+`/rewards guide` adds default-disabled chat path choices to the existing command, with ordinary permission enforcement and existing focused-menu navigation. There is no forced GUI, join message, boss bar, auto-claim, gameplay command, reward definition/payout or schema change. Missing/unverified paths render unavailable instead of a misleading clickable goal. The guide never creates a guild, duel or mail interaction.
+
+Goal selection uses immutable configured definitions and reobserves progress/state on the main thread before rendering. Only fresh LOCKED/UNLOCKED goals with supported criteria and available actions are offered. Native CUSTOM_COUNTER observations are supported initially only for stone_mined/logs_mined; unverified provider counters are deferred rather than displayed as zero. Social/duel reward IDs found in production are absent or unsupported on this canonical base and must be reconciled before those paths can be advertised; no synthetic reward or provider evidence is added.
+
+Gold eligibility is a read-only SQL preview of the same action fingerprints/status and legacy/current ownership queries used by reservation. Legacy sibling exemptions do not bypass Gold ownership. Preview does not reserve, pay, withhold or finalize; claim-time policy still rechecks. Blocked/unknown previews omit all typed Gold amounts, retain other configured components and explain eligibility uncertainty. Ordinary reward screens remain authoritative for claim outcomes.
+
+SQL reads use the existing claim/storage executors and immutable identity/action inputs, never Bukkit APIs on workers. Admission is bounded to 64 actual read jobs, with a three-second display timeout that does not release the permit before the underlying read ends. At most one pending display per UUID and 128 displays overall; callback rendering rechecks actual Player session identity, configuration generation, permission, provider readiness and exact definition identity. Reload increments generation; offline/disabled callbacks abstain. No IP addresses enter the domain policy or UI.
+
+Local Java/Paper 26.2 verification is not production/client acceptance. Existing Tags production-only source must be reconciled, canonical code merged and monorepo release pin/combined build verified before a separately authorized clean release. Disable rewards.guide.enabled to roll back discovery; existing reward data/UI/claims are unchanged. Test Java and Bedrock chat click behavior, whitelist subcommands, reload/quit/provider failure, Gold withholding and supported counters on an isolated runtime before activation.
+
 ## Layer Dependency Rules
 
 domain <- application <- infrastructure

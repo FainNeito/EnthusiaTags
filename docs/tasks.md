@@ -1,5 +1,13 @@
 # SPEAR tasks
 
+## T-928 [TDD] Voluntary newcomer reward guide
+References: REQ-928 through REQ-932.
+Evidence: current canonical main 28048ca fetched; isolated codex/newcomer-reward-guide; production network/reward audit and operational guide specification. Gold ownership includes legacy reservations and ignores legacy sibling exemptions. Existing evaluate does not verify monetary eligibility; focused reward menu already exists.
+Acceptance: default-disabled manual `/rewards guide` interest paths; one available goal; immutable progress and read-only Gold preview; no claim, payment, auto-message or gameplay actions; fail closed on unknown evidence and stale session/reload; preserve reward configuration and ordinary claim flow.
+Status: spec, proof pending. Java/Bedrock and loaded-provider acceptance remain separate.
+
+T-928 delivery evidence: initial focused proof failed compilation on the missing guide policy/preview adapter (guide-red.log); implementation then passed three storage/policy tests (guide-green.log). Five presentation/session tests cover permission/default-disable, read-only navigation, unknown/blocked monetary suppression with nonmonetary components, stale reconnect/reload/claim readiness, single-flight and unavailable goals. Eight focused tests and JDK25.0.3/Maven3.9.11/Paper26.2 final clean verify pass all 258 tests with zero failures/errors/skips (guide-final-verify.log). EARS validator, 12 Node tests, refine-state assertion and diff check pass. Final shaded SQLite probe prints SHADED_SQLITE_READ_ONLY_OK. Local unmerged test JAR version 2.2.3-guide-SNAPSHOT, SHA256 D28BEC1EBDF5687236725DFC15B0D4DFE56F13CA61932C094C9010E04EBFB1F4. No new schema, claims, payouts, automatic messages or production changes. Architecture keeps pure policy in domain and Bukkit/SQL orchestration in infrastructure; read inputs are immutable and actual jobs remain bounded after timeout. Production provider/source reconciliation, hosted exact-head checks/review, merged-source release pins/build and Java/Bedrock acceptance remain required. Local implementation complete; hosted delivery pending.
+
 ## T-916 [INFRA] Canonical advancement presentation dependency
 
 References: REQ-916; implementation.md Presentation and Verification and rollout.

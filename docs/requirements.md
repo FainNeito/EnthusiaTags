@@ -97,3 +97,9 @@ The user explicitly authorized the remaining non-guild WarzoneDuels advancement 
 - REQ-905: WHEN local workflow tooling reads or modifies task state THE SYSTEM SHALL reject malformed state, serialize concurrent operations, enforce required evidence, and replace files atomically.
 
 - REQ-906: IF a companion linkage error occurs during projection or tree removal THEN THE SYSTEM SHALL contain and log that integration failure while preserving retry/cleanup behavior without swallowing fatal virtual-machine errors.
+
+- REQ-928: WHEN a permitted player opens the enabled reward guide THE SYSTEM SHALL offer voluntary building, social and combat paths and display at most one supported existing goal without claiming or executing gameplay actions.
+- REQ-929: IF player state, provider progress or reward delivery is unavailable, unknown, already claimed, queued, pending or requires reconciliation THEN THE SYSTEM SHALL defer that goal rather than infer zero progress or a fresh payout.
+- REQ-930: WHEN the guide previews Gold actions THE SYSTEM SHALL read the existing achievement ownership and action ledger policy without writing reservations or claims and distinguish allowed, blocked and unknown eligibility.
+- REQ-931: IF Gold preview eligibility is blocked or unknown THEN THE SYSTEM SHALL omit its monetary amount while retaining eligible nonmonetary components and truthful ordinary reward navigation.
+- REQ-932: WHEN a guide callback returns THE SYSTEM SHALL recheck player session, permission, service, configuration and reward observations before showing a result while preserving the existing focused menu and authoritative claim validation.
