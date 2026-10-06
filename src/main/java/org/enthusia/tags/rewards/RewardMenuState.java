@@ -5,33 +5,34 @@ import java.util.Locale;
 /** Browser state only. Never alters reward definitions or saved completion. */
 public record RewardMenuState(View view, String category, int page, Filter filter,
                               Sort sort, Group group, String focusedReward) {
+    private static final int FIRST_PAGE = 0;
     public enum View { DASHBOARD, CATEGORY, READY }
     public enum Filter {
         ALL("All"), READY("Ready to Claim"), UNCLAIMED("Unclaimed"), CLAIMED("Claimed");
-        private final String label;
-        Filter(String label) { this.label = label; }
-        public String label() { return label; }
+        private final String displayLabel;
+        Filter(String displayLabel) { this.displayLabel = displayLabel; }
+        public String label() { return displayLabel; }
         public Filter cycle(boolean reverse) { return values()[Math.floorMod(ordinal() + (reverse ? -1 : 1), values().length)]; }
     }
     public enum Sort {
         PROGRESSION("Progression"), CLOSEST("Closest to Completion"), NAME("Name");
-        private final String label;
-        Sort(String label) { this.label = label; }
-        public String label() { return label; }
+        private final String displayLabel;
+        Sort(String displayLabel) { this.displayLabel = displayLabel; }
+        public String label() { return displayLabel; }
         public Sort cycle(boolean reverse) { return values()[Math.floorMod(ordinal() + (reverse ? -1 : 1), values().length)]; }
     }
     public enum Group {
         ALL("All Playtime"), TOTAL("Total Playtime"), ACTIVE("Active Playtime"), ACCESS("Access Unlocks"), SPECIAL("Special Challenges");
-        private final String label;
-        Group(String label) { this.label = label; }
-        public String label() { return label; }
+        private final String displayLabel;
+        Group(String displayLabel) { this.displayLabel = displayLabel; }
+        public String label() { return displayLabel; }
         public Group cycle(boolean reverse) { return values()[Math.floorMod(ordinal() + (reverse ? -1 : 1), values().length)]; }
     }
     public RewardMenuState {
         if (view == null || filter == null || sort == null || group == null) throw new IllegalArgumentException("Missing browser state");
         category = category == null ? null : category.toLowerCase(Locale.ROOT);
         focusedReward = focusedReward == null ? null : focusedReward.toLowerCase(Locale.ROOT);
-        page = Math.max(0, page);
+        page = Math.max(FIRST_PAGE, page);
         if (view == View.CATEGORY && (category == null || category.isBlank())) throw new IllegalArgumentException("Missing category");
         if (view == View.READY) filter = Filter.READY;
         if (!"playtime".equals(category)) group = Group.ALL;

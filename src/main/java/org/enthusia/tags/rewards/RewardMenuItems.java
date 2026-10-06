@@ -10,6 +10,7 @@ import org.enthusia.tags.TagTextFormat;
 
 /** Vanilla items only. No model IDs, custom textures or resource-pack dependency. */
 final class RewardMenuItems {
+    private static final int SINGLE_ENTRY = 1;
     private final RewardService service;
     private final TagService tags;
     RewardMenuItems(RewardService service, TagService tags) { this.service = service; this.tags = tags; }
@@ -37,20 +38,20 @@ final class RewardMenuItems {
         lore.add(selected ? "&6Selected category" : "&eClick to browse");
         return item(category.icon(), (selected ? "&6" : "&f") + RewardMenuText.categoryName(category), lore, false);
     }
+    private static final java.util.Map<String, String> CATEGORY_DESCRIPTIONS = java.util.Map.ofEntries(
+        java.util.Map.entry("playtime", "Rewards for time spent on Enthusia."),
+        java.util.Map.entry("advancements", "Rewards earned through custom advancements."),
+        java.util.Map.entry("supporter", "Permanent supporter rewards and current-rank perks."),
+        java.util.Map.entry("legacy", "Historical rewards permanently tied to your account."),
+        java.util.Map.entry("events", "Champion and special event rewards."),
+        java.util.Map.entry("mining", "Gather resources and reach mining milestones."),
+        java.util.Map.entry("combat", "Complete combat challenges."),
+        java.util.Map.entry("deaths", "Milestones from your less fortunate moments."),
+        java.util.Map.entry("economy", "Build your wealth and economic progress."),
+        java.util.Map.entry("exploration", "Explore the world and travel farther.")
+    );
     private String categoryDescription(String id) {
-        return switch(id.toLowerCase(java.util.Locale.ROOT)) {
-            case "playtime" -> "Rewards for time spent on Enthusia.";
-            case "advancements" -> "Rewards earned through custom advancements.";
-            case "supporter" -> "Permanent supporter rewards and current-rank perks.";
-            case "legacy" -> "Historical rewards permanently tied to your account.";
-            case "events" -> "Champion and special event rewards.";
-            case "mining" -> "Gather resources and reach mining milestones.";
-            case "combat" -> "Complete combat challenges.";
-            case "deaths" -> "Milestones from your less fortunate moments.";
-            case "economy" -> "Build your wealth and economic progress.";
-            case "exploration" -> "Explore the world and travel farther.";
-            default -> "Browse additional server challenges.";
-        };
+        return CATEGORY_DESCRIPTIONS.getOrDefault(id.toLowerCase(java.util.Locale.ROOT), "Browse additional server challenges.");
     }
     ItemStack browserHeader(Material icon, String title, RewardMenuModel.Summary summary, boolean readyView) {
         List<String> lore = new ArrayList<>();
@@ -85,8 +86,16 @@ final class RewardMenuItems {
         lore.add("");
         addProgress(lore, row);
         lore.add("");
+        addRewards(lore, definition);
+        lore.add("");
+        addStatus(lore, row.displayState(), claiming);
+        addNotice(lore, notice, claiming);
+        if (focused) lore.add("&7Opened from your selected goal");
+        return item(definition.getIcon(), (row.claimed() ? "&7" : "&f") + RewardMenuText.plain(definition.getName()), lore, row.ready() && !claiming);
+    }
+    private void addRewards(List<String> lore, RewardDefinition definition) {
         if (definition.getActions().isEmpty()) lore.add("&7Reward: &fRecognition only");
-        else if (definition.getActions().size() == 1) lore.add("&7Reward: &f" + action(definition.getActions().getFirst(), definition));
+        else if (definition.getActions().size() == SINGLE_ENTRY) lore.add("&7Reward: &f" + action(definition.getActions().getFirst(), definition));
         else {
             lore.add("&7Rewards");
             for (RewardAction action : definition.getActions()) lore.add("&f  " + action(action, definition));
@@ -94,12 +103,10 @@ final class RewardMenuItems {
         if (definition.getActions().stream().anyMatch(RewardAction::isGoldNetworkLimited)) {
             for (String line : RewardMenuText.wrap(service.getMessage("rewards-gold-policy"), 40)) lore.add("&7" + line);
         }
-        lore.add("");
-        addStatus(lore, row.displayState(), claiming);
+    }
+    private static void addNotice(List<String> lore, RewardClaimResult notice, boolean claiming) {
         String last = RewardMenuText.notice(notice);
         if (!last.isBlank() && !claiming) for (String line : RewardMenuText.wrap(last,40)) lore.add("&6" + line);
-        if (focused) lore.add("&7Opened from your selected goal");
-        return item(definition.getIcon(), (row.claimed() ? "&7" : "&f") + RewardMenuText.plain(definition.getName()), lore, row.ready() && !claiming);
     }
     private void addProgress(List<String> lore, RewardMenuModel.Entry row) {
         if (row.claimed()) { lore.add("&aRequirements completed"); return; }
@@ -108,14 +115,16 @@ final class RewardMenuItems {
             if (!row.progressKnown()) { lore.add("&7Current progress temporarily unavailable"); return; }
         }
         if (row.readings().isEmpty()) { lore.add("&6Progress temporarily unavailable"); return; }
-        boolean single = row.readings().size() == 1;
+        boolean single = row.readings().size() == SINGLE_ENTRY;
         if (!single) lore.add("&7Requirements");
-        for (RewardMenuModel.Reading reading : row.readings()) {
+        for (RewardMenuModel.Reading reading : row.readings()) addReading(lore, reading, single);
+    }
+    private static void addReading(List<String> lore, RewardMenuModel.Reading reading, boolean single) {
             RewardCriterion criterion = reading.criterion();
             String label = single ? "Progress" : RewardMenuText.criterionLabel(criterion);
             if (reading.value().isEmpty()) {
                 lore.add("&7" + label + ": &6Temporarily unavailable");
-                continue;
+                return;
             }
             long current = reading.value().getAsLong();
             long goal = criterion.getAmount();
@@ -127,40 +136,41 @@ final class RewardMenuItems {
                     + " &7/ &f" + RewardMenuText.value(goal, criterion));
             }
             if (single && goal > 0) lore.add(RewardMenuText.bar(Math.min(1, (double) current / goal)));
-        }
     }
+    private static final java.util.Map<RewardMenuModel.DisplayState, List<String>> STATUS_LINES = java.util.Map.ofEntries(
+        java.util.Map.entry(RewardMenuModel.DisplayState.CLAIMED, List.of("&7Claimed ✓")),
+        java.util.Map.entry(RewardMenuModel.DisplayState.READY, List.of("&aREADY TO CLAIM", "&eClick to claim")),
+        java.util.Map.entry(RewardMenuModel.DisplayState.NOT_STARTED, List.of("&7Not started")),
+        java.util.Map.entry(RewardMenuModel.DisplayState.IN_PROGRESS, List.of("&6In progress")),
+        java.util.Map.entry(RewardMenuModel.DisplayState.UNAVAILABLE, List.of("&6Temporarily unavailable", "&7Refresh once the provider is ready.")),
+        java.util.Map.entry(RewardMenuModel.DisplayState.PENDING, List.of("&6Delivery pending", "&eClick to check / recover delivery")),
+        java.util.Map.entry(RewardMenuModel.DisplayState.QUEUED, List.of("&6Item delivery queued", "&7Free inventory space.", "&eClick to retry item delivery")),
+        java.util.Map.entry(RewardMenuModel.DisplayState.RETRY, List.of("&6Delivery failed", "&eClick to retry safely")),
+        java.util.Map.entry(RewardMenuModel.DisplayState.REVIEW, List.of("&cDelivery needs review", "&7Contact staff; do not repeat the claim.")),
+        java.util.Map.entry(RewardMenuModel.DisplayState.WITHHELD, List.of("&6Gold withheld by network policy", "&7Other reward components remain separate."))
+    );
     private static void addStatus(List<String> lore, RewardMenuModel.DisplayState state, boolean claiming) {
         if (claiming) { lore.add("&6Claiming..."); lore.add("&7Please wait; your claim is being processed."); return; }
-        switch(state) {
-            case CLAIMED -> lore.add("&7Claimed ✓");
-            case READY -> { lore.add("&aREADY TO CLAIM"); lore.add("&eClick to claim"); }
-            case NOT_STARTED -> lore.add("&7Not started");
-            case IN_PROGRESS -> lore.add("&6In progress");
-            case UNAVAILABLE -> { lore.add("&6Temporarily unavailable"); lore.add("&7Refresh once the provider is ready."); }
-            case PENDING -> { lore.add("&6Delivery pending"); lore.add("&eClick to check / recover delivery"); }
-            case QUEUED -> { lore.add("&6Item delivery queued"); lore.add("&7Free inventory space."); lore.add("&eClick to retry item delivery"); }
-            case RETRY -> { lore.add("&6Delivery failed"); lore.add("&eClick to retry safely"); }
-            case REVIEW -> { lore.add("&cDelivery needs review"); lore.add("&7Contact staff; do not repeat the claim."); }
-            case WITHHELD -> { lore.add("&6Gold withheld by network policy"); lore.add("&7Other reward components remain separate."); }
-        }
+        lore.addAll(STATUS_LINES.get(state));
     }
     private String action(RewardAction action, RewardDefinition reward) {
         return switch(action.getType()) {
             case MONEY -> RewardMenuText.money(action.getAmount());
-            case ITEM -> action.getItemAmount() + " × " + (action.getDisplayName() != null && !action.getDisplayName().isBlank()
-                ? RewardMenuText.plain(action.getDisplayName())
-                : action.getMaterial() == null ? "Item" : RewardMenuText.titleCase(action.getMaterial().name()));
-            case TAG -> {
-                var definition = tags.getRegistry().get(action.getValue());
-                String display = definition == null
-                    ? RewardMenuText.plain(action.getValue())
-                    : TagTextFormat.legacyText(definition.getDisplayName());
-                yield "Tag: " + display;
-            }
-            case COMMAND -> "Unlock: " + (action.getLabel() != null && !action.getLabel().isBlank()
-                ? RewardMenuText.plain(action.getLabel()) : RewardMenuText.plain(reward.getName()));
-            case LORE_ITEM -> action.getLabel() != null && !action.getLabel().isBlank()
-                ? RewardMenuText.plain(action.getLabel()) : "Special item";
+            case ITEM -> action.getItemAmount() + " × " + itemName(action);
+            case TAG -> tagName(action);
+            case COMMAND -> "Unlock: " + label(action, RewardMenuText.plain(reward.getName()));
+            case LORE_ITEM -> label(action, "Special item");
         };
+    }
+    private static String itemName(RewardAction action) {
+        if (action.getDisplayName() != null && !action.getDisplayName().isBlank()) return RewardMenuText.plain(action.getDisplayName());
+        return action.getMaterial() == null ? "Item" : RewardMenuText.titleCase(action.getMaterial().name());
+    }
+    private String tagName(RewardAction action) {
+        var definition = tags.getRegistry().get(action.getValue());
+        return "Tag: " + (definition == null ? RewardMenuText.plain(action.getValue()) : TagTextFormat.legacyText(definition.getDisplayName()));
+    }
+    private static String label(RewardAction action, String fallback) {
+        return action.getLabel() != null && !action.getLabel().isBlank() ? RewardMenuText.plain(action.getLabel()) : fallback;
     }
 }

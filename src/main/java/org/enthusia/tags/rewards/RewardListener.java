@@ -15,7 +15,10 @@ import org.bukkit.inventory.Inventory;
 public final class RewardListener implements Listener {
     private final RewardService service;
     private final RewardMenu menu;
-    public RewardListener(RewardService service, RewardMenu menu) { this.service = service; this.menu = menu; }
+    private final java.util.Map<RewardMenuAction.Type, java.util.function.Consumer<Interaction>> actionHandlers;
+    public RewardListener(RewardService service, RewardMenu menu) {
+        this.service = service; this.menu = menu; this.actionHandlers = handlers();
+    }
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
         // Retain the established retry mechanism for already-claimed queued items.
@@ -54,23 +57,26 @@ public final class RewardListener implements Listener {
     private RewardMenuHolder owned(Inventory top) {
         return top.getHolder() instanceof RewardMenuHolder holder && holder.getRewardService() == service ? holder : null;
     }
+    private record Interaction(Player player, RewardMenuHolder holder, RewardMenuAction action, boolean reverse) {}
+    private java.util.Map<RewardMenuAction.Type, java.util.function.Consumer<Interaction>> handlers() {
+        return java.util.Map.ofEntries(
+            java.util.Map.entry(RewardMenuAction.Type.CATEGORY, input -> { menu.navigate(input.player(),input.holder(),RewardMenuState.category(input.action().value())); }),
+            java.util.Map.entry(RewardMenuAction.Type.BACK, input -> { menu.navigate(input.player(),input.holder(),RewardMenuState.dashboard()); }),
+            java.util.Map.entry(RewardMenuAction.Type.READY, input -> { menu.navigate(input.player(),input.holder(),RewardMenuState.ready()); }),
+            java.util.Map.entry(RewardMenuAction.Type.FILTER, input -> { menu.navigate(input.player(),input.holder(),input.holder().state().withFilter(input.holder().state().filter().cycle(input.reverse()))); }),
+            java.util.Map.entry(RewardMenuAction.Type.SORT, input -> { menu.navigate(input.player(),input.holder(),input.holder().state().withSort(input.holder().state().sort().cycle(input.reverse()))); }),
+            java.util.Map.entry(RewardMenuAction.Type.GROUP, input -> { menu.navigate(input.player(),input.holder(),input.holder().state().withGroup(input.holder().state().group().cycle(input.reverse()))); }),
+            java.util.Map.entry(RewardMenuAction.Type.PREVIOUS, input -> { if(input.holder().state().page() > 0) menu.navigate(input.player(),input.holder(),input.holder().state().withPage(input.holder().state().page()-1)); }),
+            java.util.Map.entry(RewardMenuAction.Type.NEXT, input -> { if(input.holder().state().page()+1 < input.holder().pageCount()) menu.navigate(input.player(),input.holder(),input.holder().state().withPage(input.holder().state().page()+1)); }),
+            java.util.Map.entry(RewardMenuAction.Type.CLOSE, input -> { input.player().closeInventory(); }),
+            java.util.Map.entry(RewardMenuAction.Type.REFRESH, input -> { input.holder().clearNotices(); menu.refresh(input.player(),input.holder(),false); }),
+            java.util.Map.entry(RewardMenuAction.Type.TAGS, input -> { menu.openTags(input.player()); }),
+            java.util.Map.entry(RewardMenuAction.Type.COSMETICS, input -> { menu.openCosmetics(input.player()); }),
+            java.util.Map.entry(RewardMenuAction.Type.CLAIM, input -> { claim(input.player(),input.holder(),input.action().value()); })
+        );
+    }
     private void handle(Player player, RewardMenuHolder holder, RewardMenuAction action, boolean reverse) {
-        RewardMenuState state = holder.state();
-        switch(action.type()) {
-            case CATEGORY -> menu.navigate(player,holder,RewardMenuState.category(action.value()));
-            case BACK -> menu.navigate(player,holder,RewardMenuState.dashboard());
-            case READY -> menu.navigate(player,holder,RewardMenuState.ready());
-            case FILTER -> menu.navigate(player,holder,state.withFilter(state.filter().cycle(reverse)));
-            case SORT -> menu.navigate(player,holder,state.withSort(state.sort().cycle(reverse)));
-            case GROUP -> menu.navigate(player,holder,state.withGroup(state.group().cycle(reverse)));
-            case PREVIOUS -> { if(state.page() > 0) menu.navigate(player,holder,state.withPage(state.page()-1)); }
-            case NEXT -> { if(state.page()+1 < holder.pageCount()) menu.navigate(player,holder,state.withPage(state.page()+1)); }
-            case CLOSE -> player.closeInventory();
-            case REFRESH -> { holder.clearNotices(); menu.refresh(player,holder,false); }
-            case TAGS -> menu.openTags(player);
-            case COSMETICS -> menu.openCosmetics(player);
-            case CLAIM -> claim(player,holder,action.value());
-        }
+        actionHandlers.get(action.type()).accept(new Interaction(player, holder, action, reverse));
     }
     private void claim(Player player, RewardMenuHolder holder, String id) {
         RewardDefinition reward = service.getRewards().get(id.toLowerCase(Locale.ROOT));

@@ -16,12 +16,13 @@ public final class RewardMenuText {
         .character('&')
         .hexColors()
         .build();
-    private static final PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
+    private static final PlainTextComponentSerializer TEXT_SERIALIZER = PlainTextComponentSerializer.plainText();
 
+    private static final String GENERAL_NAME = "Misc";
     private RewardMenuText() {}
     public static String plain(String value) {
         if (value == null) return "";
-        return PLAIN.serialize(LEGACY.deserialize(value.replace('§','&')));
+        return TEXT_SERIALIZER.serialize(LEGACY.deserialize(value.replace('§','&')));
     }
     public static Component component(String value) {
         return withoutItalics(LEGACY.deserialize(value.replace('§','&')));
@@ -71,7 +72,7 @@ public final class RewardMenuText {
         return "&6" + "■".repeat(filled) + "&8" + "□".repeat(10 - filled) + " &7" + percent(fraction) + "%";
     }
     public static String categoryName(RewardCategory category) {
-        if ("misc".equalsIgnoreCase(category.id()) && plain(category.name()).equalsIgnoreCase("Misc")) return "General";
+        if ("misc".equalsIgnoreCase(category.id()) && plain(category.name()).equalsIgnoreCase(GENERAL_NAME)) return "General";
         return plain(category.name());
     }
     public static String titleCase(String value) {
@@ -84,49 +85,56 @@ public final class RewardMenuText {
         return result.toString();
     }
     public static List<String> wrap(String value, int width) {
+        return java.util.Arrays.stream(plain(value).split("\n", -1))
+            .flatMap(paragraph -> wrapParagraph(paragraph, width).stream()).toList();
+    }
+    private static List<String> wrapParagraph(String paragraph, int width) {
+        if (paragraph.isBlank()) return List.of("");
         List<String> result = new ArrayList<>();
-        for (String paragraph : plain(value).split("\n", -1)) {
-            if (paragraph.isBlank()) { result.add(""); continue; }
-            StringBuilder line = new StringBuilder();
-            for (String word : paragraph.split("\s+")) {
-                if (!line.isEmpty() && line.length() + word.length() + 1 > width) { result.add(line.toString()); line.setLength(0); }
-                if (!line.isEmpty()) line.append(' ');
-                line.append(word);
-            }
-            if (!line.isEmpty()) result.add(line.toString());
-        }
+        StringBuilder line = new StringBuilder();
+        for (String word : paragraph.split("\s+")) appendWord(result, line, word, width);
+        if (!line.isEmpty()) result.add(line.toString());
         return List.copyOf(result);
     }
-    public static String resultMessageKey(RewardClaimResult result) {
-        return switch (result) {
-            case SUCCESS -> "rewards-claimed";
-            case SUCCESS_GOLD_WITHHELD -> "rewards-gold-withheld";
-            case GOLD_VERIFICATION_UNAVAILABLE -> "rewards-gold-verification-unavailable";
-            case LOADING -> "rewards-loading";
-            case ALREADY_CLAIMED -> "rewards-already-claimed";
-            case NOT_READY -> "rewards-not-ready";
-            case IP_ALREADY_CLAIMED -> "rewards-ip-already-claimed";
-            case DELIVERY_FAILED -> "rewards-delivery-failed";
-            case ITEM_QUEUED -> "rewards-item-queued";
-            case RECONCILIATION_REQUIRED -> "rewards-reconciliation-required";
-            case CLAIM_IN_PROGRESS -> "rewards-claim-in-progress";
-            case SERVICE_UNAVAILABLE -> "rewards-service-unavailable";
-        };
+    private static void appendWord(List<String> result, StringBuilder line, String word, int width) {
+        if (!line.isEmpty() && line.length() + word.length() + 1 > width) {
+            result.add(line.toString()); line.setLength(0);
+        }
+        if (!line.isEmpty()) line.append(' ');
+        line.append(word);
     }
+    private static final java.util.Map<RewardClaimResult, String> RESULT_KEYS = java.util.Map.ofEntries(
+        java.util.Map.entry(RewardClaimResult.SUCCESS, "rewards-claimed"),
+        java.util.Map.entry(RewardClaimResult.SUCCESS_GOLD_WITHHELD, "rewards-gold-withheld"),
+        java.util.Map.entry(RewardClaimResult.GOLD_VERIFICATION_UNAVAILABLE, "rewards-gold-verification-unavailable"),
+        java.util.Map.entry(RewardClaimResult.LOADING, "rewards-loading"),
+        java.util.Map.entry(RewardClaimResult.ALREADY_CLAIMED, "rewards-already-claimed"),
+        java.util.Map.entry(RewardClaimResult.NOT_READY, "rewards-not-ready"),
+        java.util.Map.entry(RewardClaimResult.IP_ALREADY_CLAIMED, "rewards-ip-already-claimed"),
+        java.util.Map.entry(RewardClaimResult.DELIVERY_FAILED, "rewards-delivery-failed"),
+        java.util.Map.entry(RewardClaimResult.ITEM_QUEUED, "rewards-item-queued"),
+        java.util.Map.entry(RewardClaimResult.RECONCILIATION_REQUIRED, "rewards-reconciliation-required"),
+        java.util.Map.entry(RewardClaimResult.CLAIM_IN_PROGRESS, "rewards-claim-in-progress"),
+        java.util.Map.entry(RewardClaimResult.SERVICE_UNAVAILABLE, "rewards-service-unavailable")
+    );
+    public static String resultMessageKey(RewardClaimResult result) {
+        return RESULT_KEYS.get(result);
+    }
+    private static final java.util.Map<RewardClaimResult, String> NOTICES = java.util.Map.ofEntries(
+        java.util.Map.entry(RewardClaimResult.SUCCESS, ""),
+        java.util.Map.entry(RewardClaimResult.ALREADY_CLAIMED, ""),
+        java.util.Map.entry(RewardClaimResult.SUCCESS_GOLD_WITHHELD, "Gold portion withheld by network policy."),
+        java.util.Map.entry(RewardClaimResult.GOLD_VERIFICATION_UNAVAILABLE, "Gold verification unavailable; try later."),
+        java.util.Map.entry(RewardClaimResult.LOADING, "Your reward data is still loading."),
+        java.util.Map.entry(RewardClaimResult.NOT_READY, "Requirements are not currently met."),
+        java.util.Map.entry(RewardClaimResult.IP_ALREADY_CLAIMED, "Network claim restriction applies."),
+        java.util.Map.entry(RewardClaimResult.DELIVERY_FAILED, "Delivery failed; retry safely."),
+        java.util.Map.entry(RewardClaimResult.ITEM_QUEUED, "Item delivery queued; free inventory space."),
+        java.util.Map.entry(RewardClaimResult.RECONCILIATION_REQUIRED, "Delivery needs staff review."),
+        java.util.Map.entry(RewardClaimResult.CLAIM_IN_PROGRESS, "A claim is already in progress."),
+        java.util.Map.entry(RewardClaimResult.SERVICE_UNAVAILABLE, "Reward service temporarily unavailable.")
+    );
     public static String notice(RewardClaimResult result) {
-        if (result == null) return "";
-        return switch(result) {
-            case SUCCESS, ALREADY_CLAIMED -> "";
-            case SUCCESS_GOLD_WITHHELD -> "Gold portion withheld by network policy.";
-            case GOLD_VERIFICATION_UNAVAILABLE -> "Gold verification unavailable; try later.";
-            case LOADING -> "Your reward data is still loading.";
-            case NOT_READY -> "Requirements are not currently met.";
-            case IP_ALREADY_CLAIMED -> "Network claim restriction applies.";
-            case DELIVERY_FAILED -> "Delivery failed; retry safely.";
-            case ITEM_QUEUED -> "Item delivery queued; free inventory space.";
-            case RECONCILIATION_REQUIRED -> "Delivery needs staff review.";
-            case CLAIM_IN_PROGRESS -> "A claim is already in progress.";
-            case SERVICE_UNAVAILABLE -> "Reward service temporarily unavailable.";
-        };
+        return result == null ? "" : NOTICES.get(result);
     }
 }

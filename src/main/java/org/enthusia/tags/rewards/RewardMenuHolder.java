@@ -8,27 +8,29 @@ import org.bukkit.inventory.InventoryHolder;
 
 public final class RewardMenuHolder implements InventoryHolder {
     private final RewardService rewardService;
-    private RewardMenuState state;
+    private RewardMenuState browserState;
     private Inventory inventory;
+    @SuppressWarnings("PMD.UseConcurrentHashMap") // Holder state is confined to the server thread.
     private final Map<Integer, RewardMenuAction> actions = new LinkedHashMap<>();
+    @SuppressWarnings("PMD.UseConcurrentHashMap") // Holder state is confined to the server thread.
     private final Map<String, RewardClaimResult> notices = new LinkedHashMap<>();
-    private List<String> visibleRewards = List.of();
-    private int pageCount = 1;
+    private List<String> visibleIds = List.of();
+    private int totalPages = 1;
     private boolean scheduled;
     public RewardMenuHolder(RewardService service) { this(service, RewardMenuState.dashboard()); }
     public RewardMenuHolder(RewardService service, String category, int page) {
         this(service, category == null ? RewardMenuState.dashboard().withPage(page) : RewardMenuState.category(category).withPage(page));
     }
-    public RewardMenuHolder(RewardService service, RewardMenuState state) { this.rewardService = service; this.state = state; }
+    public RewardMenuHolder(RewardService service, RewardMenuState state) { this.rewardService = service; this.browserState = state; }
     public RewardService getRewardService() { return rewardService; }
-    public String getCategory() { return state.category(); }
-    public int getPage() { return state.page(); }
-    public RewardMenuState state() { return state; }
-    public void state(RewardMenuState state) { this.state = state; }
-    public int pageCount() { return pageCount; }
-    public List<String> visibleRewards() { return visibleRewards; }
+    public String getCategory() { return browserState.category(); }
+    public int getPage() { return browserState.page(); }
+    public RewardMenuState state() { return browserState; }
+    public void state(RewardMenuState state) { this.browserState = state; }
+    public int pageCount() { return totalPages; }
+    public List<String> visibleRewards() { return visibleIds; }
     public void page(List<String> ids, int pages, int selectedPage) {
-        visibleRewards = List.copyOf(ids); pageCount = Math.max(1, pages); state = state.withPage(selectedPage);
+        visibleIds = List.copyOf(ids); totalPages = Math.max(1, pages); browserState = browserState.withPage(selectedPage);
     }
     public void clearActions() { actions.clear(); }
     public void action(int slot, RewardMenuAction action) { actions.put(slot, action); }

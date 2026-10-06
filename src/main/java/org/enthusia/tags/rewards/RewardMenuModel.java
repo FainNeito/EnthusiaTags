@@ -9,8 +9,14 @@ import java.util.OptionalLong;
 public final class RewardMenuModel {
     public static final List<Integer> REWARD_SLOTS = List.of(19,20,21,22,23,24,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43);
     public static final List<Integer> DASHBOARD_SLOTS = List.of(10,12,14,16,20,22,24);
+    private static final int SINGLE_CRITERION = 1;
     private RewardMenuModel() {}
     public enum DisplayState { NOT_STARTED, IN_PROGRESS, READY, CLAIMED, PENDING, QUEUED, RETRY, REVIEW, WITHHELD, UNAVAILABLE }
+    private static final java.util.Map<RewardStatus, DisplayState> TERMINAL_STATES = java.util.Map.of(
+        RewardStatus.CLAIMED, DisplayState.CLAIMED, RewardStatus.CLAIM_PENDING, DisplayState.PENDING,
+        RewardStatus.ITEM_QUEUED, DisplayState.QUEUED, RewardStatus.DELIVERY_FAILED, DisplayState.RETRY,
+        RewardStatus.REQUIRES_RECONCILIATION, DisplayState.REVIEW,
+        RewardStatus.WITHHELD_NETWORK_LIMIT, DisplayState.WITHHELD);
     public record Reading(RewardCriterion criterion, OptionalLong value) {
         public Reading { if (criterion == null || value == null) throw new IllegalArgumentException("Missing progress reading"); }
     }
@@ -30,16 +36,9 @@ public final class RewardMenuModel {
             return readings.stream().mapToDouble(r -> Math.min(1, (double) r.value().getAsLong() / r.criterion().getAmount())).min().orElse(-1);
         }
         public DisplayState displayState() {
-            return switch (evaluation.status()) {
-                case CLAIMED -> DisplayState.CLAIMED;
-                case CLAIM_PENDING -> DisplayState.PENDING;
-                case ITEM_QUEUED -> DisplayState.QUEUED;
-                case DELIVERY_FAILED -> DisplayState.RETRY;
-                case REQUIRES_RECONCILIATION -> DisplayState.REVIEW;
-                case WITHHELD_NETWORK_LIMIT -> DisplayState.WITHHELD;
-                case UNLOCKED -> evaluation.claimable() ? DisplayState.READY : DisplayState.UNAVAILABLE;
-                case LOCKED -> lockedState();
-            };
+            if (evaluation.status() == RewardStatus.LOCKED) return lockedState();
+            if (evaluation.status() == RewardStatus.UNLOCKED) return ready() ? DisplayState.READY : DisplayState.UNAVAILABLE;
+            return TERMINAL_STATES.get(evaluation.status());
         }
         private DisplayState lockedState() {
             if (!progressKnown() || (!evaluation.diagnosticReason().isBlank()
@@ -92,7 +91,7 @@ public final class RewardMenuModel {
     private static Comparator<Entry> progressionOrder() {
         Comparator<Entry> fallback = Comparator.comparingInt(Entry::categoryOrder)
             .thenComparingInt(e -> "playtime".equalsIgnoreCase(e.reward().getCategory()) ? e.group().ordinal() : 0)
-            .thenComparingLong(e -> "playtime".equalsIgnoreCase(e.reward().getCategory()) && e.reward().getCriteria().size() == 1
+            .thenComparingLong(e -> "playtime".equalsIgnoreCase(e.reward().getCategory()) && e.reward().getCriteria().size() == SINGLE_CRITERION
                 ? e.reward().getCriteria().getFirst().getAmount() : e.order())
             .thenComparingInt(Entry::order).thenComparing(Entry::id);
         return fallback;
@@ -111,7 +110,7 @@ public final class RewardMenuModel {
     public static RewardMenuState.Group groupFor(RewardDefinition reward) {
         if (!"playtime".equalsIgnoreCase(reward.getCategory())) return RewardMenuState.Group.ALL;
         if (reward.getActions().stream().anyMatch(a -> a.getType() == RewardActionType.COMMAND)) return RewardMenuState.Group.ACCESS;
-        if (reward.getCriteria().size() != 1) return RewardMenuState.Group.SPECIAL;
+        if (reward.getCriteria().size() != SINGLE_CRITERION) return RewardMenuState.Group.SPECIAL;
         return switch (reward.getCriteria().getFirst().getType()) {
             case PLAYTIME_TOTAL_MINUTES -> RewardMenuState.Group.TOTAL;
             case PLAYTIME_ACTIVE_MINUTES -> RewardMenuState.Group.ACTIVE;

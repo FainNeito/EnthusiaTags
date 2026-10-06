@@ -21,6 +21,7 @@ import org.enthusia.tags.TagService;
 import static org.enthusia.tags.rewards.RewardMenuAction.Type.*;
 
 public final class RewardMenu implements AutoCloseable {
+    private static final int BROWSER_SIZE = 54;
     private final RewardService service;
     private final Plugin plugin;
     private final TagService tags;
@@ -55,7 +56,7 @@ public final class RewardMenu implements AutoCloseable {
     public Inventory create(Player player, RewardMenuState state) { return create(player, state, snapshot(player)); }
     private Inventory create(Player player, RewardMenuState state, Snapshot snapshot) {
         RewardMenuHolder holder = new RewardMenuHolder(service, state);
-        Inventory inventory = Bukkit.createInventory(holder, state.view() == RewardMenuState.View.DASHBOARD ? 45 : 54,
+        Inventory inventory = Bukkit.createInventory(holder, state.view() == RewardMenuState.View.DASHBOARD ? 45 : BROWSER_SIZE,
             RewardMenuText.component(title(state)));
         holder.setInventory(inventory);
         render(player, holder, snapshot, false);
@@ -63,7 +64,7 @@ public final class RewardMenu implements AutoCloseable {
     }
     /** Called outside inventory-click processing, on the main thread. */
     public void navigate(Player player, RewardMenuHolder holder, RewardMenuState next) {
-        int size = next.view() == RewardMenuState.View.DASHBOARD ? 45 : 54;
+        int size = next.view() == RewardMenuState.View.DASHBOARD ? 45 : BROWSER_SIZE;
         if (holder.getInventory().getSize() != size) { player.openInventory(create(player,next)); return; }
         holder.state(next); holder.clearNotices(); render(player,holder,snapshot(player),false);
     }
@@ -74,16 +75,18 @@ public final class RewardMenu implements AutoCloseable {
     public void nextTick(Runnable work) { Bukkit.getScheduler().runTask(plugin,work); }
     public void startRefresh() {
         if (closed || refreshTask != null) return;
-        refreshTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            if (closed || !service.isAvailable()) return;
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                if (player.getOpenInventory().getTopInventory().getHolder() instanceof RewardMenuHolder holder
-                    && holder.getRewardService() == service) {
-                    try { refresh(player,holder,true); }
-                    catch (RuntimeException error) { warn(error); }
-                }
-            }
-        },40L,40L);
+        refreshTask = Bukkit.getScheduler().runTaskTimer(plugin, this::refreshOpenViews, 40L, 40L);
+    }
+    private void refreshOpenViews() {
+        if (closed || !service.isAvailable()) return;
+        for (Player player : Bukkit.getOnlinePlayers()) refreshOwnedView(player);
+    }
+    private void refreshOwnedView(Player player) {
+        if (player.getOpenInventory().getTopInventory().getHolder() instanceof RewardMenuHolder holder
+            && holder.getRewardService() == service) {
+            try { refresh(player,holder,true); }
+            catch (RuntimeException error) { warn(error); }
+        }
     }
     public boolean beginClaim(UUID player, String id) { return inFlight.add(new ClaimKey(player,id.toLowerCase(Locale.ROOT))); }
     public void endClaim(UUID player, String id) { inFlight.remove(new ClaimKey(player,id.toLowerCase(Locale.ROOT))); }
@@ -99,26 +102,34 @@ public final class RewardMenu implements AutoCloseable {
         Map<String,RewardDefinition> rewards = service.getRewards();
         for (RewardDefinition reward : rewards.values()) {
             String category = reward.getCategory().toLowerCase(Locale.ROOT);
-            categories.putIfAbsent(category,new RewardCategory(category,RewardMenuText.titleCase(category),Material.PAPER));
+            categories.putIfAbsent(category,defaultCategory(category));
         }
         var ids = new ArrayList<>(categories.keySet());
         var progress = service.getProgressSnapshot(player);
         var rows = new ArrayList<RewardMenuModel.Entry>();
         int index = 0;
         for (RewardDefinition reward : rewards.values()) {
-            RewardEvaluation evaluation;
-            var readings = new ArrayList<RewardMenuModel.Reading>();
-            try {
-                evaluation = service.evaluate(player,reward,progress);
-                for (RewardCriterion criterion : reward.getCriteria()) readings.add(new RewardMenuModel.Reading(
-                    criterion,service.getVerifiedMenuProgress(player,criterion,progress)));
-            } catch (RuntimeException error) {
-                warn(error); evaluation = new RewardEvaluation(RewardStatus.LOCKED,Map.of(),false,false,"Progress unavailable");
-                readings.clear();
-            }
-            rows.add(new RewardMenuModel.Entry(reward,evaluation,readings,index++,ids.indexOf(reward.getCategory().toLowerCase(Locale.ROOT))));
+            rows.add(readEntry(player, reward, progress, index++, ids.indexOf(reward.getCategory().toLowerCase(Locale.ROOT))));
         }
         return new Snapshot(List.copyOf(categories.values()),List.copyOf(rows));
+    }
+    private static RewardCategory defaultCategory(String category) {
+        return new RewardCategory(category, RewardMenuText.titleCase(category), Material.PAPER);
+    }
+    private RewardMenuModel.Entry readEntry(Player player, RewardDefinition reward, RewardService.ProgressSnapshot progress, int index, int categoryIndex) {
+        RewardEvaluation evaluation;
+        var readings = new ArrayList<RewardMenuModel.Reading>();
+        try {
+            evaluation = service.evaluate(player,reward,progress);
+            for (RewardCriterion criterion : reward.getCriteria()) readings.add(readCriterion(player, criterion, progress));
+        } catch (RuntimeException error) {
+            warn(error); evaluation = new RewardEvaluation(RewardStatus.LOCKED,Map.of(),false,false,"Progress unavailable");
+            readings.clear();
+        }
+        return new RewardMenuModel.Entry(reward,evaluation,readings,index,categoryIndex);
+    }
+    private RewardMenuModel.Reading readCriterion(Player player, RewardCriterion criterion, RewardService.ProgressSnapshot progress) {
+        return new RewardMenuModel.Reading(criterion, service.getVerifiedMenuProgress(player,criterion,progress));
     }
     private void render(Player player, RewardMenuHolder holder, Snapshot snapshot, boolean preserveSlots) {
         long start = System.nanoTime();
@@ -140,7 +151,7 @@ public final class RewardMenu implements AutoCloseable {
             int column=slot%9;
             if(row==0 || row==lastRow || column==0 || column==8) inventory.setItem(slot,border);
         }
-        if(inventory.getSize()==54) {
+        if(inventory.getSize()==BROWSER_SIZE) {
             ItemStack utility = RewardMenuItems.item(Material.GRAY_STAINED_GLASS_PANE," ");
             for(int slot=9;slot<=17;slot++) inventory.setItem(slot,utility);
             ItemStack accent = RewardMenuItems.item(Material.ORANGE_STAINED_GLASS_PANE," ");
@@ -182,6 +193,13 @@ public final class RewardMenu implements AutoCloseable {
             : current == null ? Material.PAPER : current.icon();
         put(holder,4,items.browserHeader(headerIcon,name,viewSummary,state.view()==RewardMenuState.View.READY),REFRESH);
 
+        browserControls(holder, snapshot);
+        browserPage(holder, snapshot, preserveSlots);
+        browserRows(player, holder, snapshot);
+        browserFooter(holder);
+    }
+    private void browserControls(RewardMenuHolder holder, Snapshot snapshot) {
+        RewardMenuState state = holder.state();
         if(state.view()!=RewardMenuState.View.READY) {
             putReady(holder,10,RewardMenuModel.summary(snapshot.entries()).ready());
             if("playtime".equals(state.category())) put(holder,12,choice(Material.BOOK,"Group",state.group().label(),
@@ -192,18 +210,30 @@ public final class RewardMenu implements AutoCloseable {
         put(holder,16,choice(Material.COMPARATOR,"Sort",state.sort().label(),
             java.util.Arrays.stream(RewardMenuState.Sort.values()).map(RewardMenuState.Sort::label).toList()),SORT);
 
+    }
+    private static void browserPage(RewardMenuHolder holder, Snapshot snapshot, boolean preserveSlots) {
+        RewardMenuState state = holder.state();
         if(!preserveSlots) {
             var selected=RewardMenuModel.select(snapshot.entries(),state);
             var page=RewardMenuModel.page(selected,state.page(),21);
             holder.page(page.entries().stream().map(RewardMenuModel.Entry::id).toList(),page.count(),page.index());
         }
+    }
+    private void browserRows(Player player, RewardMenuHolder holder, Snapshot snapshot) {
         var byId=new LinkedHashMap<String,RewardMenuModel.Entry>(); snapshot.entries().forEach(e->byId.put(e.id(),e));
         for(int i=0;i<holder.visibleRewards().size();i++) {
             String id=holder.visibleRewards().get(i); var row=byId.get(id); if(row==null) continue;
+            renderReward(player, holder, row, id, RewardMenuModel.REWARD_SLOTS.get(i));
+        }
+    }
+    private void renderReward(Player player, RewardMenuHolder holder, RewardMenuModel.Entry row, String id, int slot) {
+        RewardMenuState state = holder.state();
             ItemStack item=items.reward(row,claiming(player.getUniqueId(),id),id.equalsIgnoreCase(state.focusedReward()),holder.notice(id));
             var meta=item.getItemMeta(); meta.getPersistentDataContainer().set(rewardKey,PersistentDataType.STRING,id); item.setItemMeta(meta);
-            put(holder,RewardMenuModel.REWARD_SLOTS.get(i),item,new RewardMenuAction(CLAIM,id));
-        }
+            put(holder,slot,item,new RewardMenuAction(CLAIM,id));
+    }
+    private void browserFooter(RewardMenuHolder holder) {
+        RewardMenuState state = holder.state();
         if(holder.visibleRewards().isEmpty()) holder.getInventory().setItem(31,RewardMenuItems.item(Material.PAPER,
             state.view()==RewardMenuState.View.READY ? "&fNo rewards ready to claim" : "&fNo matching rewards",
             "&7Try another filter or category.","&7Click the header to refresh."));
@@ -242,9 +272,9 @@ public final class RewardMenu implements AutoCloseable {
     private void put(RewardMenuHolder holder,int slot,ItemStack item,RewardMenuAction.Type type) { put(holder,slot,item,new RewardMenuAction(type)); }
     private void put(RewardMenuHolder holder,int slot,ItemStack item,RewardMenuAction action) { holder.getInventory().setItem(slot,item);holder.action(slot,action); }
     @Override public void close() {
+        if (closed) return;
         closed = true;
         if (refreshTask != null) refreshTask.cancel();
-        refreshTask = null;
         inFlight.clear();
     }
     public void openTags(Player player) {
