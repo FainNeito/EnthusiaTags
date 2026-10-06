@@ -1,5 +1,7 @@
 # SPEAR tasks
 
+Command-name follow-up: hosted Codacy on head4775770 found repeated retryitems literals after earlier warning fixes. All command names now have constants; behavior/permissions unchanged. guide-command-verify.log passes 259 tests; final EARS/refine/probe/diff checks pass. Superseding unmerged local artifact SHA256 E62382C70EC3DA56076526D6104D9E35D0B675BA5C008CE2744DA14633C425F0. New-head hosted analysis remains pending, and CodeRabbit skip is not source review.
+
 ## T-928 [TDD] Voluntary newcomer reward guide
 
 Second exact-head refinement: gate 112037156128 on 50a8d66 retained one annotation for the new single-argument tab-completion conditional. Replaced argument-count literals with COMMAND_ARGUMENTS consistently; no behavior change. Clean verify still passes 259 tests, EARS/refine/diff and shaded SQLite probe pass. Superseding local unmerged JAR SHA256 3E0D3E7AD6F86F1BB71F126066B3860F1226ED5E01D98C3B108F10FDC9DA9463. New-head hosted reanalysis required.

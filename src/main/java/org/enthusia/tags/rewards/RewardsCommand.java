@@ -15,6 +15,9 @@ import java.util.Collections;
 import java.util.List;
 
 public final class RewardsCommand implements CommandExecutor, TabCompleter {
+    private static final String RETRY_ITEMS_COMMAND = "retryitems";
+    private static final String RELOAD_COMMAND = "reload";
+    private static final String OPEN_COMMAND = "open";
     private static final String GUIDE_COMMAND = "guide";
     private static final int COMMAND_ARGUMENTS = 1;
     private static final int TARGET_ARGUMENTS = 2;
@@ -38,7 +41,7 @@ public final class RewardsCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(message("rewards-service-unavailable"));
             return true;
         }
-        if (args.length == COMMAND_ARGUMENTS && args[0].equalsIgnoreCase("reload")) {
+        if (args.length == COMMAND_ARGUMENTS && args[0].equalsIgnoreCase(RELOAD_COMMAND)) {
             if (!sender.hasPermission("enthusia.tags.admin")) {
                 sender.sendMessage(message("no-permission"));
                 return true;
@@ -59,12 +62,12 @@ public final class RewardsCommand implements CommandExecutor, TabCompleter {
             guide.open(player, args.length == COMMAND_ARGUMENTS ? null : args[1]);
             return true;
         }
-        if (args.length == COMMAND_ARGUMENTS && args[0].equalsIgnoreCase("retryitems")) {
+        if (args.length == COMMAND_ARGUMENTS && args[0].equalsIgnoreCase(RETRY_ITEMS_COMMAND)) {
             rewardService.retryQueuedItems(player);
             player.sendMessage(Component.text("Queued item delivery retry requested."));
             return true;
         }
-        if (args.length == TARGET_ARGUMENTS && args[0].equalsIgnoreCase("open")) {
+        if (args.length == TARGET_ARGUMENTS && args[0].equalsIgnoreCase(OPEN_COMMAND)) {
             openFocused(player, args[1]);
             return true;
         }
@@ -86,11 +89,11 @@ public final class RewardsCommand implements CommandExecutor, TabCompleter {
         if (sender instanceof Player player && guide.allowed(player)) {
             if (args.length == TARGET_ARGUMENTS && args[0].equalsIgnoreCase(GUIDE_COMMAND)) return List.of("build", "social", "combat");
             if (args.length == COMMAND_ARGUMENTS) return sender.hasPermission("enthusia.tags.admin")
-                ? List.of("reload", "open", "retryitems", GUIDE_COMMAND) : List.of("retryitems", GUIDE_COMMAND);
+                ? List.of(RELOAD_COMMAND, OPEN_COMMAND, RETRY_ITEMS_COMMAND, GUIDE_COMMAND) : List.of(RETRY_ITEMS_COMMAND, GUIDE_COMMAND);
         }
         if (args.length == COMMAND_ARGUMENTS) {
             return sender.hasPermission("enthusia.tags.admin")
-                ? List.of("reload", "open", "retryitems") : List.of("retryitems");
+                ? List.of(RELOAD_COMMAND, OPEN_COMMAND, RETRY_ITEMS_COMMAND) : List.of(RETRY_ITEMS_COMMAND);
         }
         return Collections.emptyList();
     }
