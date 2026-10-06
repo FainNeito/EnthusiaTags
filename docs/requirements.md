@@ -97,3 +97,7 @@ The user explicitly authorized the remaining non-guild WarzoneDuels advancement 
 - REQ-905: WHEN local workflow tooling reads or modifies task state THE SYSTEM SHALL reject malformed state, serialize concurrent operations, enforce required evidence, and replace files atomically.
 
 - REQ-906: IF a companion linkage error occurs during projection or tree removal THEN THE SYSTEM SHALL contain and log that integration failure while preserving retry/cleanup behavior without swallowing fatal virtual-machine errors.
+
+## Holiday reward tags (EnthusiaHolidays)
+
+- REQ-910: WHEN the plugin starts THE SYSTEM SHALL install any missing EnthusiaHolidays reward tag definitions (pumpkin_hunter, no_pumpkin_left_behind, present_seeker, home_for_the_holidays, advent_keeper, secret_santa) without overwriting administrator edits, so that `tag give <player> <id>` from holiday events always names a known tag.

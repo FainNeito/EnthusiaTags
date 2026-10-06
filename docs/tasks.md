@@ -271,3 +271,9 @@ References: REQ-906; implementation.md Presentation.
 Evidence: Current owner-bound projection API and scheduler integration; completion-linkage-red.log reproduced two uncaught linkage errors using a captured real scheduled callback. A separate fatal-error test proves VM failures must not be swallowed.
 Acceptance: RuntimeException and LinkageError are contained at projection/removal boundaries; no broad catch-all for Error/Throwable, no reward changes, and all dependent PRs inherit the fix.
 Status: complete locally. Java 25 clean Maven verification passes 149 tests with zero failures and errors; hosted review remains pending.
+
+## T-910 [TDD] Holiday reward tags for EnthusiaHolidays
+
+References: REQ-910; EnthusiaHolidays `tag:` rewards (`integrations.tag-command: "tag give {player} {tag}"`).
+Evidence: `HolidayTagCatalog` mirrors `FrontierPortableTagCatalog` (set-if-missing, single save, no reload loop) and installs from the same `TagListener` hook with one `reloadAll`. Ids are year-agnostic so later events reuse them; tags are owned directly through `tag give`, so no `entitlement-permission` is written. `HolidayTagCatalogTest` (2) checks the exact id set the bundled holiday events grant, lower-case ids, and that an admin's custom display name survives while missing fields are filled once.
+Status: complete locally. Java 25 `mvn -B -ntp clean verify` after the repo's own bootstrap scripts: 252 tests, zero failures/errors/skips. Hosted CI and Codacy pending.
