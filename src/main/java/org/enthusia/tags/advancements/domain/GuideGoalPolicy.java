@@ -8,6 +8,7 @@ public final class GuideGoalPolicy {
     }
 
     public static boolean supportsCounter(String key) {
-        return "stone_mined".equals(key) || "logs_mined".equals(key);
+        return "stone_mined".equals(key) || "logs_mined".equals(key)
+            || ProviderRewardEvidence.supportsCounter(key);
     }
 }

@@ -128,4 +128,20 @@ class RewardGuideTest {
         verify(service, never()).claimAsync(any(Player.class), any(RewardDefinition.class));
         verify(player, never()).openInventory(any(org.bukkit.inventory.Inventory.class));
     }
+    @Test void providerGoalExplainsConfiguredActionBeforeManualNavigation() {
+        RewardGuide guide = ready();
+        var provider = new RewardDefinition("provider", "Read All About It",
+            List.of("&7Read your first received letter."), null, List.of(), goal.getActions(), "advancements");
+        config.set("rewards.guide.paths.social", List.of("provider"));
+        when(service.getRewards()).thenReturn(Map.of("provider", provider));
+        when(service.isGuideGoalReady(player, provider)).thenReturn(true);
+        when(service.previewGuideGold(player, provider)).thenReturn(CompletableFuture.completedFuture(GoldEligibility.UNKNOWN));
+        guide.open(player, "social");
+        callbacks.getFirst().run();
+        String text = messages.stream().map(PlainTextComponentSerializer.plainText()::serialize).reduce("", String::concat);
+        assertTrue(text.contains("Read your first received letter."));
+        assertFalse(text.contains("100 Gold"));
+        assertEquals(ClickEvent.runCommand("/rewards open provider"), messages.getLast().clickEvent());
+        verify(service, never()).claimAsync(any(Player.class), any(RewardDefinition.class));
+    }
 }

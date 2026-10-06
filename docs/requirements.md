@@ -111,3 +111,10 @@ The user explicitly authorized the remaining non-guild WarzoneDuels advancement 
 - REQ-939: WHEN reward state is unloaded or the player reconnects or configuration reloads THE SYSTEM SHALL reject stale observations and retry fresh evidence after loading without overwriting claims or ownership.
 - REQ-940: WHEN provider reward defaults are recovered THE SYSTEM SHALL add only missing provider rewards and referenced tags while preserving custom overrides, higher configuration versions, action fingerprints and current active-playtime policy.
 - REQ-941: WHEN native advancement presentation is unavailable THE SYSTEM SHALL continue bounded read-only provider tracking and ordinary claim access without duplicate provider readers or reward delivery in the renderer.
+
+
+## Provider goals in voluntary guide
+
+- REQ-942: WHEN a configured guide goal uses an allowlisted provider completion counter THE SYSTEM SHALL suggest it only with verified current evidence or durable earned completion and an ordinary unsettled claim state.
+- REQ-943: IF provider evidence is unknown, unavailable, pre-session or unsupported THEN THE SYSTEM SHALL omit that guide goal while retaining existing earned counters and ordinary claim policy.
+- REQ-944: WHEN a provider guide goal is shown THE SYSTEM SHALL explain its configured description and manual reward navigation without executing provider actions or promising Gold before the existing read-only eligibility preview.

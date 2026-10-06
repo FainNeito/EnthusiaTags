@@ -106,6 +106,7 @@ final class RewardGuide {
     private void render(Player player, RewardDefinition goal, GoldEligibility gold) {
         var legacy = LegacyComponentSerializer.legacyAmpersand();
         player.sendMessage(legacy.deserialize(goal.getName()));
+        goal.getDescription().forEach(line -> player.sendMessage(legacy.deserialize(line)));
         for (RewardCriterion criterion : goal.getCriteria()) {
             player.sendMessage(Component.text(criterion.getLabel() + ": " + service.formatProgress(player, criterion), NamedTextColor.GRAY));
         }

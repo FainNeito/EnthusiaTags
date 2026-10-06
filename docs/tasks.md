@@ -1,5 +1,13 @@
 # SPEAR tasks
 
+## T-942 [TDD] Provider goals in the voluntary guide
+
+References: REQ-942 through REQ-944.
+Evidence: freshly fetched canonical main 28048ca remains unchanged; clean ongoing PR #25 incorporated exact provider PR #27 head 4e9f174 via merge 047df06, preserving both implementations and requirements. Guide currently rejects every provider completion key despite recovered verified availability; chat also omits configured goal descriptions.
+Acceptance: exact counter allowlist, loaded zero versus unavailable distinction, earned progress retained, claimed/queued/pending/reconciliation/failure goals omitted, configured description and unchanged read-only Gold preview/manual navigation. Existing curated social/combat defaults remain unchanged; no new rewards, action execution, automatic prompts or production changes.
+Status: local spec/prove/engine/architecture verified. Two behavioral assertions fail against the integrated baseline (guide-provider-red.log, nine tests, two failures, zero errors); 12 focused checks pass after the narrow implementation. Full Java 25 clean Maven verify passes 273 tests with zero failures/errors/skips; EARS, 12 Node tooling checks, diff check and shaded SQLite read-only probe pass. Implementation.md records ownership, dependency, rollout and client boundaries. Hosted exact-head refinement and independent review remain separate. No production changes.
+
+
 Command-name follow-up: hosted Codacy on head4775770 found repeated retryitems literals after earlier warning fixes. All command names now have constants; behavior/permissions unchanged. guide-command-verify.log passes 259 tests; final EARS/refine/probe/diff checks pass. Superseding unmerged local artifact SHA256 E62382C70EC3DA56076526D6104D9E35D0B675BA5C008CE2744DA14633C425F0. New-head hosted analysis remains pending, and CodeRabbit skip is not source review.
 
 ## T-928 [TDD] Voluntary newcomer reward guide
