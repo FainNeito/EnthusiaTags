@@ -185,27 +185,29 @@ public final class ProviderRewardTracker implements Listener, AutoCloseable {
         if (duels != null) {
             var update = duels.observe(id);
             merge(id, known, fresh, update.progress(), update.celebrate(),
-                duels.evidenceAvailable(id) && enabled("WarzoneDuels"));
+                available("WarzoneDuels", duels.evidenceAvailable(id)));
         }
         if (commend != null) {
             var update = commend.observe(id);
             merge(id, known, fresh, update.progress(), update.celebrate(),
-                commend.evidenceAvailable(id) && enabled("EnthusiaCommend"));
+                available("EnthusiaCommend", commend.evidenceAvailable(id)));
         }
         if (express != null) {
             var update = express.observe(id);
             merge(id, known, fresh, update.progress(), update.celebrate(),
-                express.evidenceAvailable(id) && enabled("EnthusiaExpress"));
+                available("EnthusiaExpress", express.evidenceAvailable(id)));
         }
         if (diary != null) {
             var update = diary.observe(id);
             merge(id, known, fresh, update.progress(), update.celebrate(),
-                diary.evidenceAvailable(id) && enabled("DiaryKeeper"));
+                available("DiaryKeeper", diary.evidenceAvailable(id)));
         }
         progress.put(id, Map.copyOf(known));
         rewards.observeProviderProgress(player, Map.copyOf(fresh));
     }
-    private boolean enabled(String name) { return Bukkit.getPluginManager().isPluginEnabled(name); }
+    private boolean available(String name, boolean verified) {
+        return verified && Bukkit.getPluginManager().isPluginEnabled(name);
+    }
     private void merge(UUID id, Map<String, Integer> known, Map<String, Integer> fresh,
                        Map<String, Integer> update, Set<String> celebrate, boolean available) {
         known.putAll(update);
