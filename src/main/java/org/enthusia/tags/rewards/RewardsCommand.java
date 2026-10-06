@@ -16,6 +16,7 @@ import java.util.List;
 
 public final class RewardsCommand implements CommandExecutor, TabCompleter {
     private static final String GUIDE_COMMAND = "guide";
+    private static final int COMMAND_ARGUMENTS = 1;
     private static final int TARGET_ARGUMENTS = 2;
     private final RewardMenu rewardMenu;
     private final Messages messages;
@@ -37,7 +38,7 @@ public final class RewardsCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(message("rewards-service-unavailable"));
             return true;
         }
-        if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
+        if (args.length == COMMAND_ARGUMENTS && args[0].equalsIgnoreCase("reload")) {
             if (!sender.hasPermission("enthusia.tags.admin")) {
                 sender.sendMessage(message("no-permission"));
                 return true;
@@ -54,11 +55,11 @@ public final class RewardsCommand implements CommandExecutor, TabCompleter {
     }
 
     private boolean handlePlayerCommand(Player player, String[] args) {
-        if (args.length >= 1 && args[0].equalsIgnoreCase(GUIDE_COMMAND)) {
-            guide.open(player, args.length == 1 ? null : args[1]);
+        if (args.length >= COMMAND_ARGUMENTS && args[0].equalsIgnoreCase(GUIDE_COMMAND)) {
+            guide.open(player, args.length == COMMAND_ARGUMENTS ? null : args[1]);
             return true;
         }
-        if (args.length == 1 && args[0].equalsIgnoreCase("retryitems")) {
+        if (args.length == COMMAND_ARGUMENTS && args[0].equalsIgnoreCase("retryitems")) {
             rewardService.retryQueuedItems(player);
             player.sendMessage(Component.text("Queued item delivery retry requested."));
             return true;
@@ -84,10 +85,10 @@ public final class RewardsCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (sender instanceof Player player && guide.allowed(player)) {
             if (args.length == TARGET_ARGUMENTS && args[0].equalsIgnoreCase(GUIDE_COMMAND)) return List.of("build", "social", "combat");
-            if (args.length == 1) return sender.hasPermission("enthusia.tags.admin")
+            if (args.length == COMMAND_ARGUMENTS) return sender.hasPermission("enthusia.tags.admin")
                 ? List.of("reload", "open", "retryitems", GUIDE_COMMAND) : List.of("retryitems", GUIDE_COMMAND);
         }
-        if (args.length == 1) {
+        if (args.length == COMMAND_ARGUMENTS) {
             return sender.hasPermission("enthusia.tags.admin")
                 ? List.of("reload", "open", "retryitems") : List.of("retryitems");
         }

@@ -2,6 +2,8 @@
 
 ## T-928 [TDD] Voluntary newcomer reward guide
 
+Second exact-head refinement: gate 112037156128 on 50a8d66 retained one annotation for the new single-argument tab-completion conditional. Replaced argument-count literals with COMMAND_ARGUMENTS consistently; no behavior change. Clean verify still passes 259 tests, EARS/refine/diff and shaded SQLite probe pass. Superseding local unmerged JAR SHA256 3E0D3E7AD6F86F1BB71F126066B3860F1226ED5E01D98C3B108F10FDC9DA9463. New-head hosted reanalysis required.
+
 Hosted Codacy refinement: exact head 8789d61 passed verify/Sentinel but gate 112034708449 failed on duplicated guide literal and a conditional argument-count literal in RewardsCommand. Extracted GUIDE_COMMAND and TARGET_ARGUMENTS without changing dispatch, permissions or tab suggestions. Existing behavior suite rerun: clean verify passes 259 tests, EARS/refine assertion/diff check and final shaded SQLite probe pass (guide-codacy-verify.log). Superseding unmerged local JAR SHA256 1A2A1D5C5870B02890897618A775413FD64206B2DC15E59F303178CCBF14B8CC. Static-review refinement, no invented new behavioral red/green cycle; hosted new-head reanalysis remains required.
 References: REQ-928 through REQ-932.
 Evidence: current canonical main 28048ca fetched; isolated codex/newcomer-reward-guide; production network/reward audit and operational guide specification. Gold ownership includes legacy reservations and ignores legacy sibling exemptions. Existing evaluate does not verify monetary eligibility; focused reward menu already exists.
