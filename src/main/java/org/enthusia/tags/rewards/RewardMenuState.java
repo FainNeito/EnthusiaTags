@@ -5,6 +5,7 @@ import java.util.Locale;
 /** Browser state only. Never alters reward definitions or saved completion. */
 public record RewardMenuState(View view, String category, int page, Filter filter,
                               Sort sort, Group group, String focusedReward) {
+    public static final String PLAYTIME_CATEGORY = "playtime";
     private static final int FIRST_PAGE = 0;
     public enum View { DASHBOARD, CATEGORY, READY }
     public enum Filter {
@@ -35,7 +36,7 @@ public record RewardMenuState(View view, String category, int page, Filter filte
         page = Math.max(FIRST_PAGE, page);
         if (view == View.CATEGORY && (category == null || category.isBlank())) throw new IllegalArgumentException("Missing category");
         if (view == View.READY) filter = Filter.READY;
-        if (!"playtime".equals(category)) group = Group.ALL;
+        if (!PLAYTIME_CATEGORY.equals(category)) group = Group.ALL;
     }
     public static RewardMenuState dashboard() { return new RewardMenuState(View.DASHBOARD, null, 0, Filter.ALL, Sort.PROGRESSION, Group.ALL, null); }
     public static RewardMenuState category(String id) { return new RewardMenuState(View.CATEGORY, id, 0, Filter.ALL, Sort.PROGRESSION, Group.ALL, null); }

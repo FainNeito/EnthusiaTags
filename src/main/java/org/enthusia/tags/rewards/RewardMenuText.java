@@ -18,6 +18,7 @@ public final class RewardMenuText {
         .build();
     private static final PlainTextComponentSerializer TEXT_SERIALIZER = PlainTextComponentSerializer.plainText();
 
+    private static final String GENERAL_CATEGORY = "misc";
     private static final String GENERAL_NAME = "Misc";
     private RewardMenuText() {}
     public static String plain(String value) {
@@ -72,7 +73,7 @@ public final class RewardMenuText {
         return "&6" + "■".repeat(filled) + "&8" + "□".repeat(10 - filled) + " &7" + percent(fraction) + "%";
     }
     public static String categoryName(RewardCategory category) {
-        if ("misc".equalsIgnoreCase(category.id()) && plain(category.name()).equalsIgnoreCase(GENERAL_NAME)) return "General";
+        if (GENERAL_CATEGORY.equalsIgnoreCase(category.id()) && plain(category.name()).equalsIgnoreCase(GENERAL_NAME)) return "General";
         return plain(category.name());
     }
     public static String titleCase(String value) {

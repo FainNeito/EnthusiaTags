@@ -90,8 +90,8 @@ public final class RewardMenuModel {
     }
     private static Comparator<Entry> progressionOrder() {
         Comparator<Entry> fallback = Comparator.comparingInt(Entry::categoryOrder)
-            .thenComparingInt(e -> "playtime".equalsIgnoreCase(e.reward().getCategory()) ? e.group().ordinal() : 0)
-            .thenComparingLong(e -> "playtime".equalsIgnoreCase(e.reward().getCategory()) && e.reward().getCriteria().size() == SINGLE_CRITERION
+            .thenComparingInt(e -> RewardMenuState.PLAYTIME_CATEGORY.equalsIgnoreCase(e.reward().getCategory()) ? e.group().ordinal() : 0)
+            .thenComparingLong(e -> RewardMenuState.PLAYTIME_CATEGORY.equalsIgnoreCase(e.reward().getCategory()) && e.reward().getCriteria().size() == SINGLE_CRITERION
                 ? e.reward().getCriteria().getFirst().getAmount() : e.order())
             .thenComparingInt(Entry::order).thenComparing(Entry::id);
         return fallback;
@@ -108,7 +108,7 @@ public final class RewardMenuModel {
         return switch(filter) { case ALL -> true; case READY -> row.ready(); case UNCLAIMED -> !row.claimed(); case CLAIMED -> row.claimed(); };
     }
     public static RewardMenuState.Group groupFor(RewardDefinition reward) {
-        if (!"playtime".equalsIgnoreCase(reward.getCategory())) return RewardMenuState.Group.ALL;
+        if (!RewardMenuState.PLAYTIME_CATEGORY.equalsIgnoreCase(reward.getCategory())) return RewardMenuState.Group.ALL;
         if (reward.getActions().stream().anyMatch(a -> a.getType() == RewardActionType.COMMAND)) return RewardMenuState.Group.ACCESS;
         if (reward.getCriteria().size() != SINGLE_CRITERION) return RewardMenuState.Group.SPECIAL;
         return switch (reward.getCriteria().getFirst().getType()) {
