@@ -1,6 +1,6 @@
 name: EnthusiaTags
 main: org.enthusia.tags.EnthusiaTagsPlugin
-version: 2.2.3-guide-SNAPSHOT
+version: 2.2.3-guide-provider-SNAPSHOT
 api-version: '26.2'
 author: Enthusia
 softdepend:

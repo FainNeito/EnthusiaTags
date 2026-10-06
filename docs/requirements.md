@@ -103,3 +103,11 @@ The user explicitly authorized the remaining non-guild WarzoneDuels advancement 
 - REQ-930: WHEN the guide previews Gold actions THE SYSTEM SHALL read the existing achievement ownership and action ledger policy without writing reservations or claims and distinguish allowed, blocked and unknown eligibility.
 - REQ-931: IF Gold preview eligibility is blocked or unknown THEN THE SYSTEM SHALL omit its monetary amount while retaining eligible nonmonetary components and truthful ordinary reward navigation.
 - REQ-932: WHEN a guide callback returns THE SYSTEM SHALL recheck player session, permission, service, configuration and reward observations before showing a result while preserving the existing focused menu and authoritative claim validation.
+
+## Provider reward source recovery
+
+- REQ-937: WHEN a supported provider milestone is verified complete THE SYSTEM SHALL latch its stable completion counter once without executing rewards or replaying historical celebrations.
+- REQ-938: IF a provider observation is unavailable or predates the player session THEN THE SYSTEM SHALL retain previously earned completion and mark unearned progress unavailable rather than authoritative zero.
+- REQ-939: WHEN reward state is unloaded or the player reconnects or configuration reloads THE SYSTEM SHALL reject stale observations and retry fresh evidence after loading without overwriting claims or ownership.
+- REQ-940: WHEN provider reward defaults are recovered THE SYSTEM SHALL add only missing provider rewards and referenced tags while preserving custom overrides, higher configuration versions, action fingerprints and current active-playtime policy.
+- REQ-941: WHEN native advancement presentation is unavailable THE SYSTEM SHALL continue bounded read-only provider tracking and ordinary claim access without duplicate provider readers or reward delivery in the renderer.

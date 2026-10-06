@@ -84,6 +84,7 @@ public final class RewardService {
     private final Map<UUID, RewardPlayerState> playerStates = new ConcurrentHashMap<>();
     private final Map<UUID, CompletableFuture<Void>> pendingLoads = new ConcurrentHashMap<>();
     private final Map<UUID, Map<String, Long>> pendingCounterDeltas = new ConcurrentHashMap<>();
+    private final Map<UUID, Map<String, Integer>> providerProgress = new ConcurrentHashMap<>();
     private final Map<UUID, ProgressSnapshot> progressSnapshots = new ConcurrentHashMap<>();
     private final Map<UUID, Map<String, Long>> lastVerifiedProgress = new ConcurrentHashMap<>();
     private final Map<UUID, org.enthusia.tags.advancements.domain.CompletionBaseline> completionBaselines = new ConcurrentHashMap<>();
@@ -151,6 +152,7 @@ public final class RewardService {
             return thread;
         });
         lifecycle.set(ServiceLifecycle.RELOADING);
+        providerProgress.clear();
         reloadNow();
     }
 
@@ -185,6 +187,7 @@ public final class RewardService {
         pendingCounterDeltas.clear();
         progressSnapshots.clear();
         lastVerifiedProgress.clear();
+        providerProgress.clear();
         completionBaselines.clear();
         advancementNotifications = null;
         rewardSyncQueue.clear();
@@ -205,6 +208,7 @@ public final class RewardService {
             return;
         }
         lifecycle.set(ServiceLifecycle.RELOADING);
+        providerProgress.clear();
         if (!activeOperations.isEmpty()) {
             if (reloadQueued.compareAndSet(false, true)) {
                 CompletableFuture<?>[] claims = activeOperations.toArray(CompletableFuture[]::new);
@@ -332,6 +336,7 @@ public final class RewardService {
         pendingCounterDeltas.remove(playerId);
         progressSnapshots.remove(playerId);
         lastVerifiedProgress.remove(playerId);
+        providerProgress.remove(playerId);
         completionBaselines.remove(playerId);
         playerStates.remove(playerId);
     }
@@ -1019,6 +1024,13 @@ public final class RewardService {
         }
         if (criterion.getSourceType() == RewardSourceType.CUSTOM_COUNTER) {
             String key = criterion.getKey();
+            if (key != null && key.startsWith(org.enthusia.tags.advancements.domain.ProviderRewardEvidence.COUNTER_PREFIX)) {
+                if (!org.enthusia.tags.advancements.domain.ProviderRewardEvidence.supportsCounter(key)) return -1;
+                long earned = getCounter(player.getUniqueId(), key);
+                if (earned >= 1) return earned;
+                String milestone = key.substring(org.enthusia.tags.advancements.domain.ProviderRewardEvidence.COUNTER_PREFIX.length());
+                return providerProgress.getOrDefault(player.getUniqueId(), Map.of()).containsKey(milestone) ? 0 : -1;
+            }
             if ("diamond_ore_mined".equals(key)) {
                 return getCounter(player.getUniqueId(), NaturalBlockPolicy.counterKey(Material.DIAMOND_ORE))
                     + getCounter(player.getUniqueId(), NaturalBlockPolicy.counterKey(Material.DEEPSLATE_DIAMOND_ORE));
@@ -1168,6 +1180,24 @@ public final class RewardService {
         invalidateProgress(playerId);
         queueUnlockCheck(playerId);
         return next;
+    }
+
+    /** Main-thread observation from shared read-only providers; never claims or pays a reward. */
+    public void observeProviderProgress(Player player, Map<String, Integer> progress) {
+        if (!isAvailable() || player == null || !player.isOnline() || Bukkit.getPlayer(player.getUniqueId()) != player) return;
+        UUID id = player.getUniqueId();
+        RewardPlayerState state = getLoadedState(id);
+        if (state == null || !state.isLoaded()) return; // The next fresh tick retries after loading.
+        Map<String, Integer> verified = new java.util.HashMap<>();
+        progress.forEach((key, value) -> {
+            if (org.enthusia.tags.advancements.domain.ProviderRewardEvidence.keys().contains(key)
+                && value != null && value >= 0 && value <= 1000) verified.put(key, value);
+        });
+        providerProgress.put(id, Map.copyOf(verified));
+        for (String key : org.enthusia.tags.advancements.domain.ProviderRewardEvidence.completed(verified))
+            state.raiseCounter(org.enthusia.tags.advancements.domain.ProviderRewardEvidence.counterKey(key), 1L);
+        invalidateProgress(id);
+        queueUnlockCheck(id);
     }
 
     public void setCounter(UUID playerId, String key, long value) {
