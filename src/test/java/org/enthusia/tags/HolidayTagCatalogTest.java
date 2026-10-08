@@ -27,7 +27,7 @@ class HolidayTagCatalogTest {
         }
         // Ids EnthusiaHolidays' bundled events grant with "tag: <id>".
         assertEquals(Set.of("pumpkin_hunter", "no_pumpkin_left_behind", "present_seeker",
-            "home_for_the_holidays", "advent_keeper", "secret_santa"), ids);
+            "home_for_the_holidays", "advent_keeper", "secret_santa", "seen_the_watcher"), ids);
     }
 
     @Test

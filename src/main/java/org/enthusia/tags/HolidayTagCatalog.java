@@ -22,7 +22,9 @@ final class HolidayTagCatalog {
         tag("advent_keeper", "<#f4d03f>Advent Keeper", "CLOCK",
             "&7Opened the last door of the Advent calendar"),
         tag("secret_santa", "<#e74c3c>Secret <#27ae60>Santa", "CHEST",
-            "&7Sent a Secret Santa gift")
+            "&7Sent a Secret Santa gift"),
+        tag("seen_the_watcher", "<#9aa0a6>Seen the <#f5f5f5>Watcher", "ENDER_EYE",
+            "&7Caught a glimpse of the Watcher in the dark")
     );
 
     private HolidayTagCatalog() {
