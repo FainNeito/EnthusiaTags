@@ -293,3 +293,5 @@ Evidence: `HolidayTagCatalogTest` failed first on the missing `pumpkin_king` id,
   The tag text is `ꂠ<bold><gradient:#FFB347:#FF7518>Pumpkin King</gradient></bold>ꂠ`. U+A0A0 is the Nexo glyph `pumpkin_king_icon` in `resourcepack/holiday-tags`, which reuses the LumaGuilds Halloween menu's jack o'lantern pixel for pixel. A candle-lit version ships beside it as an alternative.
 
   Evidence: `HolidayTagCatalogTest.pumpkinKingWearsThePumpkinGlyphOnBothSides` failed first on the old text, then passed. `mvn verify` passes.
+
+  Owner's choice (2026-10-09): option B, the candle-lit pumpkin, with the tag text `<b><gradient:#FF3A00:#FF5A00>Pumpkin King</gradient></b>`. The sculk version is kept as `pumpkin_sculk_alt.png`.

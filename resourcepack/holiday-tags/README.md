@@ -1,12 +1,11 @@
 # Holiday tag icons
 
 Glyphs drawn inside holiday reward tags, e.g. `pumpkin_king`:
-`ꂠ` + bold "Pumpkin King" (a slight #FFB347 → #FF7518 gradient) + `ꂠ`.
+`ꂠ` + bold "Pumpkin King" (#FF3A00 → #FF5A00 gradient) + `ꂠ`.
 
 - `pumpkin.png` is the jack o'lantern from the LumaGuilds Halloween menu icon set
-  (`lg_emoji_halloween`, `lumaguilds:enthusia/halloween/emoji`), 16x16, pixel-identical, so the tag matches the Halloween menu style.
-- `pumpkin_candle_alt.png` is the same icon with the sculk glow recoloured to candlelight.
-  To use it, copy it over `pumpkin.png`.
+  (`lg_emoji_halloween`, `lumaguilds:enthusia/halloween/emoji`, 16x16) with its sculk glow recoloured to candlelight.
+- `pumpkin_sculk_alt.png` is the original, sculk-glow icon, kept as an alternative.
 
 Nexo install:
 
