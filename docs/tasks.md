@@ -287,3 +287,9 @@ Status: complete locally; hosted CI and Codacy pending.
 - [x] Add the `pumpkin_king` holiday reward tag (REQ-910): EnthusiaHolidays gives it to the first player to find every pumpkin (`hunt.first-finishers`, count 1).
 
 Evidence: `HolidayTagCatalogTest` failed first on the missing `pumpkin_king` id, then passed with the catalog entry. It is installed through the same set-if-missing path as T-910.
+
+- [x] Give `pumpkin_king` a pumpkin on each side (owner, 2026-10-09: "🎃Pumpkin King🎃, with a nice orange color with a slight gradient").
+
+  The tag text is `ꂠ<bold><gradient:#FFB347:#FF7518>Pumpkin King</gradient></bold>ꂠ`. U+A0A0 is the Nexo glyph `pumpkin_king_icon` in `resourcepack/holiday-tags`, which reuses the LumaGuilds Halloween menu's jack o'lantern pixel for pixel. A candle-lit version ships beside it as an alternative.
+
+  Evidence: `HolidayTagCatalogTest.pumpkinKingWearsThePumpkinGlyphOnBothSides` failed first on the old text, then passed. `mvn verify` passes.

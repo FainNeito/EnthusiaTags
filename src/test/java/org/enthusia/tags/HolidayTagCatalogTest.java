@@ -31,6 +31,16 @@ class HolidayTagCatalogTest {
     }
 
     @Test
+    void pumpkinKingWearsThePumpkinGlyphOnBothSides() {
+        HolidayTagCatalog.HolidayTag king = HolidayTagCatalog.tags().stream()
+            .filter(tag -> tag.id().equals("pumpkin_king")).findFirst().orElseThrow();
+        // U+A0A0 is the pumpkin_king_icon glyph in resourcepack/holiday-tags (Nexo); kept outside <bold> so it isn't drawn twice.
+        assertTrue(king.displayName().startsWith("\uA0A0<bold>"), king.displayName());
+        assertTrue(king.displayName().endsWith("</bold>\uA0A0"), king.displayName());
+        assertTrue(king.displayName().contains("Pumpkin King"), king.displayName());
+    }
+
+    @Test
     void installAddsMissingHolidayTagsWithoutOverwritingCustomization() {
         EnthusiaTagsPlugin plugin = mock(EnthusiaTagsPlugin.class);
         YamlConfiguration config = new YamlConfiguration();

@@ -25,7 +25,8 @@ final class HolidayTagCatalog {
             "&7Sent a Secret Santa gift"),
         tag("seen_the_watcher", "<#9aa0a6>Seen the <#f5f5f5>Watcher", "ENDER_EYE",
             "&7Caught a glimpse of the Watcher in the dark"),
-        tag("pumpkin_king", "<bold><gradient:#ffd700:#ff7b00:#8a2be2>Pumpkin King</gradient>", "JACK_O_LANTERN",
+        // \uA0A0 is the pumpkin_king_icon glyph (resourcepack/holiday-tags), outside <bold> so it isn't drawn twice.
+        tag("pumpkin_king", "\uA0A0<bold><gradient:#FFB347:#FF7518>Pumpkin King</gradient></bold>\uA0A0", "JACK_O_LANTERN",
             "&7The first to find every pumpkin in a Halloween hunt")
     );
 
