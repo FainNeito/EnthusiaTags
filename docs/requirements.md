@@ -100,4 +100,4 @@ The user explicitly authorized the remaining non-guild WarzoneDuels advancement 
 
 ## Holiday reward tags (EnthusiaHolidays)
 
-- REQ-910: WHEN the plugin starts THE SYSTEM SHALL install any missing EnthusiaHolidays reward tag definitions (pumpkin_hunter, no_pumpkin_left_behind, present_seeker, home_for_the_holidays, advent_keeper, secret_santa, seen_the_watcher) without overwriting administrator edits, so that `tag give <player> <id>` from holiday events always names a known tag.
+- REQ-910: WHEN the plugin starts THE SYSTEM SHALL install any missing EnthusiaHolidays reward tag definitions (pumpkin_hunter, no_pumpkin_left_behind, present_seeker, home_for_the_holidays, advent_keeper, secret_santa, seen_the_watcher, pumpkin_king) without overwriting administrator edits, so that `tag give <player> <id>` from holiday events always names a known tag.

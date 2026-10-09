@@ -283,3 +283,7 @@ Status: complete locally. Java 25 `mvn -B -ntp clean verify` after the repo's ow
 References: REQ-910; EnthusiaHolidays `docs/watcher.md` (The Watcher, D6).
 Evidence: `HolidayTagCatalogTest` failed first on the missing `seen_the_watcher` id, then passed with the catalog entry (same set-if-missing install path as T-910).
 Status: complete locally; hosted CI and Codacy pending.
+
+- [x] Add the `pumpkin_king` holiday reward tag (REQ-910): EnthusiaHolidays gives it to the first player to find every pumpkin (`hunt.first-finishers`, count 1).
+
+Evidence: `HolidayTagCatalogTest` failed first on the missing `pumpkin_king` id, then passed with the catalog entry. It is installed through the same set-if-missing path as T-910.
