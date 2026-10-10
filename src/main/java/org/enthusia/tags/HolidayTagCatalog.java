@@ -11,7 +11,7 @@ import java.util.List;
  */
 final class HolidayTagCatalog {
     private static final List<HolidayTag> DEFINITIONS = List.of(
-        tag("pumpkin_hunter", "<gradient:#ff7b00:#ffb347>Pumpkin Hunter</gradient>", "PUMPKIN",
+        tag("pumpkin_hunter", "<bold><gradient:#ff7b00:#ffb347>Pumpkin Hunter</gradient></bold>", "PUMPKIN",
             "&7Found 15 pumpkins in a Halloween hunt"),
         tag("no_pumpkin_left_behind", "<bold><gradient:#ff7b00:#8a2be2>No Pumpkin Left Behind</gradient>",
             "CARVED_PUMPKIN", "&7Found every pumpkin in a Halloween hunt"),

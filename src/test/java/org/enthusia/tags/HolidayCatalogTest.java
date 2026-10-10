@@ -16,9 +16,9 @@ class HolidayCatalogTest {
         assertEquals("holidays", categories.get("christmas").parent());
         assertTrue(categories.get("halloween").tags().contains("pumpkin_king"));
         assertTrue(categories.get("christmas").tags().contains("advent_keeper"));
-        var tags = resource("config.yml");
+        var ids = HolidayTagCatalog.tags().stream().map(HolidayTagCatalog.HolidayTag::id).toList();
         for (var category : categories.values()) {
-            for (String id : category.tags()) assertTrue(tags.contains("tags." + id), id);
+            for (String id : category.tags()) assertTrue(ids.contains(id), id);
         }
     }
     @Test void migrationMakesHunterBoldAndPreservesCustomFields() {

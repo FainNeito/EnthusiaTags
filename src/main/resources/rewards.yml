@@ -24,7 +24,7 @@ categories:
     name: "&6&lHalloween"
     icon: JACK_O_LANTERN
     parent: holidays
-    tags: [pumpkin_hunter, no_pumpkin_left_behind, pumpkin_king]
+    tags: [pumpkin_hunter, no_pumpkin_left_behind, pumpkin_king, seen_the_watcher]
   christmas:
     name: "&a&lChristmas"
     icon: SPRUCE_SAPLING

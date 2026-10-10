@@ -3,7 +3,7 @@
 ## T-917 [TDD] Holiday reward catalog
 
 References: REQ-917..919; implementation.md Presentation.
-Evidence: HolidayCatalogTest initially failed compilation for the missing hierarchy and migration APIs; after implementation all three focused tests pass. Clean Maven verify passes 253 tests; EARS validation and all 12 Node tooling tests pass. The schema assertion was updated from 5 to 7 for the new configuration version. Existing runtime catalog fields and custom Pumpkin King styling are preserved by copy-missing migration. No claims, permissions or server activation changed.
+Evidence: HolidayCatalogTest initially failed compilation for the missing hierarchy and migration APIs; after implementation all three focused tests pass. Clean Maven verify passes 258 tests; EARS validation and all 12 Node tooling tests pass. The schema assertion was updated from 5 to 7 for the new configuration version. Existing runtime catalog fields and custom Pumpkin King styling are preserved by copy-missing migration. No claims, permissions or server activation changed.
 Status: local verification complete; exact-head hosted review and native client acceptance pending.
 
 ## T-916 [INFRA] Canonical advancement presentation dependency

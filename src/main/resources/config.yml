@@ -127,41 +127,6 @@ daily:
     pitch: 1.25
 
 tags:
-  pumpkin_hunter:
-    display-name: "<bold><gradient:#ff7b00:#ffb347>Pumpkin Hunter</gradient></bold>"
-    tag-text: "<bold><gradient:#ff7b00:#ffb347>Pumpkin Hunter</gradient></bold>"
-    icon: PUMPKIN
-    description: ["&7Find 15 pumpkins in a Halloween hunt."]
-  no_pumpkin_left_behind:
-    display-name: "<bold><gradient:#ff7b00:#8a2be2>No Pumpkin Left Behind</gradient></bold>"
-    tag-text: "<bold><gradient:#ff7b00:#8a2be2>No Pumpkin Left Behind</gradient></bold>"
-    icon: CARVED_PUMPKIN
-    description: ["&7Find every pumpkin in a Halloween hunt."]
-  pumpkin_king:
-    display-name: "<bold><gradient:#FF3A00:#FF5A00>Pumpkin King</gradient></bold>"
-    tag-text: "<bold><gradient:#FF3A00:#FF5A00>Pumpkin King</gradient></bold>"
-    icon: JACK_O_LANTERN
-    description: ["&7Be the first to find every pumpkin."]
-  present_seeker:
-    display-name: "<green>Present Seeker"
-    tag-text: "<green>Present Seeker"
-    icon: CHEST
-    description: ["&7Find 12 presents in a Christmas hunt."]
-  home_for_the_holidays:
-    display-name: "<bold><gradient:#e74c3c:#27ae60>Home for the Holidays</gradient></bold>"
-    tag-text: "<bold><gradient:#e74c3c:#27ae60>Home for the Holidays</gradient></bold>"
-    icon: SPRUCE_SAPLING
-    description: ["&7Find every present in a Christmas hunt."]
-  advent_keeper:
-    display-name: "<gold>Advent Keeper"
-    tag-text: "<gold>Advent Keeper"
-    icon: CLOCK
-    description: ["&7Open 24 Advent calendar doors."]
-  secret_santa:
-    display-name: "<#e74c3c>Secret <#27ae60>Santa"
-    tag-text: "<#e74c3c>Secret <#27ae60>Santa"
-    icon: CHEST
-    description: ["&7Send a Secret Santa gift."]
   beta_tester:
     display-name: "<#39c5ff>Beta <#6ee7ff>Tester"
     tag-text: "<#39c5ff>Beta <#6ee7ff>Tester"

@@ -18,6 +18,8 @@ Only additive schema changes. Preserve reward_claims, reward_unlocks and existin
 
 ## Presentation
 
+Reward categories may specify `parent` and `tags` in rewards.yml. Root categories and direct children are paged in the existing 54-slot inventory; Back follows the parent chain. Invalid or cyclic chains fail configuration validation. Catalog tag items show descriptions and cached ownership with no claim action; EnthusiaHolidays remains the award owner. The existing holiday catalog installs missing definitions, preserves custom crown assets and text, and uses bold Pumpkin Hunter defaults; version 7 migration adds bold to existing Hunter names without replacing their colors. Item rendering remains limited to the visible page.
+
 EnthusiaTags remains authoritative. Native advancement progress is a rebuildable projection. Historical reconciliation is silent; live completion is celebrated once. Native advancement criteria do not invoke reward commands. Existing claim UI remains accessible because vanilla advancement clicks are not an ordinary server-side claim interface. Missing dependencies disable the projection without disabling claims.
 
 ## Presence integration
