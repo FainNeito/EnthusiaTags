@@ -120,7 +120,7 @@ public final class ConfigMigrator {
         if (existingVersion < 5) {
             changed |= TagConfigV5Migration.migrate(config, report);
         }
-        if (existingVersion < 7) changed |= HolidayTagMigration.migrate(config, report);
+        if (existingVersion < CURRENT_CONFIG_VERSION) changed |= HolidayTagMigration.migrate(config, report);
         return changed;
     }
 
