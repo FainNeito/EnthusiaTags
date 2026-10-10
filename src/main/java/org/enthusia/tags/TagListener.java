@@ -39,7 +39,9 @@ public final class TagListener implements Listener {
         this.rewardMenu = new RewardMenu(rewardService, tagService);
         this.rewardService = rewardService;
         this.portableEntitlements = new LuckPermsPortableEntitlementGateway(tagService.getPlugin());
-        if (FrontierPortableTagCatalog.ensureInstalled(tagService.getPlugin())) {
+        // Non-short-circuit OR: both catalogs must install before the single reload.
+        if (FrontierPortableTagCatalog.ensureInstalled(tagService.getPlugin())
+            | HolidayTagCatalog.ensureInstalled(tagService.getPlugin())) {
             tagService.reloadAll();
         }
     }

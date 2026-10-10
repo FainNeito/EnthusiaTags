@@ -277,3 +277,27 @@ References: REQ-906; implementation.md Presentation.
 Evidence: Current owner-bound projection API and scheduler integration; completion-linkage-red.log reproduced two uncaught linkage errors using a captured real scheduled callback. A separate fatal-error test proves VM failures must not be swallowed.
 Acceptance: RuntimeException and LinkageError are contained at projection/removal boundaries; no broad catch-all for Error/Throwable, no reward changes, and all dependent PRs inherit the fix.
 Status: complete locally. Java 25 clean Maven verification passes 149 tests with zero failures and errors; hosted review remains pending.
+
+## T-910 [TDD] Holiday reward tags for EnthusiaHolidays
+
+References: REQ-910; EnthusiaHolidays `tag:` rewards (`integrations.tag-command: "tag give {player} {tag}"`).
+Evidence: `HolidayTagCatalog` mirrors `FrontierPortableTagCatalog` (set-if-missing, single save, no reload loop) and installs from the same `TagListener` hook with one `reloadAll`. Ids are year-agnostic so later events reuse them; tags are owned directly through `tag give`, so no `entitlement-permission` is written. `HolidayTagCatalogTest` (2) checks the exact id set the bundled holiday events grant, lower-case ids, and that an admin's custom display name survives while missing fields are filled once.
+Status: complete locally. Java 25 `mvn -B -ntp clean verify` after the repo's own bootstrap scripts: 252 tests, zero failures/errors/skips. Hosted CI and Codacy pending.
+
+## T-911 [TDD] Watcher reward tag
+
+References: REQ-910; EnthusiaHolidays `docs/watcher.md` (The Watcher, D6).
+Evidence: `HolidayTagCatalogTest` failed first on the missing `seen_the_watcher` id, then passed with the catalog entry (same set-if-missing install path as T-910).
+Status: complete locally; hosted CI and Codacy pending.
+
+- [x] Add the `pumpkin_king` holiday reward tag (REQ-910): EnthusiaHolidays gives it to the first player to find every pumpkin (`hunt.first-finishers`, count 1).
+
+Evidence: `HolidayTagCatalogTest` failed first on the missing `pumpkin_king` id, then passed with the catalog entry. It is installed through the same set-if-missing path as T-910.
+
+- [x] Give `pumpkin_king` a pumpkin on each side (owner, 2026-10-09: "🎃Pumpkin King🎃, with a nice orange color with a slight gradient").
+
+  The tag text is `ꂠ<bold><gradient:#FFB347:#FF7518>Pumpkin King</gradient></bold>ꂠ`. U+A0A0 is the Nexo glyph `pumpkin_king_icon` in `resourcepack/holiday-tags`, which reuses the LumaGuilds Halloween menu's jack o'lantern pixel for pixel. A candle-lit version ships beside it as an alternative.
+
+  Evidence: `HolidayTagCatalogTest.pumpkinKingWearsThePumpkinGlyphOnBothSides` failed first on the old text, then passed. `mvn verify` passes.
+
+  Owner's choice (2026-10-09): option B, the candle-lit pumpkin, with the tag text `<b><gradient:#FF3A00:#FF5A00>Pumpkin King</gradient></b>`. The sculk version is kept as `pumpkin_sculk_alt.png`.
