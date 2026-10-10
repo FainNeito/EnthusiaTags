@@ -1,4 +1,7 @@
 config-version: 3
+rewards-holiday-owned: "&aEarned &8- &7Equip with /tags."
+rewards-holiday-locked: "&7Not earned yet."
+rewards-holiday-event: "&8Awarded by the holiday event."
 
 no-permission: "&cYou do not have permission to do that."
 players-only: "&cOnly players can use this command."

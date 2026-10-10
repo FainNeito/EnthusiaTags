@@ -18,8 +18,8 @@ import java.util.List;
 public final class ConfigMigrator {
     private static final String REWARDS_RESOURCE = "rewards.yml";
 
-    public static final int CURRENT_CONFIG_VERSION = 5;
-    private static final int REWARDS_CONFIG_VERSION = 5;
+    public static final int CURRENT_CONFIG_VERSION = 7;
+    private static final int REWARDS_CONFIG_VERSION = 7;
     private static final DateTimeFormatter BACKUP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
 
     private final JavaPlugin plugin;
@@ -120,6 +120,7 @@ public final class ConfigMigrator {
         if (existingVersion < 5) {
             changed |= TagConfigV5Migration.migrate(config, report);
         }
+        if (existingVersion < 7) changed |= HolidayTagMigration.migrate(config, report);
         return changed;
     }
 

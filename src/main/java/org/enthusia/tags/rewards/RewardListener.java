@@ -41,6 +41,7 @@ public final class RewardListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }
+        if (event.getRawSlot() < 0 || event.getRawSlot() >= event.getView().getTopInventory().getSize()) return;
         ItemStack clicked = event.getCurrentItem();
         if (clicked == null || !clicked.hasItemMeta()) {
             return;
@@ -48,21 +49,15 @@ public final class RewardListener implements Listener {
         ItemMeta meta = clicked.getItemMeta();
         PersistentDataContainer data = meta.getPersistentDataContainer();
         if (data.has(rewardMenu.getBackKey(), PersistentDataType.BYTE)) {
-            player.openInventory(rewardMenu.create(player));
+            player.openInventory(rewardMenu.createParent(player, rewardHolder.getCategory()));
             return;
         }
         if (data.has(rewardMenu.getNextKey(), PersistentDataType.BYTE)) {
-            if (rewardHolder.getCategory() == null) {
-                return;
-            }
             int next = rewardHolder.getPage() + 1;
             player.openInventory(rewardMenu.createCategory(player, rewardHolder.getCategory(), next));
             return;
         }
         if (data.has(rewardMenu.getPrevKey(), PersistentDataType.BYTE)) {
-            if (rewardHolder.getCategory() == null) {
-                return;
-            }
             int prev = Math.max(0, rewardHolder.getPage() - 1);
             player.openInventory(rewardMenu.createCategory(player, rewardHolder.getCategory(), prev));
             return;

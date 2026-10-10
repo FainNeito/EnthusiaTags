@@ -1,5 +1,9 @@
 # EnthusiaTags advancement pilot
 
+- REQ-917: WHEN a player opens rewards THE SYSTEM SHALL display a Holidays category containing configurable Halloween and Christmas subcategories with event-earned tag descriptions and ownership, without granting rewards from catalog entries.
+- REQ-918: WHEN reward categories are nested THE SYSTEM SHALL support parent navigation and pagination without hiding existing categories or changing reward claims.
+- REQ-919: WHEN holiday tag defaults are installed THE SYSTEM SHALL make Pumpkin Hunter bold and preserve configured colors, custom tags, earned ownership, and reward history.
+
 - REQ-916: WHEN companion sources are verified THE SYSTEM SHALL use the canonical merged advancement presentation provider with matching Maven coordinates and reject unapproved repositories, versions or commits without changing reward behavior.
 
 - REQ-914: WHEN playtime reward requirements are loaded THE SYSTEM SHALL use active playtime for every bundled and existing total or AFK minute criterion, retaining thresholds, payouts, custom non-time criteria, historical claims, and administrator descriptions.

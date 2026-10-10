@@ -12,6 +12,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.enthusia.tags.TagService;
+import org.enthusia.tags.TagTextFormat;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -39,21 +40,7 @@ public final class RewardMenu {
     }
 
     public Inventory create(Player player) {
-        RewardMenuHolder holder = new RewardMenuHolder(rewardService);
-        Component title = LegacyComponentSerializer.legacyAmpersand()
-            .deserialize(rewardService.getMessage("rewards-gui-title"));
-        Inventory inventory = Bukkit.createInventory(holder, 27, title);
-        holder.setInventory(inventory);
-
-        int slot = 10;
-        Map<String, RewardCategory> categories = rewardService.getConfig().categories();
-        for (RewardCategory category : categories.values()) {
-            if (slot >= 17) {
-                break;
-            }
-            inventory.setItem(slot++, createCategoryItem(category));
-        }
-        return inventory;
+        return createCategory(player, null, 0);
     }
 
     public Inventory createCategory(Player player, String categoryId) {
@@ -61,7 +48,11 @@ public final class RewardMenu {
     }
 
     public Inventory createFocused(Player player, RewardDefinition target) {
-        int index = 0;
+        int index = (int) rewardService.getConfig().categories().values().stream()
+            .filter(category -> target.getCategory().equals(category.parent())).count();
+        RewardCategory category = rewardService.getConfig().categories().get(target.getCategory());
+        if (category != null) index += (int) category.tags().stream()
+            .filter(id -> tagService.getRegistry().get(id) != null).count();
         for (RewardDefinition reward : rewardService.getRewards().values()) {
             if (!reward.getCategory().equalsIgnoreCase(target.getCategory())) continue;
             if (reward.getId().equalsIgnoreCase(target.getId())) {
@@ -77,41 +68,71 @@ public final class RewardMenu {
     }
 
     private Inventory createCategory(Player player, String categoryId, int page, String focusedRewardId) {
-        RewardMenuHolder holder = new RewardMenuHolder(rewardService, categoryId, page);
-        RewardCategory category = rewardService.getConfig().categories().get(categoryId);
+        Map<String, RewardCategory> categories = rewardService.getConfig().categories();
+        RewardCategory category = categoryId == null ? null : categories.get(categoryId);
         String titleText = category == null
             ? rewardService.getMessage("rewards-gui-title")
             : rewardService.getMessage("rewards-category-title").replace("{category}", category.name());
         Component title = LegacyComponentSerializer.legacyAmpersand().deserialize(titleText);
-        Inventory inventory = Bukkit.createInventory(holder, 54, title);
-        holder.setInventory(inventory);
-
-        List<RewardDefinition> list = new ArrayList<>();
+        List<java.util.function.Supplier<ItemStack>> list = new ArrayList<>();
+        for (RewardCategory child : categories.values()) {
+            if (java.util.Objects.equals(child.parent(), categoryId)) list.add(() -> createCategoryItem(child));
+        }
+        if (category != null) {
+            for (String tagId : category.tags()) {
+                var tag = tagService.getRegistry().get(tagId);
+                if (tag != null) list.add(() -> createHolidayTagItem(player, tag));
+            }
+        }
+        long renderStart = System.nanoTime();
+        RewardService.ProgressSnapshot snapshot = rewardService.getProgressSnapshot(player);
         for (RewardDefinition reward : rewardService.getRewards().values()) {
             if (!reward.getCategory().equalsIgnoreCase(categoryId)) {
                 continue;
             }
-            list.add(reward);
+            list.add(() -> createRewardItem(player, reward, snapshot,
+                reward.getId().equalsIgnoreCase(focusedRewardId == null ? "" : focusedRewardId)));
         }
         int pageSize = 45;
-        int start = Math.max(0, page) * pageSize;
+        int safePage = Math.min(Math.max(0, page), Math.max(0, (list.size() - 1) / pageSize));
+        RewardMenuHolder holder = new RewardMenuHolder(rewardService, categoryId, safePage);
+        Inventory inventory = Bukkit.createInventory(holder, 54, title);
+        holder.setInventory(inventory);
+        int start = safePage * pageSize;
         int end = Math.min(list.size(), start + pageSize);
         int slot = 0;
-        long renderStart = System.nanoTime();
-        RewardService.ProgressSnapshot snapshot = rewardService.getProgressSnapshot(player);
         for (int i = start; i < end; i++) {
-            inventory.setItem(slot++, createRewardItem(player, list.get(i), snapshot,
-                list.get(i).getId().equalsIgnoreCase(focusedRewardId == null ? "" : focusedRewardId)));
+            inventory.setItem(slot++, list.get(i).get());
         }
         if (tagService.getPlugin() instanceof org.enthusia.tags.EnthusiaTagsPlugin plugin) {
             plugin.getPerformanceMonitor().add("rewards.gui.items-rendered", end - start);
             plugin.getPerformanceMonitor().recordDurationMillis("rewards.gui.render",
                 java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - renderStart));
         }
-        inventory.setItem(45, createPrevItem());
-        inventory.setItem(49, createBackItem());
-        inventory.setItem(53, createNextItem());
+        if (safePage > 0) inventory.setItem(45, createPrevItem());
+        if (categoryId != null) inventory.setItem(49, createBackItem());
+        if (end < list.size()) inventory.setItem(53, createNextItem());
         return inventory;
+    }
+
+    public Inventory createParent(Player player, String categoryId) {
+        RewardCategory category = categoryId == null ? null : rewardService.getConfig().categories().get(categoryId);
+        return createCategory(player, category == null ? null : category.parent());
+    }
+
+    private ItemStack createHolidayTagItem(Player player, org.enthusia.tags.TagDefinition tag) {
+        ItemStack stack = new ItemStack(tag.getIcon());
+        ItemMeta meta = stack.getItemMeta();
+        meta.displayName(TagTextFormat.deserializeCompat(tag.getDisplayName()));
+        List<Component> lore = new ArrayList<>();
+        for (String line : tag.getDescription()) lore.add(TagTextFormat.deserializeCompat(line));
+        boolean owned = tagService.getPlayerData(player.getUniqueId()).getOwnedTags().contains(tag.getId().toLowerCase(Locale.ROOT));
+        lore.add(TagTextFormat.deserializeCompat(rewardService.getMessage(owned ? "rewards-holiday-owned" : "rewards-holiday-locked")));
+        lore.add(TagTextFormat.deserializeCompat(rewardService.getMessage("rewards-holiday-event")));
+        meta.lore(lore);
+        // No reward or category key: catalog clicks must never issue an event award.
+        stack.setItemMeta(meta);
+        return stack;
     }
 
     public NamespacedKey getRewardKey() {
