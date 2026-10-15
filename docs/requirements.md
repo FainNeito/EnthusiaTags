@@ -1,5 +1,9 @@
 # EnthusiaTags advancement pilot
 
+- REQ-920: WHEN a known advancement completes again after reconnect, restart or provider regression THE SYSTEM SHALL restore its completion silently using durable per-player and advancement-key evidence without repeating its announcement or executing rewards.
+- REQ-921: IF completion history cannot be loaded or committed THEN THE SYSTEM SHALL defer announcements and retry without substituting empty history or consuming pending live evidence.
+- REQ-922: WHEN historical completions are first reconciled THE SYSTEM SHALL seed durable completion history silently and reserve a new live announcement before calling the renderer, accepting a lost notification after an interrupted process rather than replaying it on restart.
+
 - REQ-916: WHEN companion sources are verified THE SYSTEM SHALL use the canonical merged advancement presentation provider with matching Maven coordinates and reject unapproved repositories, versions or commits without changing reward behavior.
 
 - REQ-914: WHEN playtime reward requirements are loaded THE SYSTEM SHALL use active playtime for every bundled and existing total or AFK minute criterion, retaining thresholds, payouts, custom non-time criteria, historical claims, and administrator descriptions.

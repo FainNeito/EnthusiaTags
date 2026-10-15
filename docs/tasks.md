@@ -1,5 +1,12 @@
 # SPEAR tasks
 
+## T-920 [TDD] Durable advancement completion and announcement boundary
+
+References: REQ-920, REQ-921, REQ-922; implementation.md Presentation.
+Evidence: John_Raidfarms has two First Class Discord announcements about eleven days apart. Production read-only inspection confirms Tags 2.2.2-unique-mail-test.1 and Express 1.2.1 loaded. Session-only provider projections and PendingCelebrations have no durable cross-session announcement boundary. The exact historical trigger is unproven; normal rejoin alone is silent and Express expiration does not delete sender history.
+Acceptance: persistent UUID/key uniqueness; silent history backfill; monotonic earned display; reconnect/restart/provider regression deduplication; independent players and keys; retry failed storage; no SQL on Bukkit thread; quit/close fences; no reward/provider DB changes. No server restart, reload, deployment or merge is authorized by this task.
+Status: local spec/prove/engine/architecture/refine complete. The existing controller failed the new behavioral regression (two renderer calls instead of one), then the implementation passed. Final clean Java 25 Maven verify passes 261 tests, zero failures/errors/skips, including an additional asynchronous reward-notification ordering regression. Pinned renderer build passes 40 tests; companion validators, 10 Python bootstrap tests, EARS and 12 Node tests pass. No GUI/layout, reward, permission or provider-state changes. Hosted exact-head checks, canonical merge, monorepo pin reconciliation and real server/client acceptance remain delivery gates; no server files changed. See docs/evidence/durable-advancement-completions.md.
+
 ## T-916 [INFRA] Canonical advancement presentation dependency
 
 References: REQ-916; implementation.md Presentation and Verification and rollout.
