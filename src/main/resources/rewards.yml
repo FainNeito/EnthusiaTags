@@ -1703,3 +1703,18 @@ rewards:
         material: TOTEM_OF_UNDYING
         amount: 2
         label: Ultimate Survivor bonus
+  watcher_melody:
+    name: "&7Forgotten Melody"
+    description:
+      - "&7Hear the Watcher's theme all the way to its end."
+    icon: MUSIC_DISC_11
+    category: misc
+    criteria:
+      c1:
+        type: CUSTOM_COUNTER
+        key: watcher_theme_heard
+        amount: 1
+    rewards:
+      r1:
+        type: COMMAND
+        id: 'give %player% minecraft:music_disc_11[minecraft:item_model="enthusia:watcher_disc",minecraft:jukebox_playable="enthusia:forgotten_melody",minecraft:item_name={"text":"Music Disc","color":"#F5F5F5"},minecraft:rarity="rare"] 1'
