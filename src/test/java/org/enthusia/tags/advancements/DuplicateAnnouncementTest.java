@@ -27,14 +27,18 @@ class DuplicateAnnouncementTest {
     @TempDir Path directory;
 
     @Test void previouslyAnnouncedCompletionIsNotAnnouncedAfterSessionReset() throws Exception {
-        scenario(false);
+        scenario(false, false);
     }
 
     @Test void previouslyAnnouncedCompletionIsNotAnnouncedAfterControllerRestart() throws Exception {
-        scenario(true);
+        scenario(true, false);
     }
 
-    private void scenario(boolean restart) throws Exception {
+    @Test void partiallyDeliveredProviderNotificationIsNotRetried() throws Exception {
+        scenario(false, true);
+    }
+
+    private void scenario(boolean restart, boolean partialFailure) throws Exception {
         JavaPlugin plugin = mock(JavaPlugin.class);
         when(plugin.getDataFolder()).thenReturn(directory.toFile());
         when(plugin.getConfig()).thenReturn(new YamlConfiguration());
@@ -42,6 +46,10 @@ class DuplicateAnnouncementTest {
         RewardService rewards = mock(RewardService.class);
         when(rewards.getRewards()).thenReturn(Map.of());
         ProjectionService projection = mock(ProjectionService.class);
+        if (partialFailure) {
+            doThrow(new IllegalStateException("sent toast, then viewer delivery failed"))
+                .doNothing().when(projection).celebrate(eq(plugin), eq("enthusia"), any(Player.class), eq("express/first_class"));
+        }
         ServicesManager services = mock(ServicesManager.class);
         when(services.load(ProjectionService.class)).thenReturn(projection);
         Player player = mock(Player.class);
@@ -92,7 +100,13 @@ class DuplicateAnnouncementTest {
         var field = NativeAdvancementController.class.getDeclaredField("pendingCelebrations");
         field.setAccessible(true);
         while (((Map<?, ?>) field.get(controller)).containsKey(player.getUniqueId())) {
-            method.invoke(controller, player, new java.util.HashMap<>(Map.of("express/first_class", 1000)));
+            try {
+                method.invoke(controller, player, new java.util.HashMap<>(Map.of("express/first_class", 1000)));
+            } catch (java.lang.reflect.InvocationTargetException ex) {
+                if (!(ex.getCause() instanceof IllegalStateException)
+                    || !"sent toast, then viewer delivery failed".equals(ex.getCause().getMessage())) throw ex;
+                // Simulates the tick boundary containing a recoverable renderer exception.
+            }
             org.junit.jupiter.api.Assertions.assertTrue(System.nanoTime() < deadline, "Completion did not settle");
             Thread.sleep(5);
         }

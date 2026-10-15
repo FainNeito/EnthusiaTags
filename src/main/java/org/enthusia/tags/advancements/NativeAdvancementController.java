@@ -369,8 +369,10 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         if (!history(player).reconcile(progress, pending, registeredKeys)) return;
         PendingCelebrations.deliver(
             pending, progress, key -> {
+                // The renderer can throw after a toast or some audience sends succeeded.
+                // Provider keys are already durable; never retry an uncertain dispatch.
+                history(player).consumeAuthorization(key);
                 projection.celebrate(plugin, "enthusia", player, key);
-                history(player).acknowledge(key);
             });
         if (pending.isEmpty()) pendingCelebrations.remove(player.getUniqueId());
     }

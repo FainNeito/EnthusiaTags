@@ -57,7 +57,7 @@ class CompletionHistoryTest {
         assertFalse(history.reconcile(progress, pending, Set.of(KEY)));
         assertTrue(history.reconcile(progress, pending, Set.of(KEY)));
         assertEquals(Set.of(KEY), pending);
-        history.acknowledge(KEY);
+        history.consumeAuthorization(KEY);
         assertTrue(history.reconcile(progress, pending, Set.of(KEY)));
         assertTrue(pending.isEmpty());
     }
@@ -92,5 +92,21 @@ class CompletionHistoryTest {
         assertTrue(history.reconcile(progress, pending, Set.of(KEY)));
         assertEquals(Set.of(reward), pending);
         verify(ledger, never()).record(any(), any());
+    }
+
+    @Test void uncertainDispatchConsumesOnlyTheAttemptedKey() {
+        String other = "express/pen_pal";
+        Set<String> keys = Set.of(KEY, other);
+        when(ledger.load(player)).thenReturn(CompletableFuture.completedFuture(Set.of()));
+        when(ledger.record(player, keys)).thenReturn(CompletableFuture.completedFuture(keys));
+        var history = new CompletionHistory(ledger, player);
+        var progress = new HashMap<>(Map.of(KEY, 1000, other, 1000));
+        var pending = new HashSet<>(keys);
+        assertFalse(history.reconcile(progress, pending, keys));
+        assertTrue(history.reconcile(progress, pending, keys));
+        history.consumeAuthorization(KEY);
+        // A throw aborts the delivery loop before the second key is attempted.
+        assertTrue(history.reconcile(progress, pending, keys));
+        assertEquals(Set.of(other), pending);
     }
 }

@@ -1,5 +1,12 @@
 # SPEAR tasks
 
+## T-923 [TDD] Review correction: uncertain renderer delivery and method complexity
+
+References: REQ-923, REQ-921; implementation.md Presentation.
+Evidence: PR #31 at e1a1c938 acknowledges provider authorization after renderer return; a renderer that sends and then throws is invoked again. Codacy identifies reconcile cyclomatic complexity 10, limit 8.
+Acceptance: controller-level partial-send regression; consume only the attempted provider authorization before renderer invocation; retain remaining keys and storage retries; ordinary reward path unchanged; split reconciliation stages without suppressions; clean build and exact-head hosted checks. No deployment/restart/reload/merge.
+Status: local spec/prove/engine/arch/refine complete. The partial-send regression reproduced two calls on e1a1c938, then passed after consume-before-dispatch. An additional regression preserves unrelated pending keys. Java 25 clean Maven verify passes 263 tests, zero failures/errors/skips; EARS, 12 Node tests, 10 Python bootstrap tests and architecture checks pass. reconcile is split into small stages without a Codacy suppression. Exact-head hosted build/Codacy validation remains pending the push. No server changes.
+
 ## T-920 [TDD] Durable advancement completion and announcement boundary
 
 References: REQ-920, REQ-921, REQ-922; implementation.md Presentation.
