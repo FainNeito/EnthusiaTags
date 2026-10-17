@@ -1,5 +1,10 @@
 # SPEAR tasks
 
+## T-20261017 [TDD] Align the merged holiday renderer
+
+References: REQ-REL-001; implementation.md Layer Dependency Rules.
+Evidence: the new watcher palette bootstrap regression failed with Unexpected renderer version before implementation (tags-renderer-red.log). The parent renderer is merged at 01fac426152737c76cd4d2e570e07a33dde99798; release checks must use its actual pilot version, preserve strict SHA/POM validation and rerun the existing suites. No reward, menu, ownership or progression behavior changes.
+
 ## T-917 [TDD] Holiday reward catalog
 
 References: REQ-917..919; implementation.md Presentation.
