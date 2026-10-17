@@ -36,7 +36,7 @@ final class DailyInventoryHolder implements InventoryHolder {
     }
 
     int claimSlot() {
-        return claimSlot;
+        return DailyMaintenancePolicy.claimsPaused() ? -1 : claimSlot;
     }
 
     UUID sessionId() {

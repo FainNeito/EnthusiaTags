@@ -16,8 +16,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class ConfigMigrator {
-    public static final int CURRENT_CONFIG_VERSION = 5;
-    private static final int REWARDS_CONFIG_VERSION = 5;
+    private static final String REWARDS_RESOURCE = "rewards.yml";
+
+    public static final int CURRENT_CONFIG_VERSION = 7;
+    private static final int REWARDS_CONFIG_VERSION = 7;
     private static final DateTimeFormatter BACKUP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
 
     private final JavaPlugin plugin;
@@ -30,7 +32,7 @@ public final class ConfigMigrator {
         MigrationReport report = new MigrationReport();
         migrate("config.yml", report);
         migrate("messages.yml", report);
-        migrate("rewards.yml", report);
+        migrate(REWARDS_RESOURCE, report);
         migrate("cosmetics.yml", report);
         return report;
     }
@@ -63,6 +65,11 @@ public final class ConfigMigrator {
                 changed = true;
             }
             changed |= copyMissing(defaults, config, "", resourceName, report);
+            if (REWARDS_RESOURCE.equals(resourceName)
+                && ActivePlaytimeRewardMigration.needsUpdate(config, defaults)) {
+                if (existingVersion >= targetVersion) backup(file, resourceName, report);
+                changed |= ActivePlaytimeRewardMigration.migrate(config, defaults, report);
+            }
             if (changed) {
                 config.save(file);
             }
@@ -75,7 +82,7 @@ public final class ConfigMigrator {
         if ("config.yml".equals(resourceName)) {
             return CURRENT_CONFIG_VERSION;
         }
-        if ("rewards.yml".equals(resourceName)) {
+        if (REWARDS_RESOURCE.equals(resourceName)) {
             return REWARDS_CONFIG_VERSION;
         }
         return defaults.getInt("config-version", CURRENT_CONFIG_VERSION);
@@ -87,7 +94,7 @@ public final class ConfigMigrator {
         if ("config.yml".equals(resourceName)) {
             return migrateConfigValues(config, existingVersion, report);
         }
-        if ("rewards.yml".equals(resourceName) && existingVersion < REWARDS_CONFIG_VERSION) {
+        if (REWARDS_RESOURCE.equals(resourceName) && existingVersion < REWARDS_CONFIG_VERSION) {
             boolean changed = existingVersion < 4 && migrateRewardValues(config, report);
             if (existingVersion < 5) {
                 changed |= RewardConfigV5Migration.migrateRewards(config, defaults, report);
@@ -113,6 +120,7 @@ public final class ConfigMigrator {
         if (existingVersion < 5) {
             changed |= TagConfigV5Migration.migrate(config, report);
         }
+        if (existingVersion < CURRENT_CONFIG_VERSION) changed |= HolidayTagMigration.migrate(config, report);
         return changed;
     }
 
@@ -210,7 +218,9 @@ public final class ConfigMigrator {
                                 String resourceName,
                                 MigrationReport report) {
         boolean changed = false;
-        for (String key : defaults.getKeys(false)) {
+        ConfigurationSection currentDefaults = path.isBlank() ? defaults : defaults.getConfigurationSection(path);
+        if (currentDefaults == null) return false;
+        for (String key : currentDefaults.getKeys(false)) {
             String childPath = path.isBlank() ? key : path + "." + key;
             if ("config-version".equals(childPath)) {
                 continue;
@@ -234,7 +244,7 @@ public final class ConfigMigrator {
     }
 
     private boolean isAdministratorCollection(String resourceName, String path) {
-        if ("rewards.yml".equals(resourceName) && path.startsWith("rewards.")) return true;
+        if (REWARDS_RESOURCE.equals(resourceName) && path.startsWith("rewards.")) return true;
         return "config.yml".equals(resourceName) && path.startsWith("tags.");
     }
 

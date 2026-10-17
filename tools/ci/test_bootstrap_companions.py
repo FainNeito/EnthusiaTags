@@ -17,7 +17,7 @@ class BootstrapCompanionsTest(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         self.root = pathlib.Path(temporary.name)
         self.pins = {
-            "renderer": {"repository": "FainNeito/EnthusiaAdvancements", "sha": "a" * 40,
+            "renderer": {"repository": "BadgersMC/EnthusiaAdvancements", "sha": "a" * 40,
                          "version": "1.0.0-pilot.4"},
             "rosechat": {"repository": "FainNeito/Enthusia-RoseChat", "sha": "b" * 40,
                         "path": bootstrap.PRESENCE_SOURCE,
@@ -41,7 +41,7 @@ class BootstrapCompanionsTest(unittest.TestCase):
     def test_expected_pins_produce_only_approved_https_destinations(self):
         pins = bootstrap.load_pins(self.root)
         repository, sha, source = bootstrap.resolved_fields(pins)
-        self.assertEqual(repository, "https://github.com/FainNeito/EnthusiaAdvancements.git")
+        self.assertEqual(repository, "https://github.com/BadgersMC/EnthusiaAdvancements.git")
         self.assertEqual(sha, "a" * 40)
         self.assertEqual(source, "https://raw.githubusercontent.com/FainNeito/Enthusia-RoseChat/"
                          + "b" * 40 + "/" + bootstrap.PRESENCE_SOURCE)
@@ -63,6 +63,23 @@ class BootstrapCompanionsTest(unittest.TestCase):
     def test_workspace_escape_is_rejected(self):
         with self.assertRaises(ValueError):
             bootstrap.bounded_file(self.root, "../outside.xml")
+
+    def test_canonical_presentation_provider_is_accepted_with_exact_version(self):
+        self.pins["renderer"].update(repository="BadgersMC/EnthusiaAdvancements",
+                                     version="1.0.0-pilot.6-chat-colors-test.4")
+        self.write("tools/ci/companions.json", json.dumps(self.pins))
+        pins = bootstrap.load_pins(self.root)
+        self.assertEqual(bootstrap.resolved_fields(pins)[0],
+                         "https://github.com/BadgersMC/EnthusiaAdvancements.git")
+
+    def test_presentation_versions_cannot_include_arbitrary_suffixes(self):
+        for version in ("1.0.0-pilot.6-chat-colors-test.4;bad", "1.0.0-pilot.6-anything",
+                        "1.0.0-pilot.6-chat-colors-test.", "../pilot.6"):
+            with self.subTest(version=version):
+                self.pins["renderer"]["version"] = version
+                self.write("tools/ci/companions.json", json.dumps(self.pins))
+                with self.assertRaises(ValueError):
+                    bootstrap.load_pins(self.root)
 
     def test_dtd_and_external_entities_are_rejected(self):
         for declaration in (
