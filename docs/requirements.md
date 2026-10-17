@@ -1,5 +1,7 @@
 # EnthusiaTags advancement pilot
 
+- REQ-REL-001: WHEN verifying the holiday release THE SYSTEM SHALL compile against the exact immutable merged advancement renderer version while rejecting mismatched commits, mismatched POMs and arbitrary version suffixes.
+
 - REQ-917: WHEN a player opens rewards THE SYSTEM SHALL display a Holidays category containing configurable Halloween and Christmas subcategories with event-earned tag descriptions and ownership, without granting rewards from catalog entries.
 - REQ-918: WHEN reward categories are nested THE SYSTEM SHALL support parent navigation and pagination without hiding existing categories or changing reward claims.
 - REQ-919: WHEN holiday tag defaults are installed THE SYSTEM SHALL make Pumpkin Hunter bold and preserve configured colors, custom tags, earned ownership, and reward history.
