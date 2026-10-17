@@ -7,16 +7,16 @@ import java.util.OptionalLong;
 
 /** Pure presentation rules; RewardService remains the sole authority for claiming. */
 public final class RewardMenuModel {
-    public static final List<Integer> REWARD_SLOTS = List.of(19,20,21,22,23,24,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43);
-    public static final List<Integer> DASHBOARD_SLOTS = List.of(10,12,14,16,20,22,24);
-    private static final int SINGLE_CRITERION = 1;
-    private RewardMenuModel() {}
-    public enum DisplayState { NOT_STARTED, IN_PROGRESS, READY, CLAIMED, PENDING, QUEUED, RETRY, REVIEW, WITHHELD, UNAVAILABLE }
     private static final java.util.Map<RewardStatus, DisplayState> TERMINAL_STATES = java.util.Map.of(
         RewardStatus.CLAIMED, DisplayState.CLAIMED, RewardStatus.CLAIM_PENDING, DisplayState.PENDING,
         RewardStatus.ITEM_QUEUED, DisplayState.QUEUED, RewardStatus.DELIVERY_FAILED, DisplayState.RETRY,
         RewardStatus.REQUIRES_RECONCILIATION, DisplayState.REVIEW,
         RewardStatus.WITHHELD_NETWORK_LIMIT, DisplayState.WITHHELD);
+    public static final List<Integer> REWARD_SLOTS = List.of(19,20,21,22,23,24,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43);
+    public static final List<Integer> DASHBOARD_SLOTS = List.of(10,12,14,16,20,22,24);
+    private static final int SINGLE_CRITERION = 1;
+    private RewardMenuModel() {}
+    public enum DisplayState { NOT_STARTED, IN_PROGRESS, READY, CLAIMED, PENDING, QUEUED, RETRY, REVIEW, WITHHELD, UNAVAILABLE }
     public record Reading(RewardCriterion criterion, OptionalLong value) {
         public Reading { if (criterion == null || value == null) throw new IllegalArgumentException("Missing progress reading"); }
     }

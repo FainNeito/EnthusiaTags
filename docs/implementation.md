@@ -36,7 +36,6 @@ Nine milestones ship: first win, five-win best streak and 50 wins use existing s
 
 SPEAR cycles: spec, prove (behavioral red), engine (green), architecture, refine. Record test commands and results per task. Validate existing databases through temporary SQLite fixtures, concurrency/restart/recovery tests, then produce a local test artifact only after package verification. Staging must check the actual Paper/client versions, logo pack, toast timing, RoseChat visibility and restart behavior. No live approval can be inferred from unit tests.
 
-
 ## Reward browser source recovery (T-945)
 
 This isolated source recovery starts from canonical main 28048ca and recovers the preserved candidate reward browser, not supporter entitlement ownership, tag/cosmetic menus, configuration migrations or provider reward definitions. RewardMenuState stores transient browser state; RewardMenuModel adapts existing platform-bearing reward definitions/evaluations into presentation rows. These remain in the legacy infrastructure package, with no new domain persistence/payment policy. Formatting/items remain Paper adapters; RewardService supplies verified immutable observations and exclusively owns claims, IP/Gold enforcement, action fingerprints, queued delivery and reconciliation.

@@ -5,6 +5,7 @@
 References: REQ-917..919; implementation.md Presentation.
 Evidence: HolidayCatalogTest initially failed compilation for the missing hierarchy and migration APIs; after implementation all three focused tests pass. Clean Maven verify passes 258 tests; EARS validation and all 12 Node tooling tests pass. The schema assertion was updated from 5 to 7 for the new configuration version. Existing runtime catalog fields and custom Pumpkin King styling are preserved by copy-missing migration. No claims, permissions or server activation changed.
 Status: local verification complete; exact-head hosted review and native client acceptance pending.
+
 ## T-945 [TDD] Recover reward browser source
 
 References: REQ-945 through REQ-948.
@@ -13,8 +14,6 @@ Acceptance: presentation-only recovery, exact existing claim/data policy, verifi
 Status: local engine verified. menu-red.log records two actual interaction assertion failures with zero errors against canonical main. New browser model, inventory, verified progress and interaction cases pass; clean Java 25 Maven verify passes all 262 tests with zero failures/errors/skips, including existing claim/IP/storage/lifecycle and pinned companion contracts. EARS and all 12 Node tooling tests pass; shaded SQLite read-only probe and diff checks pass. Architecture/rollout boundaries recorded in implementation.md. Hosted exact-head refinement and source/client acceptance remain separate.
 
 Refinement: initial PR #28 head 7154512 passed hosted build and Sentinel, while Codacy rejected 34 maintainability findings. Split rendering/refresh/progress helpers, immutable presentation tables, cached interaction dispatch, and distinct field names retain behavior. Holder maps remain server-thread confined with narrowly documented PMD annotations. Java 25 clean verify still passes 262 tests; EARS, 12 Node tooling tests and shaded SQLite read-only probe pass. Exact-head hosted refinement remains pending.
-
-
 
 ## T-916 [INFRA] Canonical advancement presentation dependency
 
@@ -313,6 +312,7 @@ Evidence: `HolidayTagCatalogTest` failed first on the missing `pumpkin_king` id,
   Owner's choice (2026-10-09): option B, the candle-lit pumpkin, with the tag text `<b><gradient:#FF3A00:#FF5A00>Pumpkin King</gradient></b>`. The sculk version is kept as `pumpkin_sculk_alt.png`.
 
 ## T-920 [TDD] Preserve production reward menu for Holidays
+
 References: REQ-920, REQ-921.
 Evidence: Production JAR unique-mail-test.1 downloaded read-only; javap confirms production RewardMenuState/dashboard/browser family. Rejected build replaced that family. Regression checks will assert original frame and controls, nested catalogs and no award actions.
 Status: spec; TEST rollback underway; no production writes.
@@ -320,6 +320,7 @@ Status: spec; TEST rollback underway; no production writes.
 T-920 Status: local269 tests,12 tooling tests and EARS pass. Existing production browser recovered; sameframe seasonal navigation implemented. TEST rollback verified, corrected TEST activation and exact-head hosted review pending.
 
 ## T-960 [TDD] Consistent collection and KOTH menus
+
 References: REQ-960.
 Evidence: Existing Tags and Cosmetics fill slots zero onward and truncate collections; KOTH uses an unframed 28-entry inventory. Regression covers reserved frame slots and paging.
 Status: spec.
@@ -328,6 +329,7 @@ T-960 Status: 273 Java tests pass, zero failures/errors/skips; 12 SPEAR tooling 
 T-960 Hosted refinement: Codacy annotation114281598687 identified one repeated KOTH category literal. Centralized KOTH_CATEGORY without a behavior change; repeated 273-test verification passes. KOTH hosted build passes. Final Tags hosted checks remain to be inspected.
 
 ## T-970 [TDD] Production defaults and advancement subcategories
+
 References: REQ-970, REQ-971.
 Evidence: Live production rewards read-only snapshot contains Commend, Express, DiaryKeeper and Warzone Duels rewards; bundled defaults omit production categories. copyMissing iterates root keys recursively rather than current section keys. Regression pending.
 Status: spec.
@@ -338,6 +340,7 @@ T-970 refinement and TEST activation: source 2e455da43f3ba7133dc5d45fe6591bedde6
 Status: implementation, local proof, hosted code checks and TEST activation verified; in-game/client acceptance pending.
 
 ## T-980 [TDD] Restore complete production collection menus
+
 References: REQ-980.
 Evidence: Production binary unique-mail-test.1 exposes filters, preview and full navigation absent from deployed source. Preserved production source pr-work/EnthusiaTags contains the same API and slots. Recover presentation and click handlers without importing unrelated entitlement grant/storage machinery; use read-only source metadata. Keep holiday and provider reward catalogs unchanged. TEST upload/restart authorized; production read-only.
 Status: spec.

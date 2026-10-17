@@ -12,6 +12,34 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 /** Formatting is display-only: stored counters and their units are never changed. */
 public final class RewardMenuText {
+    private static final java.util.Map<RewardClaimResult, String> RESULT_KEYS = java.util.Map.ofEntries(
+        java.util.Map.entry(RewardClaimResult.SUCCESS, "rewards-claimed"),
+        java.util.Map.entry(RewardClaimResult.SUCCESS_GOLD_WITHHELD, "rewards-gold-withheld"),
+        java.util.Map.entry(RewardClaimResult.GOLD_VERIFICATION_UNAVAILABLE, "rewards-gold-verification-unavailable"),
+        java.util.Map.entry(RewardClaimResult.LOADING, "rewards-loading"),
+        java.util.Map.entry(RewardClaimResult.ALREADY_CLAIMED, "rewards-already-claimed"),
+        java.util.Map.entry(RewardClaimResult.NOT_READY, "rewards-not-ready"),
+        java.util.Map.entry(RewardClaimResult.IP_ALREADY_CLAIMED, "rewards-ip-already-claimed"),
+        java.util.Map.entry(RewardClaimResult.DELIVERY_FAILED, "rewards-delivery-failed"),
+        java.util.Map.entry(RewardClaimResult.ITEM_QUEUED, "rewards-item-queued"),
+        java.util.Map.entry(RewardClaimResult.RECONCILIATION_REQUIRED, "rewards-reconciliation-required"),
+        java.util.Map.entry(RewardClaimResult.CLAIM_IN_PROGRESS, "rewards-claim-in-progress"),
+        java.util.Map.entry(RewardClaimResult.SERVICE_UNAVAILABLE, "rewards-service-unavailable")
+    );
+    private static final java.util.Map<RewardClaimResult, String> NOTICES = java.util.Map.ofEntries(
+        java.util.Map.entry(RewardClaimResult.SUCCESS, ""),
+        java.util.Map.entry(RewardClaimResult.ALREADY_CLAIMED, ""),
+        java.util.Map.entry(RewardClaimResult.SUCCESS_GOLD_WITHHELD, "Gold portion withheld by network policy."),
+        java.util.Map.entry(RewardClaimResult.GOLD_VERIFICATION_UNAVAILABLE, "Gold verification unavailable; try later."),
+        java.util.Map.entry(RewardClaimResult.LOADING, "Your reward data is still loading."),
+        java.util.Map.entry(RewardClaimResult.NOT_READY, "Requirements are not currently met."),
+        java.util.Map.entry(RewardClaimResult.IP_ALREADY_CLAIMED, "Network claim restriction applies."),
+        java.util.Map.entry(RewardClaimResult.DELIVERY_FAILED, "Delivery failed; retry safely."),
+        java.util.Map.entry(RewardClaimResult.ITEM_QUEUED, "Item delivery queued; free inventory space."),
+        java.util.Map.entry(RewardClaimResult.RECONCILIATION_REQUIRED, "Delivery needs staff review."),
+        java.util.Map.entry(RewardClaimResult.CLAIM_IN_PROGRESS, "A claim is already in progress."),
+        java.util.Map.entry(RewardClaimResult.SERVICE_UNAVAILABLE, "Reward service temporarily unavailable.")
+    );
     private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.builder()
         .character('&')
         .hexColors()
@@ -104,37 +132,9 @@ public final class RewardMenuText {
         if (!line.isEmpty()) line.append(' ');
         line.append(word);
     }
-    private static final java.util.Map<RewardClaimResult, String> RESULT_KEYS = java.util.Map.ofEntries(
-        java.util.Map.entry(RewardClaimResult.SUCCESS, "rewards-claimed"),
-        java.util.Map.entry(RewardClaimResult.SUCCESS_GOLD_WITHHELD, "rewards-gold-withheld"),
-        java.util.Map.entry(RewardClaimResult.GOLD_VERIFICATION_UNAVAILABLE, "rewards-gold-verification-unavailable"),
-        java.util.Map.entry(RewardClaimResult.LOADING, "rewards-loading"),
-        java.util.Map.entry(RewardClaimResult.ALREADY_CLAIMED, "rewards-already-claimed"),
-        java.util.Map.entry(RewardClaimResult.NOT_READY, "rewards-not-ready"),
-        java.util.Map.entry(RewardClaimResult.IP_ALREADY_CLAIMED, "rewards-ip-already-claimed"),
-        java.util.Map.entry(RewardClaimResult.DELIVERY_FAILED, "rewards-delivery-failed"),
-        java.util.Map.entry(RewardClaimResult.ITEM_QUEUED, "rewards-item-queued"),
-        java.util.Map.entry(RewardClaimResult.RECONCILIATION_REQUIRED, "rewards-reconciliation-required"),
-        java.util.Map.entry(RewardClaimResult.CLAIM_IN_PROGRESS, "rewards-claim-in-progress"),
-        java.util.Map.entry(RewardClaimResult.SERVICE_UNAVAILABLE, "rewards-service-unavailable")
-    );
     public static String resultMessageKey(RewardClaimResult result) {
         return RESULT_KEYS.get(result);
     }
-    private static final java.util.Map<RewardClaimResult, String> NOTICES = java.util.Map.ofEntries(
-        java.util.Map.entry(RewardClaimResult.SUCCESS, ""),
-        java.util.Map.entry(RewardClaimResult.ALREADY_CLAIMED, ""),
-        java.util.Map.entry(RewardClaimResult.SUCCESS_GOLD_WITHHELD, "Gold portion withheld by network policy."),
-        java.util.Map.entry(RewardClaimResult.GOLD_VERIFICATION_UNAVAILABLE, "Gold verification unavailable; try later."),
-        java.util.Map.entry(RewardClaimResult.LOADING, "Your reward data is still loading."),
-        java.util.Map.entry(RewardClaimResult.NOT_READY, "Requirements are not currently met."),
-        java.util.Map.entry(RewardClaimResult.IP_ALREADY_CLAIMED, "Network claim restriction applies."),
-        java.util.Map.entry(RewardClaimResult.DELIVERY_FAILED, "Delivery failed; retry safely."),
-        java.util.Map.entry(RewardClaimResult.ITEM_QUEUED, "Item delivery queued; free inventory space."),
-        java.util.Map.entry(RewardClaimResult.RECONCILIATION_REQUIRED, "Delivery needs staff review."),
-        java.util.Map.entry(RewardClaimResult.CLAIM_IN_PROGRESS, "A claim is already in progress."),
-        java.util.Map.entry(RewardClaimResult.SERVICE_UNAVAILABLE, "Reward service temporarily unavailable.")
-    );
     public static String notice(RewardClaimResult result) {
         return result == null ? "" : NOTICES.get(result);
     }

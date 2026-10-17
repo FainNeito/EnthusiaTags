@@ -12,6 +12,7 @@ import org.enthusia.tags.cosmetics.CosmeticsListener;
 import org.enthusia.tags.cosmetics.CosmeticsService;
 import org.enthusia.tags.rewards.NaturalBlockTracker;
 import org.enthusia.tags.rewards.RewardListener;
+import org.enthusia.tags.rewards.RewardMenu;
 import org.enthusia.tags.rewards.RewardService;
 import org.enthusia.tags.rewards.RewardTracker;
 import org.enthusia.tags.rewards.RewardsCommand;
@@ -35,7 +36,7 @@ public final class EnthusiaTagsPlugin extends JavaPlugin {
     private LoreItemRewardRuntime loreItemRewardRuntime;
     private LoreItemRewardAdmin loreItemRewardAdmin;
     private NativeAdvancementController nativeAdvancements;
-    private org.enthusia.tags.rewards.RewardMenu rewardMenu;
+    private RewardMenu rewardMenu;
 
     @Override
     public void onEnable() {

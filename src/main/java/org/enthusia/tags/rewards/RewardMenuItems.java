@@ -10,6 +10,30 @@ import org.enthusia.tags.TagTextFormat;
 
 /** Vanilla items only. No model IDs, custom textures or resource-pack dependency. */
 final class RewardMenuItems {
+    private static final java.util.Map<String, String> CATEGORY_DESCRIPTIONS = java.util.Map.ofEntries(
+        java.util.Map.entry("playtime", "Rewards for time spent on Enthusia."),
+        java.util.Map.entry("advancements", "Rewards earned through custom advancements."),
+        java.util.Map.entry("supporter", "Permanent supporter rewards and current-rank perks."),
+        java.util.Map.entry("legacy", "Historical rewards permanently tied to your account."),
+        java.util.Map.entry("events", "Champion and special event rewards."),
+        java.util.Map.entry("mining", "Gather resources and reach mining milestones."),
+        java.util.Map.entry("combat", "Complete combat challenges."),
+        java.util.Map.entry("deaths", "Milestones from your less fortunate moments."),
+        java.util.Map.entry("economy", "Build your wealth and economic progress."),
+        java.util.Map.entry("exploration", "Explore the world and travel farther.")
+    );
+    private static final java.util.Map<RewardMenuModel.DisplayState, List<String>> STATUS_LINES = java.util.Map.ofEntries(
+        java.util.Map.entry(RewardMenuModel.DisplayState.CLAIMED, List.of("&7Claimed ✓")),
+        java.util.Map.entry(RewardMenuModel.DisplayState.READY, List.of("&aREADY TO CLAIM", "&eClick to claim")),
+        java.util.Map.entry(RewardMenuModel.DisplayState.NOT_STARTED, List.of("&7Not started")),
+        java.util.Map.entry(RewardMenuModel.DisplayState.IN_PROGRESS, List.of("&6In progress")),
+        java.util.Map.entry(RewardMenuModel.DisplayState.UNAVAILABLE, List.of("&6Temporarily unavailable", "&7Refresh once the provider is ready.")),
+        java.util.Map.entry(RewardMenuModel.DisplayState.PENDING, List.of("&6Delivery pending", "&eClick to check / recover delivery")),
+        java.util.Map.entry(RewardMenuModel.DisplayState.QUEUED, List.of("&6Item delivery queued", "&7Free inventory space.", "&eClick to retry item delivery")),
+        java.util.Map.entry(RewardMenuModel.DisplayState.RETRY, List.of("&6Delivery failed", "&eClick to retry safely")),
+        java.util.Map.entry(RewardMenuModel.DisplayState.REVIEW, List.of("&cDelivery needs review", "&7Contact staff; do not repeat the claim.")),
+        java.util.Map.entry(RewardMenuModel.DisplayState.WITHHELD, List.of("&6Gold withheld by network policy", "&7Other reward components remain separate."))
+    );
     private static final int SINGLE_ENTRY = 1;
     private final RewardService service;
     private final TagService tags;
@@ -38,18 +62,6 @@ final class RewardMenuItems {
         lore.add(selected ? "&6Selected category" : "&eClick to browse");
         return item(category.icon(), (selected ? "&6" : "&f") + RewardMenuText.categoryName(category), lore, false);
     }
-    private static final java.util.Map<String, String> CATEGORY_DESCRIPTIONS = java.util.Map.ofEntries(
-        java.util.Map.entry("playtime", "Rewards for time spent on Enthusia."),
-        java.util.Map.entry("advancements", "Rewards earned through custom advancements."),
-        java.util.Map.entry("supporter", "Permanent supporter rewards and current-rank perks."),
-        java.util.Map.entry("legacy", "Historical rewards permanently tied to your account."),
-        java.util.Map.entry("events", "Champion and special event rewards."),
-        java.util.Map.entry("mining", "Gather resources and reach mining milestones."),
-        java.util.Map.entry("combat", "Complete combat challenges."),
-        java.util.Map.entry("deaths", "Milestones from your less fortunate moments."),
-        java.util.Map.entry("economy", "Build your wealth and economic progress."),
-        java.util.Map.entry("exploration", "Explore the world and travel farther.")
-    );
     private String categoryDescription(String id) {
         return CATEGORY_DESCRIPTIONS.getOrDefault(id.toLowerCase(java.util.Locale.ROOT), "Browse additional server challenges.");
     }
@@ -137,18 +149,6 @@ final class RewardMenuItems {
             }
             if (single && goal > 0) lore.add(RewardMenuText.bar(Math.min(1, (double) current / goal)));
     }
-    private static final java.util.Map<RewardMenuModel.DisplayState, List<String>> STATUS_LINES = java.util.Map.ofEntries(
-        java.util.Map.entry(RewardMenuModel.DisplayState.CLAIMED, List.of("&7Claimed ✓")),
-        java.util.Map.entry(RewardMenuModel.DisplayState.READY, List.of("&aREADY TO CLAIM", "&eClick to claim")),
-        java.util.Map.entry(RewardMenuModel.DisplayState.NOT_STARTED, List.of("&7Not started")),
-        java.util.Map.entry(RewardMenuModel.DisplayState.IN_PROGRESS, List.of("&6In progress")),
-        java.util.Map.entry(RewardMenuModel.DisplayState.UNAVAILABLE, List.of("&6Temporarily unavailable", "&7Refresh once the provider is ready.")),
-        java.util.Map.entry(RewardMenuModel.DisplayState.PENDING, List.of("&6Delivery pending", "&eClick to check / recover delivery")),
-        java.util.Map.entry(RewardMenuModel.DisplayState.QUEUED, List.of("&6Item delivery queued", "&7Free inventory space.", "&eClick to retry item delivery")),
-        java.util.Map.entry(RewardMenuModel.DisplayState.RETRY, List.of("&6Delivery failed", "&eClick to retry safely")),
-        java.util.Map.entry(RewardMenuModel.DisplayState.REVIEW, List.of("&cDelivery needs review", "&7Contact staff; do not repeat the claim.")),
-        java.util.Map.entry(RewardMenuModel.DisplayState.WITHHELD, List.of("&6Gold withheld by network policy", "&7Other reward components remain separate."))
-    );
     private static void addStatus(List<String> lore, RewardMenuModel.DisplayState state, boolean claiming) {
         if (claiming) { lore.add("&6Claiming..."); lore.add("&7Please wait; your claim is being processed."); return; }
         lore.addAll(STATUS_LINES.get(state));

@@ -22,6 +22,7 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffectType;
 import org.enthusia.tags.rewards.RewardMenu;
+import org.enthusia.tags.cosmetics.CosmeticsMenu;
 import org.enthusia.tags.rewards.RewardService;
 
 import java.util.Locale;
@@ -104,7 +105,7 @@ public final class TagListener implements Listener {
         ItemMeta meta = clicked.getItemMeta();
         PersistentDataContainer data = meta.getPersistentDataContainer();
 
-        org.bukkit.Bukkit.getScheduler().runTask(tagService.getPlugin(), () -> {
+        Bukkit.getScheduler().runTask(tagService.getPlugin(), () -> {
             if(!player.isOnline() || !player.hasPermission("enthusia.tags.use") || player.getOpenInventory().getTopInventory()!=top) return;
             if (data.has(tagMenu.getRewardsKey(), PersistentDataType.BYTE)) {
                 if (!rewardService.isAvailable()) {
@@ -115,7 +116,7 @@ public final class TagListener implements Listener {
                 return;
             }
             if (data.has(tagMenu.getCosmeticsKey(), PersistentDataType.BYTE)) {
-                org.enthusia.tags.cosmetics.CosmeticsMenu cosmetics = new org.enthusia.tags.cosmetics.CosmeticsMenu(
+                CosmeticsMenu cosmetics = new CosmeticsMenu(
                     tagService.getPlugin().getCosmeticsService(), tagService, tagService.getMessages());
                 if(player.hasPermission("enthusia.cosmetics.use")) player.openInventory(cosmetics.createMain(player, holder.isPreview()));
                 return;
