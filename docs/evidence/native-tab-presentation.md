@@ -26,4 +26,4 @@ The responsive owner-private preview uses Java-exported before/after coordinates
 
 No production upload, configuration change, pack reload or server restart was performed for this fix. Source PR and exact-head hosted results are recorded in the delivery report; merge and Network pin reconciliation are required before any future production replacement.
 
-Interactive owner-private preview: https://enthusia-advancement-layout-preview.awareyak.chatgpt.site (sign-in may be required). Deployment appgdep_6ad4318c20e48191a8957da42e051437 succeeded. Static source b97b118957729f489e4d9398ad6291d525480494 uses the Java-exported coordinates. Local static packaging helper requires unavailable Bash, so publication used the supported source-backed remote-build fallback.
+[Interactive owner-private preview](https://enthusia-advancement-layout-preview.awareyak.chatgpt.site) (sign-in may be required). Deployment appgdep_6ad4318c20e48191a8957da42e051437 succeeded. Static source b97b118957729f489e4d9398ad6291d525480494 uses the Java-exported coordinates. Local static packaging helper requires unavailable Bash, so publication used the supported source-backed remote-build fallback.
