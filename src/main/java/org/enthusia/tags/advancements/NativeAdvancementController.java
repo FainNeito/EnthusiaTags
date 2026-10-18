@@ -230,8 +230,11 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         }
         ItemStack icon = new ItemStack(Material.PAPER);
         var meta = icon.getItemMeta();
-        meta.setCustomModelData(plugin.getConfig().getInt("advancements.logo-custom-model-data", 815001));
+        NativeTabPresentation.applyLogo(meta,
+            plugin.getConfig().getInt("advancements.logo-custom-model-data", 815001),
+            plugin.getConfig().getString("advancements.logo-item-model", "enthusia:advancement/logo"));
         icon.setItemMeta(meta);
+        nodes = NativeTabPresentation.organize(nodes, next.values());
         projection.registerTree(plugin, "enthusia", icon, AdvancementNodeOrder.parentFirst(nodes));
         registered = true;
         definitions = next;

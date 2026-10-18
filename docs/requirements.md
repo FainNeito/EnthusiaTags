@@ -123,3 +123,5 @@ The user explicitly authorized the remaining non-guild WarzoneDuels advancement 
 - REQ-970: WHEN a player opens rewards THE SYSTEM SHALL retain production default categories, frame and controls, add Holidays and optional KOTH, and expose advancement rewards in provider subcategories while preserving reward definitions and claims.
 - REQ-971: WHEN missing nested defaults are copied THE SYSTEM SHALL traverse each actual child section once without constructing repeated parent paths or overwriting administrator values.
 - REQ-980: WHEN Tags or Cosmetics is opened THE SYSTEM SHALL retain the production dashboard slots, filters, headers, source descriptions, navigation and permission-gated read-only Admin Preview while preserving selections, ownership and existing reward categories.
+
+- REQ-1120: WHEN the Enthusia tab is rendered THE SYSTEM SHALL use its scoped logo item model, connect advancement-backed reward cards to their available provider nodes, wrap additional rewards into bounded non-overlapping branches, and preserve node identities, progress, criteria and manual claim authority.

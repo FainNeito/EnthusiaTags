@@ -3,8 +3,10 @@ config-version: 7
 # Display-only native advancement pilot. Claims still use /rewards.
 advancements:
   enabled: true
-  # Paper remains a normal vanilla icon without the optional logo resource pack.
+  # Legacy PAPER selector, retained for administrators choosing CMD-only mode.
   logo-custom-model-data: 815001
+  # Requires the supplied logo pack. Empty uses CMD only (vanilla PAPER without a pack).
+  logo-item-model: "enthusia:advancement/logo"
   players-per-tick: 25
   # Optional display-only statistics track. Requires WarzoneDuels; restart after changing.
   # Adds nine duel milestones for challenges, wins, streaks, spoils, draws, and special-condition wins.
