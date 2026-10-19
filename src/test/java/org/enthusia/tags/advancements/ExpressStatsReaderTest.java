@@ -171,6 +171,25 @@ class ExpressStatsReaderTest {
         assertEquals(1, stats.get(recipient).readLetters());
     }
 
+    @Test void museumDonationsDoNotCountAsPersonalPlayerMail() throws Exception {
+        Path database=directory.resolve("museum.db"); createCurrentSchema(database);
+        try(var connection=DriverManager.getConnection("jdbc:sqlite:"+database);
+            var statement=connection.createStatement()) {
+            statement.execute("CREATE TABLE mapart_submissions(mail_id INTEGER PRIMARY KEY)");
+            insert(connection,sender,recipient,"PACKAGE","CLAIMED",128,0,0);
+            statement.execute("INSERT INTO mapart_submissions VALUES(1)");
+            insert(connection,sender,recipient,"PACKAGE","CLAIMED",8,0,0);
+        }
+        byte[] before=Files.readAllBytes(database);
+        var all=ExpressStatsReader.read(database);
+        assertEquals(1,all.get(sender).sentPackages());
+        assertEquals(8,all.get(sender).maxPackedItems(),"Museum cargo cannot earn the personal care-package milestone");
+        assertEquals(1,all.get(recipient).claimedPackages());
+        var selected=ExpressStatsReader.read(database,java.util.Set.of(sender,recipient));
+        assertEquals(8,selected.get(sender).maxPackedItems());
+        assertArrayEquals(before,Files.readAllBytes(database));
+    }
+
     private void createCurrentSchema(Path database) throws Exception {
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + database);
              var statement = connection.createStatement()) {

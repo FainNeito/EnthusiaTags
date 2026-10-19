@@ -277,3 +277,11 @@ References: REQ-906; implementation.md Presentation.
 Evidence: Current owner-bound projection API and scheduler integration; completion-linkage-red.log reproduced two uncaught linkage errors using a captured real scheduled callback. A separate fatal-error test proves VM failures must not be swallowed.
 Acceptance: RuntimeException and LinkageError are contained at projection/removal boundaries; no broad catch-all for Error/Throwable, no reward changes, and all dependent PRs inherit the fix.
 Status: complete locally. Java 25 clean Maven verification passes 149 tests with zero failures and errors; hosted review remains pending.
+
+## T-937 [TDD] Preserve museum versus personal-mail boundaries
+
+References: REQ-937; implementation.md Presentation.
+Evidence: Express MailRepository.listSent and listInbox exclude mapart_submissions; museum claiming rewrites recipient_uuid to a curator. ExpressStatsReader must maintain that same boundary. Existing JUnit/SQLite fixtures use rowid-compatible mail records and immutable snapshots, with no new third-party imports.
+Status: spec.
+
+T-937 proof: museum-advancement-red.log reproduced museum cargo earning the personal 64-item milestone. The filtered/all-player reader now excludes mapart_submissions within the same read-only snapshot. Legacy schemas without that table remain supported; SQL player selection stays bound. Focused suite passes 17; full clean verify passes 254 tests, zero failures/errors/skips (mail-pr26-full-review.log). No provider database, reward ownership or live server mutation. Existing hosted checks apply only to the old head; new-head checks must be inspected.

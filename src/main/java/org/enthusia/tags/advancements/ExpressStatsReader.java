@@ -30,6 +30,7 @@ final class ExpressStatsReader {
          WHERE sender_uuid IS NOT NULL AND LOWER(sender_uuid)<>LOWER(recipient_uuid)
            AND status NOT IN ('RETURNED','RETURN_CLAIMED')
            AND (? IS NULL OR LOWER(sender_uuid) IN (SELECT value FROM json_each(?)))
+           /*museum_filter*/
          GROUP BY LOWER(sender_uuid)
         """;
     private static final String RECIPIENT_SQL = """
@@ -41,7 +42,8 @@ final class ExpressStatsReader {
                MAX(CASE WHEN type='PACKAGE' AND status='RETURN_CLAIMED'
                    AND LOWER(sender_uuid)=LOWER(recipient_uuid) THEN 1 ELSE 0 END) AS returned_claims
           FROM mail
-         WHERE ? IS NULL OR LOWER(recipient_uuid) IN (SELECT value FROM json_each(?))
+         WHERE (? IS NULL OR LOWER(recipient_uuid) IN (SELECT value FROM json_each(?)))
+           /*museum_filter*/
          GROUP BY LOWER(recipient_uuid)
         """;
     private static final String RECIPIENT_PENDING_SQL = """
@@ -53,7 +55,8 @@ final class ExpressStatsReader {
                MAX(CASE WHEN type='PACKAGE' AND status='RETURN_CLAIMED' AND delivery_pending=0
                    AND LOWER(sender_uuid)=LOWER(recipient_uuid) THEN 1 ELSE 0 END) AS returned_claims
           FROM mail
-         WHERE ? IS NULL OR LOWER(recipient_uuid) IN (SELECT value FROM json_each(?))
+         WHERE (? IS NULL OR LOWER(recipient_uuid) IN (SELECT value FROM json_each(?)))
+           /*museum_filter*/
          GROUP BY LOWER(recipient_uuid)
         """;
     private ExpressStatsReader() {
@@ -82,12 +85,13 @@ final class ExpressStatsReader {
             requireColumns(columns);
             Map<UUID, MutableStats> players = new HashMap<>();
             boolean deliveryPending = columns.contains("delivery_pending");
+            boolean museum = hasMuseum(connection);
             if (selected == null) {
-                readCounts(connection, players, deliveryPending, null);
+                readCounts(connection, players, deliveryPending, null, museum);
             } else {
                 for (int from = 0; from < selected.size(); from += 500) {
                     readCounts(connection, players, deliveryPending,
-                        selected.subList(from, Math.min(from + 500, selected.size())));
+                        selected.subList(from, Math.min(from + 500, selected.size())), museum);
                 }
             }
             Map<UUID, ExpressMilestoneProgress.Stats> result = new HashMap<>();
@@ -97,9 +101,18 @@ final class ExpressStatsReader {
     }
 
     private static void readCounts(Connection connection, Map<UUID, MutableStats> players,
-                                   boolean deliveryPending, List<UUID> selected) throws SQLException {
-        readSenderStats(connection, players, selected);
-        readRecipientStats(connection, players, deliveryPending, selected);
+                                   boolean deliveryPending, List<UUID> selected, boolean museum) throws SQLException {
+        readSenderStats(connection, players, selected, museum);
+        readRecipientStats(connection, players, deliveryPending, selected, museum);
+    }
+
+    private static boolean hasMuseum(Connection connection) throws SQLException {
+        try(var statement=connection.prepareStatement("SELECT 1 FROM sqlite_master WHERE type='table' AND name='mapart_submissions'");
+            var result=statement.executeQuery()) { return result.next(); }
+    }
+
+    private static String personalMail(String sql,boolean museum) {
+        return sql.replace("/*museum_filter*/",museum ? "AND rowid NOT IN (SELECT mail_id FROM mapart_submissions)" : "");
     }
 
     private static void bindSelection(PreparedStatement statement, List<UUID> selected) throws SQLException {
@@ -141,9 +154,9 @@ final class ExpressStatsReader {
     private static void readSenderStats(
         Connection connection,
         Map<UUID, MutableStats> players,
-        List<UUID> selected
+        List<UUID> selected, boolean museum
     ) throws SQLException {
-        try (var statement = connection.prepareStatement(SENDER_SQL)) {
+        try (var statement = connection.prepareStatement(personalMail(SENDER_SQL,museum))) {
             bindSelection(statement, selected);
             try (ResultSet result = statement.executeQuery()) {
                 while (result.next()) {
@@ -160,14 +173,14 @@ final class ExpressStatsReader {
         Connection connection,
         Map<UUID, MutableStats> players,
         boolean hasDeliveryPending,
-        List<UUID> selected
+        List<UUID> selected, boolean museum
     ) throws SQLException {
         // recipient_uuid is the current mailbox owner. MailRepository.expire rewrites it
         // to sender_uuid before a normal return can become RETURN_CLAIMED; see the
         // pinned provider contract in docs/express-history-contract.md.
         try (var statement = hasDeliveryPending
-            ? connection.prepareStatement(RECIPIENT_PENDING_SQL)
-            : connection.prepareStatement(RECIPIENT_SQL)) {
+            ? connection.prepareStatement(personalMail(RECIPIENT_PENDING_SQL,museum))
+            : connection.prepareStatement(personalMail(RECIPIENT_SQL,museum))) {
             bindSelection(statement, selected);
             try (ResultSet result = statement.executeQuery()) {
                 while (result.next()) {

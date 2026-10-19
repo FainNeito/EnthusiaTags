@@ -102,3 +102,5 @@ The user explicitly authorized the remaining non-guild WarzoneDuels advancement 
 - REQ-934: IF mail is self-addressed, sender-less, pending delivery or rewritten as a return THEN THE SYSTEM SHALL exclude it from normal correspondent milestones while preserving the separate confirmed return recovery milestone.
 - REQ-935: WHEN a player reconnects or historical rows repeat THE SYSTEM SHALL retain read-only provider access, silent historical reconciliation and existing awarded reward ownership without resetting progress or payments.
 - REQ-936: WHEN unique-correspondent milestones are displayed THE SYSTEM SHALL describe the different-player requirements while preserving stable node keys, thresholds and current-main verification and active-playtime safeguards.
+
+- REQ-937: WHEN provider history identifies a museum submission THE SYSTEM SHALL exclude it from personal mail advancements while retaining legacy schemas without a museum table and consistent read-only snapshots.
