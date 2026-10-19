@@ -285,3 +285,5 @@ Evidence: Express MailRepository.listSent and listInbox exclude mapart_submissio
 Status: spec.
 
 T-937 proof: museum-advancement-red.log reproduced museum cargo earning the personal 64-item milestone. The filtered/all-player reader now excludes mapart_submissions within the same read-only snapshot. Legacy schemas without that table remain supported; SQL player selection stays bound. Focused suite passes 17; full clean verify passes 254 tests, zero failures/errors/skips (mail-pr26-full-review.log). No provider database, reward ownership or live server mutation. Existing hosted checks apply only to the old head; new-head checks must be inspected.
+
+T-937 hosted refinement: Codacy flagged three computed SQL statements on 89eb811. Prepared queries now select between complete static SQL constants; all player IDs remain bound parameters, including null/all-player scope. Full clean verify repeats 254 tests after this refinement (mail-pr26-static-sql-verify.log).
