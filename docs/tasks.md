@@ -1,5 +1,12 @@
 # SPEAR tasks
 
+## INFRA-1122 — Pumpkin Patcher recognition tag
+
+References: REQ-1122; docs/evidence/pumpkin-patcher.md.
+Evidence: owner-approved final visual; live tag absent; all 130 glyph definitions and five external packs have no U+A0A1 conflict. Configuration/asset-only implementation uses the existing runtime APIs; no engine change or behavioral red/green history applies.
+Acceptance: exact seed PNG and font metrics, both glyphs outside bold, source/config preservation, read-only menu metadata and grants limited to ToxikFlame11 and Bobsuit, scoped reload with no restart. Run EARS/state tools and bounded asset/semantic/runtime verification.
+Status: locally verified; runtime activation and named-player grant evidence pending.
+
 ## T-20261017 [TDD] Align the merged holiday renderer
 
 References: REQ-REL-001; implementation.md Layer Dependency Rules.
@@ -377,3 +384,10 @@ Acceptance: full current-fork regression/packaging/tooling checks, no unrelated 
 Status: spec.
 
 INFRA-1121 result: imported only the four Express production/test files and provider-history contract from reviewed canonical head111154b. Full clean Maven verification passes 289 tests with zero failures/errors/skips. Immutable renderer01fac426 was freshly fetched, validated against companions.json/POM and built/installed; checksum-pinned presence and LoreItems contracts validate. Eleven Python bootstrap regressions, full EARS, twelve Node helper tests and the final shaded SQLite read-only probe pass. Source changes are restricted to mail evidence and accurate descriptions; current holiday/menu implementation, versions and pins are retained. Upstream canonical merge, this fork PR review, network pin/combined build and actual player acceptance remain separate gates. No server changed.
+
+## INFRA-1123 - Combine unique-mail and Pumpkin Patcher release source
+
+References: REQ-933 through REQ-937 and REQ-1122; implementation.md Layer Dependency Rules and Verification and rollout.
+Evidence: Roundtable EXPRESS-07/08 independently reviewed the clean merge of PR12 head16a70aa and current maina2d7d9. The pre-documentation tree is e7342a80c3960242712fc042fac557e42f44aae6. Four Express production/test files match the reviewed PR, and all eleven non-overlapping Pumpkin Patcher paths match main. Both requirement/task sets survive. Existing versions, immutable companion pins, menus, native presentation and reward authority are retained; no new production behavior or tests were introduced.
+Acceptance: exact combined-head hosted clean Maven verification, dependency checksum/SHA checks, Python and Node tooling regressions, Pumpkin Patcher packet check, final shaded SQLite read-only probe, independent review and artifact provenance. Record authoritative final results against the pushed commit in PR12 and retained workflow artifacts, as described in docs/evidence/express-pumpkin-integration-20261020.md. Previous parent results do not verify this combined source. Network integration and live client acceptance remain separate.
+Status: source reconciliation independently reviewed; final build/review disposition is recorded on the exact published PR head. This is an INFRA composition of already proven behavior; no fabricated behavioral red/green cycle. No server changes.

@@ -1,4 +1,9 @@
 definitions:
+  pumpkin_patcher:
+    source: "Holiday Event: Pumpkin Patcher - placed all 31 spawn pumpkins"
+    permanent: true
+    tags: [pumpkin_patcher]
+    cosmetics: []
   beta_tester:
     source: "Legacy: Beta Tester - 4+ hours during Enthusia betas"
     permanent: true

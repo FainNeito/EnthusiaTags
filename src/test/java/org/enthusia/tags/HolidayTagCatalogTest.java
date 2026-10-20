@@ -25,9 +25,9 @@ class HolidayTagCatalogTest {
             assertTrue(ids.add(tag.id()), "duplicate tag id: " + tag.id());
             assertEquals(tag.id().toLowerCase(), tag.id(), "tag give lowercases ids");
         }
-        // Ids EnthusiaHolidays' bundled events grant with "tag: <id>".
+        // Event reward ids plus the staff-awarded seasonal builder recognition.
         assertEquals(Set.of("pumpkin_hunter", "no_pumpkin_left_behind", "present_seeker",
-            "home_for_the_holidays", "advent_keeper", "secret_santa", "seen_the_watcher", "pumpkin_king"), ids);
+            "home_for_the_holidays", "advent_keeper", "secret_santa", "seen_the_watcher", "pumpkin_king", "pumpkin_patcher"), ids);
     }
 
     @Test
