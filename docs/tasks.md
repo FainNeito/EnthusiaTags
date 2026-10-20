@@ -1,5 +1,12 @@
 # SPEAR tasks
 
+## INFRA-1122 — Pumpkin Patcher recognition tag
+
+References: REQ-1122; docs/evidence/pumpkin-patcher.md.
+Evidence: owner-approved final visual; live tag absent; all 130 glyph definitions and five external packs have no U+A0A1 conflict. Configuration/asset-only implementation uses the existing runtime APIs; no engine change or behavioral red/green history applies.
+Acceptance: exact seed PNG and font metrics, both glyphs outside bold, source/config preservation, read-only menu metadata and grants limited to ToxikFlame11 and Bobsuit, scoped reload with no restart. Run EARS/state tools and bounded asset/semantic/runtime verification.
+Status: locally verified; runtime activation and named-player grant evidence pending.
+
 ## T-20261017 [TDD] Align the merged holiday renderer
 
 References: REQ-REL-001; implementation.md Layer Dependency Rules.

@@ -129,6 +129,14 @@ daily:
     pitch: 1.25
 
 tags:
+  pumpkin_patcher:
+    display-name: "ꂡ<bold><gradient:#82c6a2:#eee7c8>Pumpkin Patcher</gradient></bold>ꂡ"
+    tag-text: "ꂡ<bold><gradient:#82c6a2:#eee7c8>Pumpkin Patcher</gradient></bold>ꂡ"
+    icon: "NAME_TAG"
+    description:
+      - "&7Placed all 31 pumpkins around spawn"
+      - "&7for the Halloween hunt."
+      - "&6Special recognition - awarded by staff"
   beta_tester:
     display-name: "<#39c5ff>Beta <#6ee7ff>Tester"
     tag-text: "<#39c5ff>Beta <#6ee7ff>Tester"
