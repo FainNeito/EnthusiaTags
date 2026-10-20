@@ -127,3 +127,9 @@ The user explicitly authorized the remaining non-guild WarzoneDuels advancement 
 - REQ-980: WHEN Tags or Cosmetics is opened THE SYSTEM SHALL retain the production dashboard slots, filters, headers, source descriptions, navigation and permission-gated read-only Admin Preview while preserving selections, ownership and existing reward categories.
 
 - REQ-1120: WHEN the Enthusia tab is rendered THE SYSTEM SHALL use its scoped logo item model, connect advancement-backed reward cards to their available provider nodes, wrap additional rewards into bounded non-overlapping branches, and preserve node identities, progress, criteria and manual claim authority.
+
+- REQ-933: WHEN Express mail history is read THE SYSTEM SHALL count sent packages and letters once per distinct other recipient and confirmed packages and read letters once per distinct other sender, ignoring UUID case.
+- REQ-934: IF mail is self-addressed, sender-less, pending delivery or rewritten as a return THEN THE SYSTEM SHALL exclude it from normal correspondent milestones while preserving the separate confirmed return recovery milestone.
+- REQ-935: WHEN a player reconnects or historical rows repeat THE SYSTEM SHALL retain read-only provider access, silent historical reconciliation and existing awarded reward ownership without resetting progress or payments.
+- REQ-936: WHEN unique-correspondent milestones are displayed THE SYSTEM SHALL describe the different-player requirements while preserving stable node keys, thresholds and current-main verification and active-playtime safeguards.
+- REQ-937: WHEN provider history identifies a museum submission THE SYSTEM SHALL exclude it from personal mail advancements while retaining legacy schemas without a museum table and consistent read-only snapshots.
