@@ -1,5 +1,7 @@
 # EnthusiaTags advancement pilot
 
+- REQ-1122: WHEN staff install Pumpkin Patcher THE SYSTEM SHALL display its approved sage-to-cream bold title with two original seed clusters, preserve Pumpkin King's existing glyph, expose staff-award source metadata without automatic qualification, and allow the existing grant command to award it only to the requested players.
+
 - REQ-REL-001: WHEN verifying the holiday release THE SYSTEM SHALL compile against the exact immutable merged advancement renderer version while rejecting mismatched commits, mismatched POMs and arbitrary version suffixes.
 
 - REQ-917: WHEN a player opens rewards THE SYSTEM SHALL display a Holidays category containing configurable Halloween and Christmas subcategories with event-earned tag descriptions and ownership, without granting rewards from catalog entries.

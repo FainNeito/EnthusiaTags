@@ -5,12 +5,14 @@ import org.bukkit.configuration.file.FileConfiguration;
 import java.util.List;
 
 /**
- * Tags that EnthusiaHolidays events grant with {@code tag give <player> <id>} (REQ-910).
+ * Seasonal event and staff-recognition tags granted with {@code tag give <player> <id>} (REQ-910).
  * Ids are year-agnostic so next year's events reuse them. Missing values are installed
  * without overwriting administrator edits, like {@link FrontierPortableTagCatalog}.
  */
 final class HolidayTagCatalog {
     private static final List<HolidayTag> DEFINITIONS = List.of(
+        tag("pumpkin_patcher", "\uA0A1<bold><gradient:#82c6a2:#eee7c8>Pumpkin Patcher</gradient></bold>\uA0A1", "NAME_TAG",
+            "&7Staff recognition for placing all 31 pumpkins around spawn"),
         tag("pumpkin_hunter", "<bold><gradient:#ff7b00:#ffb347>Pumpkin Hunter</gradient></bold>", "PUMPKIN",
             "&7Found 15 pumpkins in a Halloween hunt"),
         tag("no_pumpkin_left_behind", "<bold><gradient:#ff7b00:#8a2be2>No Pumpkin Left Behind</gradient>",
