@@ -24,6 +24,6 @@ balance, hunt state or existing selection changes. Staff grants use the existing
 server restart is needed. Keep pre-existing glyph/config files byte-identical
 except for the explicitly verified additions.
 
-Preview: https://enthusia-pumpkin-patcher.awareyak.chatgpt.site (owner sign-in).
+Preview: [Pumpkin Patcher](https://enthusia-pumpkin-patcher.awareyak.chatgpt.site) (owner sign-in).
 
 Local verification: full Maven clean verify passes 285 tests with zero failures/errors/skips. EARS validation and all 12 SPEAR tooling tests pass. The immutable cached LoreItems and RoseChat contracts match their declared SHA-256 pins. The existing catalogue contract caught the missing static catalogue entry; the entry and expected id set now include Pumpkin Patcher. This adds catalogue data, not grant behavior. No runtime plugin JAR upload is needed. Static PNG/hash, glyph metrics, source/config formatting and no-auto-reward checks pass. Dry-run production patches parse and compare exactly to expected semantic additions across all three files.
