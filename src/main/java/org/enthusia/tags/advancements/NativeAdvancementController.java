@@ -26,6 +26,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 import org.enthusia.tags.advancements.domain.PendingCelebrations;
+import org.enthusia.tags.advancements.domain.RewardCelebrationOwnership;
 import org.enthusia.tags.rewards.RewardAction;
 import org.enthusia.tags.rewards.RewardDefinition;
 import org.enthusia.tags.rewards.RewardService;
@@ -61,7 +62,10 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         Bukkit.getPluginManager().registerEvents(this, plugin);
         rewards.setAdvancementNotifications((player, completed) -> {
             Set<String> pending = pendingCelebrations.computeIfAbsent(player.getUniqueId(), ignored -> new HashSet<>());
-            completed.forEach(reward -> pending.add(key(reward.getId())));
+            boolean holidaysEnabled = Bukkit.getPluginManager().isPluginEnabled("EnthusiaHolidays");
+            completed.stream()
+                .filter(reward -> RewardCelebrationOwnership.tagsCelebrates(reward.getId(), holidaysEnabled))
+                .forEach(reward -> pending.add(key(reward.getId())));
         });
         task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 20L, 20L);
     }
