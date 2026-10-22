@@ -16,6 +16,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
 import org.enthusia.tags.rewards.RewardService;
+import org.enthusia.tags.rewards.RewardDefinition;
+import org.bukkit.Material;
+import java.util.function.BiConsumer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +35,7 @@ class ProjectionTickTest {
     private final ProjectionService projection = mock(ProjectionService.class);
     private final Player player = mock(Player.class);
     private final BukkitScheduler scheduler = mock(BukkitScheduler.class);
+    private final PluginManager manager = mock(PluginManager.class);
     private MockedStatic<Bukkit> bukkit;
     private MockedConstruction<ItemStack> items;
     private NativeAdvancementController controller;
@@ -46,7 +50,6 @@ class ProjectionTickTest {
         when(player.getUniqueId()).thenReturn(id);
         ServicesManager services = mock(ServicesManager.class);
         when(services.load(ProjectionService.class)).thenReturn(projection);
-        PluginManager manager = mock(PluginManager.class);
         when(manager.isPluginEnabled("EnthusiaAdvancements")).thenReturn(true);
         when(scheduler.runTaskTimer(eq(plugin), any(Runnable.class), eq(20L), eq(20L)))
             .thenReturn(mock(BukkitTask.class));
@@ -74,6 +77,55 @@ class ProjectionTickTest {
         assertDoesNotThrow(tick::run);
         assertDoesNotThrow(tick::run);
         verify(projection).project(eq(plugin), eq("enthusia"), eq(player), anyMap());
+    }
+
+    @Test void holidaysOwnsMelodyCelebrationButTagsStillProjectsItsClaimProgress() {
+        when(manager.isPluginEnabled("EnthusiaHolidays")).thenReturn(true);
+        completeRewards("watcher_melody", "first_hour");
+        verify(projection, never()).celebrate(plugin, "enthusia", player,
+            NativeAdvancementController.key("watcher_melody"));
+        verify(projection).celebrate(plugin, "enthusia", player,
+            NativeAdvancementController.key("first_hour"));
+        verify(projection).project(eq(plugin), eq("enthusia"), eq(player), argThat(progress ->
+            progress.get(NativeAdvancementController.key("watcher_melody")) == 1000
+                && progress.get(NativeAdvancementController.key("first_hour")) == 1000));
+        verify(rewards, never()).claimAsync(any(), any());
+    }
+
+    @Test void standaloneTagsStillCelebratesMelody() {
+        when(manager.isPluginEnabled("EnthusiaHolidays")).thenReturn(false);
+        completeRewards("watcher_melody");
+        verify(projection).celebrate(plugin, "enthusia", player,
+            NativeAdvancementController.key("watcher_melody"));
+    }
+
+    @Test void unrelatedRewardWithSameTitleStillCelebrates() {
+        when(manager.isPluginEnabled("EnthusiaHolidays")).thenReturn(true);
+        completeRewards("custom_melody");
+        verify(projection).celebrate(plugin, "enthusia", player,
+            NativeAdvancementController.key("custom_melody"));
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void completeRewards(String... ids) {
+        Map<String, RewardDefinition> definitions = new java.util.LinkedHashMap<>();
+        // Keep the real bundled Melody ancestry valid while exercising its notification.
+        for (String ancestor : List.of("lag_was_crazy", "all_rounder", "server_legend", "ultimate_survivor")) {
+            definitions.put(ancestor, new RewardDefinition(ancestor, ancestor, List.of(), Material.PAPER,
+                List.of(), List.of(), "misc"));
+        }
+        for (String id : ids) {
+            var reward = new RewardDefinition(id, "Forgotten Melody", List.of(), Material.MUSIC_DISC_11,
+                List.of(), List.of(), "misc");
+            definitions.put(id, reward);
+            when(rewards.getAdvancementProgress(player, reward)).thenReturn(1000);
+        }
+        when(rewards.getRewards()).thenReturn(definitions);
+        when(projection.ready(player)).thenReturn(true);
+        ArgumentCaptor<BiConsumer<Player, List<RewardDefinition>>> sink = ArgumentCaptor.forClass(BiConsumer.class);
+        verify(rewards).setAdvancementNotifications(sink.capture());
+        sink.getValue().accept(player, java.util.Arrays.stream(ids).map(definitions::get).toList());
+        tick.run();
     }
 
     @Test void fatalVmErrorsAreNotSwallowed() {
