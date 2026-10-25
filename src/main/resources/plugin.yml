@@ -1,6 +1,6 @@
 name: EnthusiaTags
 main: org.enthusia.tags.EnthusiaTagsPlugin
-version: 2.2.3-production-collections-SNAPSHOT
+version: 2.2.3-single-milestone-diary-test.1
 api-version: '26.2'
 author: Enthusia
 softdepend:

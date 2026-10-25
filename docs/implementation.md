@@ -18,6 +18,10 @@ Only additive schema changes. Preserve reward_claims, reward_unlocks and existin
 
 ## Presentation
 
+T-1125 supersedes the two-card provider/claim presentation in T-1120. NativeMilestonePresentation is an infrastructure view built after layout: only valid, one-count, single CUSTOM_COUNTER advancement_reward criteria with a registered provider are aliases. The provider remains visible and owns notifications; reward details are appended, maximum verified alias/provider progress is projected silently, and descendant references are redirected. Stable reward IDs, provider IDs, reward definitions, storage, claims, payouts and /rewards access remain unchanged. Disabled providers and custom additional/greater criteria keep independent cards. Filtering at delivery handles notifications queued before a tree rebuild. Titles are not a deduplication key. No domain dependency, new scheduler, SQL or payout operation is added.
+
+Dear Diary uses WRITABLE_BOOK with nexo:diary_book, matching the installed physical diary. The previous shipped enthusia:advancement/diary model name resolves to that physical model; arbitrary custom names are honored. An explicitly blank/null model opts into legacy PAPER/CMD. Named mode intentionally omits the colliding shared PAPER selector. The exact renderer API retains itemModel through layout, native display and the full cloned Discord ItemStack. Actual resource-pack rendering and Java/Bedrock/Discord acceptance remain separate. No pack or production configuration is changed here.
+
 Forgotten Melody has one celebration owner when EnthusiaHolidays is enabled:
 Holidays celebrates `holidays/forgotten_melody`; Tags silently projects its
 `watcher_melody` claim node. The native notification adapter filters only that

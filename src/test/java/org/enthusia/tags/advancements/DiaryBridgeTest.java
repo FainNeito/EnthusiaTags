@@ -10,6 +10,20 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 class DiaryBridgeTest {
+    @Test void diaryUsesPhysicalDiaryModelAndCustomOverridesWithoutSharedPaperSelector() {
+        var node = DiaryAdvancementBridge.nodes(49, 815002).getFirst();
+        assertEquals(org.bukkit.Material.WRITABLE_BOOK, node.icon());
+        assertEquals("nexo:diary_book", node.itemModel());
+        assertNull(node.customModelData());
+        var custom = DiaryAdvancementBridge.nodes(49, 55, "custom:diary").getFirst();
+        assertEquals("custom:diary", custom.itemModel());
+        var legacy = DiaryAdvancementBridge.nodes(49, 55, "").getFirst();
+        assertEquals(org.bukkit.Material.PAPER, legacy.icon());
+        assertEquals(55, legacy.customModelData());
+        assertNull(legacy.itemModel());
+        assertEquals("nexo:diary_book", DiaryAdvancementBridge.nodes(49, 815002,
+            "enthusia:advancement/diary").getFirst().itemModel());
+    }
     @TempDir Path directory;
     private final UUID player = UUID.randomUUID();
 
@@ -71,8 +85,8 @@ class DiaryBridgeTest {
             java.util.stream.Collectors.toMap(node -> node.key(), node -> node));
 
         assertEquals("Dear Diary...", byKey.get("diary/dear_diary").title());
-        assertEquals(org.bukkit.Material.PAPER, byKey.get("diary/dear_diary").icon());
-        assertEquals(815002, byKey.get("diary/dear_diary").customModelData());
+        assertEquals(org.bukkit.Material.WRITABLE_BOOK, byKey.get("diary/dear_diary").icon());
+        assertEquals("nexo:diary_book", byKey.get("diary/dear_diary").itemModel());
         assertEquals("diary/dear_diary", byKey.get("diary/first_entry").parentKey());
         assertEquals("diary/first_entry", byKey.get("diary/prolific_writer").parentKey());
         assertEquals("diary/indestructible", byKey.get("diary/stubborn").parentKey());
