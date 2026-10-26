@@ -1,5 +1,14 @@
 # SPEAR tasks
 
+## T-1125 [TDD] Single provider presentation and diary model
+
+References: REQ-1125, REQ-1126, REQ-1127.
+Status: locally verified; isolated from existing release checkouts. Publication waits for matching Roundtable acknowledgment.
+Evidence: read-only October 25 audit found 38 mirrored provider/reward cards, no YAML or stable-key duplicates. Production Diary uses WRITABLE_BOOK with item model nexo:diary_book; the bridge instead uses shared PAPER CMD 815002 and ignores the configured item model. Renderer 01fac426 passes the full cloned ItemStack to the Discord image adapter. No production writes or player database reads.
+Acceptance: one visible node and provider-owned notification; preserve historical progress, reward definitions, /rewards claim authority and fallback when providers are absent; do not merge unrelated same-title milestones by title. Dear Diary uses the same model as the physical diary, with configurable override and explicit blank legacy fallback. Live client/Discord image acceptance remains separate.
+
+T-1125 refinement: Java 25 clean verify passes 296 tests, zero failures/errors/skips; EARS, 12 Node and 11 Python tests, presence checksum, matching compiled renderer interface bytes and SHADED_SQLITE_READ_ONLY_OK pass. Independent unchanged-base assertion failures confirm both bugs; chronology and limits are recorded in docs/evidence/single-milestone-diary.md. Private simulation checked at 390px/320px. Local unmerged test artifact 2.2.3-single-milestone-diary-test.1 SHA256 c84cd6e3d9a86681df9a2bc99fce0048df6e30dc8bcade763110e628dd23cdc0. No source publication, live server changes or client acceptance yet.
+
 ## INFRA-1122 — Pumpkin Patcher recognition tag
 
 References: REQ-1122; docs/evidence/pumpkin-patcher.md.

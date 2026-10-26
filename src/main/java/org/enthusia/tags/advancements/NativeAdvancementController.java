@@ -39,6 +39,7 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
     private final Map<UUID, Set<String>> pendingCelebrations = new HashMap<>();
     private final ArrayDeque<UUID> queue = new ArrayDeque<>();
     private Map<String, RewardDefinition> definitions;
+    private NativeMilestonePresentation presentation;
     private BukkitTask task;
     private BukkitTask duelTask;
     private BukkitTask commendTask;
@@ -230,7 +231,8 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
             nodes.addAll(DiaryAdvancementBridge.nodes(
                 AdvancementLayout.diaryBaseY(
                     row, duels != null, commend != null, express != null),
-                diaryIconCustomModelData));
+                diaryIconCustomModelData,
+                plugin.getConfig().getString("advancements.diary-icon-item-model", "nexo:diary_book")));
         }
         ItemStack icon = new ItemStack(Material.PAPER);
         var meta = icon.getItemMeta();
@@ -239,7 +241,10 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
             plugin.getConfig().getString("advancements.logo-item-model", "enthusia:advancement/logo"));
         icon.setItemMeta(meta);
         nodes = NativeTabPresentation.organize(nodes, next.values());
+        NativeMilestonePresentation nextPresentation = NativeMilestonePresentation.create(nodes, next.values());
+        nodes = nextPresentation.nodes();
         projection.registerTree(plugin, "enthusia", icon, AdvancementNodeOrder.parentFirst(nodes));
+        presentation = nextPresentation;
         registered = true;
         definitions = next;
         plugin.getLogger().info("Enthusia native track: " + nodes.size() + " challenges; no reward execution in renderer.");
@@ -323,7 +328,7 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         addCommendProgress(player, progress);
         addExpressProgress(player, progress);
         addDiaryProgress(player, progress);
-        return progress;
+        return presentation.progress(progress);
     }
     private void addDiaryProgress(Player player, Map<String, Integer> progress) {
         if (diary == null) return;
@@ -356,6 +361,7 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
     private void celebratePending(Player player, Map<String, Integer> progress) {
         Set<String> pending = pendingCelebrations.get(player.getUniqueId());
         if (pending == null) return;
+        pending.removeIf(key -> !presentation.ownsCelebration(key));
         PendingCelebrations.deliver(
             pending, progress, key -> projection.celebrate(plugin, "enthusia", player, key));
         if (pending.isEmpty()) pendingCelebrations.remove(player.getUniqueId());
