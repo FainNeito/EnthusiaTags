@@ -383,5 +383,6 @@ Evidence: Holidays main a5bfa75 grants holidays/forgotten_melody and increments 
 Status: locally verified; PR/CI and native acceptance separate. SPEAR state selected REQ-1121 before the initial ID collision was caught; authoritative requirement IDs were corrected to REQ-1123/1124 before behavioral proof, and the original local state history is retained without rewriting it.
 
 ### TASK-20261025 — Exact custom event support
+
 References: REQ-SOUND-001
-Evidence: Existing enum-only paths reject reviewed enthusia_theme events. Behavioral routing test added; red/green results pending. Preserve installed TEST feature commits in a separate combined TEST branch; source PR remains focused.
+Evidence: Existing enum-only paths reject reviewed enthusia_theme events. Custom routing regressions and the full local build passed; see docs/evidence/exact-reviewed-sounds.md. Preserve installed TEST feature commits in a separate combined TEST branch; source PR remains focused.
