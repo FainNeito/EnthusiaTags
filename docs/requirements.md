@@ -1,5 +1,12 @@
 # EnthusiaTags advancement pilot
 
+- REQ-1128: WHEN any existing provider milestone is verified complete THE SYSTEM SHALL persist its reward completion counter independently of rendering, preserving manual claims, existing payouts, stored ownership and provider criteria.
+- REQ-1129: IF provider evidence is unavailable, incomplete, stale or belongs to a previous player session THEN THE SYSTEM SHALL avoid inventing completion while retaining previously earned reward eligibility.
+
+- REQ-1125: WHEN a registered provider milestone is the sole one-count criterion of a reward THE SYSTEM SHALL display and celebrate only the provider node, retain reward details and manual claims, and silently project the maximum verified progress without changing stored identifiers or payouts.
+- REQ-1126: IF a provider is unavailable or a reward has additional criteria THE SYSTEM SHALL retain its independent reward card and notification behavior.
+- REQ-1127: WHEN Dear Diary is rendered THE SYSTEM SHALL use the installed diary named item model for both native and Discord rendering, honor explicit custom models and legacy opt-out, and preserve all milestone keys and criteria.
+
 - REQ-1122: WHEN staff install Pumpkin Patcher THE SYSTEM SHALL display its approved sage-to-cream bold title with two original seed clusters, preserve Pumpkin King's existing glyph, expose staff-award source metadata without automatic qualification, and allow the existing grant command to award it only to the requested players.
 
 - REQ-REL-001: WHEN verifying the holiday release THE SYSTEM SHALL compile against the exact immutable merged advancement renderer version while rejecting mismatched commits, mismatched POMs and arbitrary version suffixes.
@@ -126,7 +133,9 @@ The user explicitly authorized the remaining non-guild WarzoneDuels advancement 
 - REQ-971: WHEN missing nested defaults are copied THE SYSTEM SHALL traverse each actual child section once without constructing repeated parent paths or overwriting administrator values.
 - REQ-980: WHEN Tags or Cosmetics is opened THE SYSTEM SHALL retain the production dashboard slots, filters, headers, source descriptions, navigation and permission-gated read-only Admin Preview while preserving selections, ownership and existing reward categories.
 
-- REQ-1120: WHEN the Enthusia tab is rendered THE SYSTEM SHALL use its scoped logo item model, connect advancement-backed reward cards to their available provider nodes, wrap additional rewards into bounded non-overlapping branches, and preserve node identities, progress, criteria and manual claim authority.
+- REQ-1120: WHEN the Enthusia tab is rendered THE SYSTEM SHALL use its scoped logo item model, organize advancement-backed rewards with their available provider nodes, wrap additional rewards into bounded non-overlapping branches, and preserve reward identities, progress, criteria and manual claim authority.
 
 - REQ-1123: WHEN Forgotten Melody completes while EnthusiaHolidays is enabled THE SYSTEM SHALL leave its celebration to EnthusiaHolidays while retaining Tags reward progress, native projection and manual disc claim authority.
 - REQ-1124: IF EnthusiaHolidays is absent or disabled THE SYSTEM SHALL retain the Tags Forgotten Melody celebration and preserve celebrations for all unrelated rewards.
+
+- REQ-SOUND-001: WHEN a configured sound is a valid namespaced resource-pack event THE SYSTEM SHALL play that exact event once at the existing trigger while preserving legacy sound names, gain, pitch, recipients, enablement and invalid-value fallback.

@@ -1,5 +1,21 @@
 # SPEAR tasks
 
+## T-1128 [TDD] Reconcile provider completion with reward eligibility
+
+References: REQ-1128, REQ-1129; implementation.md Persistence and Presentation.
+Evidence: Discord report 1563592825398886450 shows Correspondent announced but reward 0/1; production GET-only rewards.yml requires advancement_reward:express/correspondent. Canonical main28048ca and fork main6d1acc9 omit a completion writer. Existing proposed PR27 head4e9f174 supplies ProviderRewardTracker and domain ProviderRewardEvidence; reconcile into isolated combined source e3b6f76 preserving PR15 presentation/Diary and exact sound support. Existing org.enthusia.tags.rewards.RewardService, org.enthusia.tags.rewards.RewardStorage, org.enthusia.tags.PerformanceMonitor, io.github.badgersmc.advancements.pilot.ProjectionService and four infrastructure bridges provide the integration seam. Tests use existing org.junit.jupiter.api.Test, org.junit.jupiter.api.io.TempDir, org.junit.jupiter.api.Assertions, org.mockito.Mockito and Paper org.bukkit APIs; JDK reflection only injects test storage. No new dependencies.
+Acceptance: all38 supported provider nodes latch completion once, persist across reload/reconnect without paying or rewriting claims, remain unavailable on failed reads, and preserve duplicate/Diary/sound regressions. Do not silently import PR27's distinct-correspondent counting policy: existing provider criteria remain unchanged. No production/TEST/DB/payout/restart/reload operations.
+Status: [x] locally verified; source review/hosted checks and TEST acceptance remain separate. All38 missing counters reproduced as behavioral assertion failures;305 Java tests pass after reconciliation, plus12 Node and11 Python checks, EARS, architecture and shaded SQLite probe. Custom-counter compatibility failure was also reproduced and repaired. See docs/evidence/provider-reward-completion.md. No server or player-data changes.
+
+## T-1125 [TDD] Single provider presentation and diary model
+
+References: REQ-1125, REQ-1126, REQ-1127.
+Status: locally verified; isolated from existing release checkouts. Publication waits for matching Roundtable acknowledgment.
+Evidence: read-only October 25 audit found 38 mirrored provider/reward cards, no YAML or stable-key duplicates. Production Diary uses WRITABLE_BOOK with item model nexo:diary_book; the bridge instead uses shared PAPER CMD 815002 and ignores the configured item model. Renderer 01fac426 passes the full cloned ItemStack to the Discord image adapter. No production writes or player database reads.
+Acceptance: one visible node and provider-owned notification; preserve historical progress, reward definitions, /rewards claim authority and fallback when providers are absent; do not merge unrelated same-title milestones by title. Dear Diary uses the same model as the physical diary, with configurable override and explicit blank legacy fallback. Live client/Discord image acceptance remains separate.
+
+T-1125 refinement: Java 25 clean verify passes 296 tests, zero failures/errors/skips; EARS, 12 Node and 11 Python tests, presence checksum, matching compiled renderer interface bytes and SHADED_SQLITE_READ_ONLY_OK pass. Independent unchanged-base assertion failures confirm both bugs; chronology and limits are recorded in docs/evidence/single-milestone-diary.md. Private simulation checked at 390px/320px. Local unmerged test artifact 2.2.3-single-milestone-diary-test.1 SHA256 c84cd6e3d9a86681df9a2bc99fce0048df6e30dc8bcade763110e628dd23cdc0. No source publication, live server changes or client acceptance yet.
+
 ## INFRA-1122 — Pumpkin Patcher recognition tag
 
 References: REQ-1122; docs/evidence/pumpkin-patcher.md.
@@ -381,3 +397,15 @@ Architecture: presentation-only helper copies every node metadata field; no payo
 References: REQ-1123, REQ-1124.
 Evidence: Holidays main a5bfa75 grants holidays/forgotten_melody and increments watcher_theme_heard; Tags fork main a2d7d9e celebrates watcher_melody from that same counter. Both call ProjectionService.celebrate. Actual controller regression failed with NeverWantedButInvoked before the ownership filter. Six focused tests and all 288 Java tests now pass, plus EARS, 12 Node and 11 Python tooling tests and the shaded SQLite probe. See docs/evidence/melody-single-announcement.md. No player data resets or runtime changes.
 Status: locally verified; PR/CI and native acceptance separate. SPEAR state selected REQ-1121 before the initial ID collision was caught; authoritative requirement IDs were corrected to REQ-1123/1124 before behavioral proof, and the original local state history is retained without rewriting it.
+
+### TASK-20261025 — Exact custom event support
+
+References: REQ-SOUND-001
+Evidence: Existing enum-only paths reject reviewed enthusia_theme events. Behavioral routing test added; red/green results pending. Preserve installed TEST feature commits in a separate combined TEST branch; source PR remains focused.
+
+## INFRA-1128 [INFRA] Exact-head hosted style refinement
+
+References: REQ-1128; implementation.md Layer Dependency Rules.
+Evidence: PR17 initial head8284348 passed hosted verify121762224361 and artifact121762224207; strict Codacy gate121763174063 reported one heading blank-line issue and two fully qualified ProviderRewardTracker references. Existing org.enthusia.tags.advancements.ProviderRewardTracker supplies the unchanged class imported explicitly; no new dependency or behavior.
+Acceptance: standard import and heading spacing only, full suite and exact-head hosted gates. Prove/engine do not apply to formatting-only infrastructure refinement; no behavioral red is invented.
+Status: [x] local refinement verified; repeated clean verification passes305 tests, zero failures/errors/skips. Updated-head hosted checks remain pending.

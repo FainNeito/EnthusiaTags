@@ -48,6 +48,7 @@ class ProjectionTickTest {
         when(rewards.isAvailable()).thenReturn(true);
         UUID id = UUID.randomUUID();
         when(player.getUniqueId()).thenReturn(id);
+        when(player.isOnline()).thenReturn(true);
         ServicesManager services = mock(ServicesManager.class);
         when(services.load(ProjectionService.class)).thenReturn(projection);
         when(manager.isPluginEnabled("EnthusiaAdvancements")).thenReturn(true);
@@ -63,7 +64,7 @@ class ProjectionTickTest {
         bukkit.when(() -> Bukkit.getPlayer(id)).thenReturn(player);
         controller = new NativeAdvancementController(plugin, rewards);
         ArgumentCaptor<Runnable> capture = ArgumentCaptor.forClass(Runnable.class);
-        verify(scheduler).runTaskTimer(eq(plugin), capture.capture(), eq(20L), eq(20L));
+        verify(scheduler, atLeastOnce()).runTaskTimer(eq(plugin), capture.capture(), eq(20L), eq(20L));
         tick = capture.getValue();
     }
 
@@ -131,6 +132,46 @@ class ProjectionTickTest {
     @Test void fatalVmErrorsAreNotSwallowed() {
         when(projection.ready(player)).thenThrow(new OutOfMemoryError("test sentinel"));
         assertThrows(OutOfMemoryError.class, tick::run);
+    }
+
+    @Test void providerOwnsBothEarlyAndLateMirroredRewardNotifications() {
+        controller.close();
+        var provider = mock(org.bukkit.plugin.Plugin.class);
+        when(manager.getPlugin("DiaryKeeper")).thenReturn(provider);
+        when(manager.isPluginEnabled("DiaryKeeper")).thenReturn(true);
+        when(provider.isEnabled()).thenReturn(true);
+        when(provider.getDataFolder()).thenReturn(new java.io.File("unused-mocked-provider"));
+        var reward = new RewardDefinition("diary_reward", "Dear Diary...", List.of(), Material.PAPER,
+            List.of(new org.enthusia.tags.rewards.RewardCriterion(
+                org.enthusia.tags.rewards.RewardCriterionType.CUSTOM_COUNTER, 1, null,
+                "advancement_reward:diary/dear_diary", 0, "Receive diary")), List.of(), "advancements");
+        when(rewards.getRewards()).thenReturn(Map.of(reward.getId(), reward));
+        when(rewards.getAdvancementProgress(player, reward)).thenReturn(1000);
+        when(projection.ready(player)).thenReturn(true);
+        var progress = Map.of("diary/dear_diary", 1000);
+        try (var bridges = mockConstruction(DiaryAdvancementBridge.class, (bridge, context) -> {
+            when(bridge.evidenceAvailable(player.getUniqueId())).thenReturn(true);
+            when(bridge.observe(player.getUniqueId())).thenReturn(
+                new org.enthusia.tags.advancements.domain.DiaryMilestoneProgress.Update(progress,
+                    java.util.Set.of("diary/dear_diary")),
+                new org.enthusia.tags.advancements.domain.DiaryMilestoneProgress.Update(progress, java.util.Set.of()));
+        })) {
+            controller = new NativeAdvancementController(plugin, rewards);
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            ArgumentCaptor<BiConsumer<Player, List<RewardDefinition>>> sink = ArgumentCaptor.forClass(BiConsumer.class);
+            verify(rewards, atLeastOnce()).setAdvancementNotifications(sink.capture());
+            var callback = sink.getValue();
+            ArgumentCaptor<Runnable> ticks = ArgumentCaptor.forClass(Runnable.class);
+            verify(scheduler, atLeastOnce()).runTaskTimer(eq(plugin), ticks.capture(), eq(20L), eq(20L));
+            callback.accept(player, List.of(reward));
+            ticks.getAllValues().forEach(Runnable::run);
+            callback.accept(player, List.of(reward));
+            ticks.getAllValues().forEach(Runnable::run);
+            verify(projection, times(1)).celebrate(plugin, "enthusia", player, "diary/dear_diary");
+            verify(projection, never()).celebrate(plugin, "enthusia", player, NativeAdvancementController.key(reward.getId()));
+            verify(projection, times(2)).project(eq(plugin), eq("enthusia"), eq(player), eq(progress));
+            verify(rewards, never()).claimAsync(any(), any());
+        }
     }
 
     @Test void linkageFailureDuringRemovalDoesNotAbortCleanup() {
