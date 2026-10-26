@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.enthusia.tags.rewards.RewardCriterionType;
 import org.enthusia.tags.rewards.RewardDefinition;
+import org.enthusia.tags.rewards.RewardSourceType;
 
 /** Infrastructure view only. RewardService remains the sole claim and payout owner. */
 final class NativeMilestonePresentation {
@@ -57,6 +58,8 @@ final class NativeMilestonePresentation {
         String key = criterion.getKey();
         String prefix = "advancement_reward:";
         if (!criterion.isValid() || criterion.getType() != RewardCriterionType.CUSTOM_COUNTER
+            || (criterion.getSourceType() != RewardSourceType.LEGACY
+                && criterion.getSourceType() != RewardSourceType.CUSTOM_COUNTER)
             || criterion.getAmount() != 1 || key == null || !key.startsWith(prefix)) return null;
         String target = key.substring(prefix.length());
         return target.startsWith("diary/") || target.startsWith("express/")

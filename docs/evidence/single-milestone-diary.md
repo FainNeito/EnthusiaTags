@@ -27,3 +27,9 @@ Private preview: https://enthusia-diary-single-milestone-preview.awareyak.chatgp
 Sites source 41cfe3daf71136c95c9788927ba818262f259e96; owner-private deployment succeeded. Browser checked at 390px and 320px with no horizontal overflow; real diary image loads and before/after, menu and provider-unavailable controls work. The preview is a simulation, not client acceptance.
 
 Roundtable SHARED request 1388 and EXPRESS owner message 1389 seek matching Tags publication ownership acknowledgment. No acknowledgment received at the last check; publication remains pending. No live TEST/prod command, upload, reload, restart, merge, monorepo pin or player/client mutation is authorized or performed. Hosted exact-head checks and native/Discord acceptance remain pending.
+
+## Release follow-up
+
+The user subsequently authorized PR/review, merge if checks pass, monorepo release and production staging without restart/reload, and explicitly confirmed taking over this release while leaving other branches/worktrees untouched. Roundtable takeover is recorded as SHARED1419/EXPRESS1420. That supersedes the earlier pending-ack status, not the production release gates. Existing upstream and network permissions are read-only; maintainer approval/merge access remains necessary. The refined release candidate passes 297 Java tests, zero failures/errors/skips (release-verify.log).
+
+Review found that an explicitly non-counter criterion source can override the legacy criterion type. A new regression failed one assertion before narrowing alias matching to LEGACY/CUSTOM_COUNTER sources. The release candidate version is 2.2.4, still unmerged and not deployable merely because its version lacks a test suffix. The preserved c58f00f candidate and its earlier artifact/test receipts remain historical evidence.

@@ -81,4 +81,15 @@ class NativeMilestonePresentationTest {
         assertEquals(Map.of(PROVIDER, 1000), presentation.progress(Map.of(REWARD, 500, key, 1000)));
         assertFalse(presentation.ownsCelebration(key));
     }
+
+    @Test void explicitNonCounterSourcesAreNotMistakenForProviderEvidence() {
+        var criterion = new RewardCriterion(RewardCriterionType.CUSTOM_COUNTER,
+            org.enthusia.tags.rewards.RewardSourceType.VAULT_BALANCE, 1, null, null, null,
+            "advancement_reward:" + PROVIDER, 0, "Balance", true);
+        var unrelated = new RewardDefinition("diary_reward", "Custom reward", List.of(), Material.PAPER,
+            List.of(criterion), List.of(), "advancements");
+        var presentation = NativeMilestonePresentation.create(List.of(node(REWARD, null), node(PROVIDER, null)), List.of(unrelated));
+        assertEquals(2, presentation.nodes().size());
+        assertTrue(presentation.ownsCelebration(REWARD));
+    }
 }
