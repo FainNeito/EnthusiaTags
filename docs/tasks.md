@@ -1,5 +1,12 @@
 # SPEAR tasks
 
+## INFRA-1129 [INFRA] Canonical release complexity refinement
+
+References: REQ-1125; implementation.md Layer Dependency Rules.
+Evidence: upstream PR32 exact head380497f verify/artifact passed, strict Codacy gate job121840093706 identifies NativeMilestonePresentation.mirrorTarget cyclomatic9 versus limit8. Extract the unchanged four-provider prefix predicate into providerTarget; retain all guards, aliases, IDs, descriptions and reward ownership. Existing NativeMilestonePresentationTest and full305-test suite govern behavior; no new imports or API.
+Acceptance: behavior-preserving extraction, full canonical verification and exact-head hosted review. Prove/engine do not apply to this complexity-only refactor; no behavioral red is invented.
+Status: [x] local complexity-only refinement verified: Java25 clean verify305 tests, zero failures/errors/skips; EARS,12Node and11Python checks pass. Exact-head hosted review remains a separate merge gate.
+
 ## T-1128 [TDD] Reconcile provider completion with reward eligibility
 
 References: REQ-1128, REQ-1129; implementation.md Persistence and Presentation.
