@@ -381,3 +381,8 @@ Architecture: presentation-only helper copies every node metadata field; no payo
 References: REQ-1123, REQ-1124.
 Evidence: Holidays main a5bfa75 grants holidays/forgotten_melody and increments watcher_theme_heard; Tags fork main a2d7d9e celebrates watcher_melody from that same counter. Both call ProjectionService.celebrate. Actual controller regression failed with NeverWantedButInvoked before the ownership filter. Six focused tests and all 288 Java tests now pass, plus EARS, 12 Node and 11 Python tooling tests and the shaded SQLite probe. See docs/evidence/melody-single-announcement.md. No player data resets or runtime changes.
 Status: locally verified; PR/CI and native acceptance separate. SPEAR state selected REQ-1121 before the initial ID collision was caught; authoritative requirement IDs were corrected to REQ-1123/1124 before behavioral proof, and the original local state history is retained without rewriting it.
+
+### TASK-20261025 — Exact custom event support
+
+References: REQ-SOUND-001
+Evidence: Existing enum-only paths reject reviewed enthusia_theme events. Custom routing regressions and the full local build passed; see docs/evidence/exact-reviewed-sounds.md. Preserve installed TEST feature commits in a separate combined TEST branch; source PR remains focused.
