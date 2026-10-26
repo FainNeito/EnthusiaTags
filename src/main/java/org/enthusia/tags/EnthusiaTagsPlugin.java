@@ -6,6 +6,7 @@ import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.enthusia.tags.api.TagVisibilityService;
 import org.enthusia.tags.advancements.NativeAdvancementController;
+import org.enthusia.tags.advancements.ProviderRewardTracker;
 import org.enthusia.tags.cosmetics.RoseChatPresenceHook;
 import org.enthusia.tags.cosmetics.CosmeticsCommand;
 import org.enthusia.tags.cosmetics.CosmeticsListener;
@@ -36,7 +37,7 @@ public final class EnthusiaTagsPlugin extends JavaPlugin {
     private LoreItemRewardRuntime loreItemRewardRuntime;
     private LoreItemRewardAdmin loreItemRewardAdmin;
     private NativeAdvancementController nativeAdvancements;
-    private org.enthusia.tags.advancements.ProviderRewardTracker providerRewards;
+    private ProviderRewardTracker providerRewards;
     private RewardMenu rewardMenu;
 
     @Override
@@ -88,7 +89,7 @@ public final class EnthusiaTagsPlugin extends JavaPlugin {
         Bukkit.getServicesManager().register(TagVisibilityService.class, tagService, this, ServicePriority.Normal);
         registerListeners();
         registerCommands();
-        if (rewardService.isAvailable()) providerRewards = new org.enthusia.tags.advancements.ProviderRewardTracker(this, rewardService);
+        if (rewardService.isAvailable()) providerRewards = new ProviderRewardTracker(this, rewardService);
         if (getConfig().getBoolean("advancements.enabled", true)
             && Bukkit.getPluginManager().isPluginEnabled("EnthusiaAdvancements")) {
             try {

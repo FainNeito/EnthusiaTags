@@ -18,4 +18,6 @@ Domain policy uses only JDK imports; architecture suite passes. Bukkit and provi
 
 The combined build preserves prior unmerged fixes but does not imply their merge, production approval or client acceptance. No TEST/production files, player records, payouts, restart/reload or client operations occurred. Existing provider reader paths and startup enablement require operator validation before activation. TEST acceptance must verify historical completion without a new toast, a fresh completion, one manual claim and duplicate-claim rejection, reconnect/reload, provider outage recovery, and retention of Diary/single-node/custom-sound behavior.
 
-Candidate: `2.2.5-provider-rewards-test.1`, SHA256 `3219d3da37d99b5ffd34d6a15f800b042fdf3bf995c7a9a8cd0298fbfebd8fad`.
+Initial candidate: `2.2.5-provider-rewards-test.1`, SHA256 `3219d3da37d99b5ffd34d6a15f800b042fdf3bf995c7a9a8cd0298fbfebd8fad`.
+
+Hosted first-head verify and artifact jobs passed; Codacy reported three style issues (heading spacing and two qualified class references). Formatting-only refinement fixes these; `provider-completion-refined.log` repeats305 passing tests. Refined candidate SHA256 `02a3821985c2c33fc5ecd3eb9cf4f7b360d78fb77567e747fba1f4bf06ede1b3`. Updated-head hosted checks remain separate; CodeRabbit skipped automatic review, not a completed independent review.

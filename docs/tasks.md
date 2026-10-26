@@ -399,5 +399,13 @@ Evidence: Holidays main a5bfa75 grants holidays/forgotten_melody and increments 
 Status: locally verified; PR/CI and native acceptance separate. SPEAR state selected REQ-1121 before the initial ID collision was caught; authoritative requirement IDs were corrected to REQ-1123/1124 before behavioral proof, and the original local state history is retained without rewriting it.
 
 ### TASK-20261025 — Exact custom event support
+
 References: REQ-SOUND-001
 Evidence: Existing enum-only paths reject reviewed enthusia_theme events. Behavioral routing test added; red/green results pending. Preserve installed TEST feature commits in a separate combined TEST branch; source PR remains focused.
+
+## INFRA-1128 [INFRA] Exact-head hosted style refinement
+
+References: REQ-1128; implementation.md Layer Dependency Rules.
+Evidence: PR17 initial head8284348 passed hosted verify121762224361 and artifact121762224207; strict Codacy gate121763174063 reported one heading blank-line issue and two fully qualified ProviderRewardTracker references. Existing org.enthusia.tags.advancements.ProviderRewardTracker supplies the unchanged class imported explicitly; no new dependency or behavior.
+Acceptance: standard import and heading spacing only, full suite and exact-head hosted gates. Prove/engine do not apply to formatting-only infrastructure refinement; no behavioral red is invented.
+Status: [x] local refinement verified; repeated clean verification passes305 tests, zero failures/errors/skips. Updated-head hosted checks remain pending.
