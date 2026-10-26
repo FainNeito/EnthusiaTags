@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.enthusia.tags.rewards.RewardCriterionType;
+import org.enthusia.tags.rewards.RewardCriterion;
 import org.enthusia.tags.rewards.RewardDefinition;
 import org.enthusia.tags.rewards.RewardSourceType;
 
@@ -57,13 +58,17 @@ final class NativeMilestonePresentation {
         var criterion = reward.getCriteria().getFirst();
         String key = criterion.getKey();
         String prefix = "advancement_reward:";
-        if (!criterion.isValid() || criterion.getType() != RewardCriterionType.CUSTOM_COUNTER
-            || (criterion.getSourceType() != RewardSourceType.LEGACY
-                && criterion.getSourceType() != RewardSourceType.CUSTOM_COUNTER)
-            || criterion.getAmount() != 1 || key == null || !key.startsWith(prefix)) return null;
+        if (!providerCounter(criterion) || key == null || !key.startsWith(prefix)) return null;
         String target = key.substring(prefix.length());
         return target.startsWith("diary/") || target.startsWith("express/")
             || target.startsWith("reputation/") || target.startsWith("warzone_duels/") ? target : null;
+    }
+
+    private static boolean providerCounter(RewardCriterion criterion) {
+        return criterion.isValid() && criterion.getType() == RewardCriterionType.CUSTOM_COUNTER
+            && (criterion.getSourceType() == RewardSourceType.LEGACY
+                || criterion.getSourceType() == RewardSourceType.CUSTOM_COUNTER)
+            && criterion.getAmount() == 1;
     }
 
     List<Node> nodes() { return nodes; }
