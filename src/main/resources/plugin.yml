@@ -1,6 +1,6 @@
 name: EnthusiaTags
 main: org.enthusia.tags.EnthusiaTagsPlugin
-version: 2.2.4
+version: 2.2.5-provider-rewards-test.1
 api-version: '26.2'
 author: Enthusia
 softdepend:

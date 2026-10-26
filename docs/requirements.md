@@ -1,5 +1,8 @@
 # EnthusiaTags advancement pilot
 
+- REQ-1128: WHEN any existing provider milestone is verified complete THE SYSTEM SHALL persist its reward completion counter independently of rendering, preserving manual claims, existing payouts, stored ownership and provider criteria.
+- REQ-1129: IF provider evidence is unavailable, incomplete, stale or belongs to a previous player session THEN THE SYSTEM SHALL avoid inventing completion while retaining previously earned reward eligibility.
+
 - REQ-1125: WHEN a registered provider milestone is the sole one-count criterion of a reward THE SYSTEM SHALL display and celebrate only the provider node, retain reward details and manual claims, and silently project the maximum verified progress without changing stored identifiers or payouts.
 - REQ-1126: IF a provider is unavailable or a reward has additional criteria THE SYSTEM SHALL retain its independent reward card and notification behavior.
 - REQ-1127: WHEN Dear Diary is rendered THE SYSTEM SHALL use the installed diary named item model for both native and Discord rendering, honor explicit custom models and legacy opt-out, and preserve all milestone keys and criteria.

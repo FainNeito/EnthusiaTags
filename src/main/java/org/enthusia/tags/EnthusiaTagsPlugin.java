@@ -36,6 +36,7 @@ public final class EnthusiaTagsPlugin extends JavaPlugin {
     private LoreItemRewardRuntime loreItemRewardRuntime;
     private LoreItemRewardAdmin loreItemRewardAdmin;
     private NativeAdvancementController nativeAdvancements;
+    private org.enthusia.tags.advancements.ProviderRewardTracker providerRewards;
     private RewardMenu rewardMenu;
 
     @Override
@@ -87,10 +88,11 @@ public final class EnthusiaTagsPlugin extends JavaPlugin {
         Bukkit.getServicesManager().register(TagVisibilityService.class, tagService, this, ServicePriority.Normal);
         registerListeners();
         registerCommands();
+        if (rewardService.isAvailable()) providerRewards = new org.enthusia.tags.advancements.ProviderRewardTracker(this, rewardService);
         if (getConfig().getBoolean("advancements.enabled", true)
             && Bukkit.getPluginManager().isPluginEnabled("EnthusiaAdvancements")) {
             try {
-                nativeAdvancements = new NativeAdvancementController(this, rewardService);
+                nativeAdvancements = new NativeAdvancementController(this, rewardService, providerRewards);
             } catch (RuntimeException | LinkageError ex) {
                 getLogger().warning("Native advancement track unavailable; rewards remain accessible: " + ex.getMessage());
             }
@@ -104,6 +106,7 @@ public final class EnthusiaTagsPlugin extends JavaPlugin {
     public void onDisable() {
         if (rewardMenu != null) rewardMenu.close();
         if (nativeAdvancements != null) nativeAdvancements.close();
+        if (providerRewards != null) providerRewards.close();
         Bukkit.getServicesManager().unregister(tagService);
         if (rewardTracker != null) {
             rewardTracker.stop();
@@ -163,6 +166,7 @@ public final class EnthusiaTagsPlugin extends JavaPlugin {
         performanceMonitor.reload();
         messages.reload();
         tagService.reloadAll();
+        if (providerRewards != null) providerRewards.resetSessions();
         rewardService.reload();
         if (loreItemRewardRuntime != null) {
             loreItemRewardRuntime.kickRetries();

@@ -1,5 +1,12 @@
 # SPEAR tasks
 
+## T-1128 [TDD] Reconcile provider completion with reward eligibility
+
+References: REQ-1128, REQ-1129; implementation.md Persistence and Presentation.
+Evidence: Discord report 1563592825398886450 shows Correspondent announced but reward 0/1; production GET-only rewards.yml requires advancement_reward:express/correspondent. Canonical main28048ca and fork main6d1acc9 omit a completion writer. Existing proposed PR27 head4e9f174 supplies ProviderRewardTracker and domain ProviderRewardEvidence; reconcile into isolated combined source e3b6f76 preserving PR15 presentation/Diary and exact sound support. Existing org.enthusia.tags.rewards.RewardService, org.enthusia.tags.rewards.RewardStorage, org.enthusia.tags.PerformanceMonitor, io.github.badgersmc.advancements.pilot.ProjectionService and four infrastructure bridges provide the integration seam. Tests use existing org.junit.jupiter.api.Test, org.junit.jupiter.api.io.TempDir, org.junit.jupiter.api.Assertions, org.mockito.Mockito and Paper org.bukkit APIs; JDK reflection only injects test storage. No new dependencies.
+Acceptance: all38 supported provider nodes latch completion once, persist across reload/reconnect without paying or rewriting claims, remain unavailable on failed reads, and preserve duplicate/Diary/sound regressions. Do not silently import PR27's distinct-correspondent counting policy: existing provider criteria remain unchanged. No production/TEST/DB/payout/restart/reload operations.
+Status: [x] locally verified; source review/hosted checks and TEST acceptance remain separate. All38 missing counters reproduced as behavioral assertion failures;305 Java tests pass after reconciliation, plus12 Node and11 Python checks, EARS, architecture and shaded SQLite probe. Custom-counter compatibility failure was also reproduced and repaired. See docs/evidence/provider-reward-completion.md. No server or player-data changes.
+
 ## T-1125 [TDD] Single provider presentation and diary model
 
 References: REQ-1125, REQ-1126, REQ-1127.
