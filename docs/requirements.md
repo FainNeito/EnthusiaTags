@@ -130,3 +130,5 @@ The user explicitly authorized the remaining non-guild WarzoneDuels advancement 
 
 - REQ-1123: WHEN Forgotten Melody completes while EnthusiaHolidays is enabled THE SYSTEM SHALL leave its celebration to EnthusiaHolidays while retaining Tags reward progress, native projection and manual disc claim authority.
 - REQ-1124: IF EnthusiaHolidays is absent or disabled THE SYSTEM SHALL retain the Tags Forgotten Melody celebration and preserve celebrations for all unrelated rewards.
+
+- REQ-SOUND-001: WHEN a configured sound is a valid namespaced resource-pack event THE SYSTEM SHALL play that exact event once at the existing trigger while preserving legacy sound names, gain, pitch, recipients, enablement and invalid-value fallback.

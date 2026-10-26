@@ -2062,6 +2062,9 @@ public final class RewardService {
     private void playUnlockSound(Player player) {
         if (!plugin.getConfig().getBoolean("rewards.unlock-sound.enabled", true)) return;
         String configured = plugin.getConfig().getString("rewards.unlock-sound.sound", "BLOCK_AMETHYST_BLOCK_CHIME");
+        if (org.enthusia.tags.infrastructure.sound.CustomSound.play(player, configured,
+                (float) plugin.getConfig().getDouble("rewards.unlock-sound.volume", 0.35D),
+                (float) plugin.getConfig().getDouble("rewards.unlock-sound.pitch", 1.15D))) return;
         Sound sound;
         try {
             sound = Sound.valueOf(configured.toUpperCase(Locale.ROOT));
