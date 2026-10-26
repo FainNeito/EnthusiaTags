@@ -60,8 +60,12 @@ final class NativeMilestonePresentation {
         String prefix = "advancement_reward:";
         if (!providerCounter(criterion) || key == null || !key.startsWith(prefix)) return null;
         String target = key.substring(prefix.length());
+        return providerTarget(target) ? target : null;
+    }
+
+    private static boolean providerTarget(String target) {
         return target.startsWith("diary/") || target.startsWith("express/")
-            || target.startsWith("reputation/") || target.startsWith("warzone_duels/") ? target : null;
+            || target.startsWith("reputation/") || target.startsWith("warzone_duels/");
     }
 
     private static boolean providerCounter(RewardCriterion criterion) {
