@@ -463,6 +463,11 @@ public final class TagService implements TagVisibilityService {
 
     static String privateRewardReference(ConfigurationSection section, String id) {
         String path = id + ".hidden-until-reward";
+        if ("remembered".equalsIgnoreCase(id)) {
+            if (!section.contains(path)) return "last_watch_remembered_2026";
+            String configured = section.getString(path);
+            return "last_watch_remembered_2026".equals(configured) ? configured : "__invalid_private_reward__";
+        }
         if (!section.contains(path)) return null;
         String reference = section.getString(path);
         // A blank or malformed reference is intentionally unresolvable, never public.

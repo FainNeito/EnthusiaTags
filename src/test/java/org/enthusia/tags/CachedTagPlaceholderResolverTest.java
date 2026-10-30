@@ -154,4 +154,10 @@ class CachedTagPlaceholderResolverTest {
             tag -> { throw new IllegalStateException("state unavailable"); }));
     }
 
+    @org.junit.jupiter.api.Test void rememberedAlwaysRequiresItsExactPrivateReward() {
+        var config = new org.bukkit.configuration.file.YamlConfiguration();
+        assertEquals("last_watch_remembered_2026", TagService.privateRewardReference(config, "remembered"));
+        config.set("remembered.hidden-until-reward", "wrong");
+        assertEquals("__invalid_private_reward__", TagService.privateRewardReference(config, "remembered"));
+    }
 }

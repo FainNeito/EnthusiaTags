@@ -63,6 +63,10 @@ public final class EnthusiaTagsPlugin extends JavaPlugin {
         rewardService = new RewardService(this, tagService, messages, performanceMonitor);
         dailyService = new DailyService(this);
 
+        // Reward actions are validated against the tag registry during rewardService.enable().
+        // Install bundled definitions before that registry is loaded, including on first startup.
+        FrontierPortableTagCatalog.ensureInstalled(this);
+        HolidayTagCatalog.ensureInstalled(this);
         tagService.enable();
         cosmeticsService.enable();
         rewardService.enable();

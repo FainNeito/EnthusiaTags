@@ -826,7 +826,11 @@ public final class RewardService {
             RewardPlayerState state = getLoadedState(playerId);
             if (state == null || !state.isLoaded()) return false;
             String id = reward.getId().toLowerCase(Locale.ROOT);
-            return PrivateRewardVisibility.reveal(true, historicallyCompleted(state, id));
+            // Holidays reconciles this reserved signal from its durable encounter ledger.
+            // The separate post-event criterion still controls whether the reward can be claimed.
+            boolean earned = "last_watch_remembered_2026".equals(id)
+                && state.getCounter("last_watch_earned_halloween_2026") >= 1;
+            return PrivateRewardVisibility.reveal(true, earned || historicallyCompleted(state, id));
         } catch (RuntimeException unavailable) {
             return false;
         }
@@ -2927,6 +2931,10 @@ public final class RewardService {
             Material icon = parseMaterial(section.getString(id + ".icon", "NAME_TAG"), "rewards." + id + ".icon", true);
             List<RewardCriterion> criteria = loadCriteria(section.getConfigurationSection(id + ".criteria"));
             List<RewardAction> actions = loadActions(section.getConfigurationSection(id + ".rewards"), id);
+            if ("last_watch_remembered_2026".equalsIgnoreCase(id) && !validRememberedReward(criteria, actions)) {
+                plugin.getLogger().warning("Last Watch reward configuration is invalid; keeping it unavailable");
+                continue;
+            }
             String category = section.getString(id + ".category", inferCategory(criteria));
             RewardCompletionMode completionMode;
             try {
@@ -2943,8 +2951,19 @@ public final class RewardService {
         rewards = java.util.Collections.unmodifiableMap(loadedRewards);
     }
 
+    static boolean validRememberedReward(List<RewardCriterion> criteria, List<RewardAction> actions) {
+        if (criteria.size() != 1 || actions.size() != 1) return false;
+        RewardCriterion criterion = criteria.getFirst();
+        RewardAction action = actions.getFirst();
+        return criterion.isValid() && criterion.getType() == RewardCriterionType.CUSTOM_COUNTER
+            && criterion.getSourceType() == RewardSourceType.CUSTOM_COUNTER
+            && "last_watch_halloween_2026".equals(criterion.getKey()) && criterion.getAmount() == 1
+            && action.isValid() && action.getType() == RewardActionType.TAG && "remembered".equals(action.getValue());
+    }
+
     static boolean privateRewardFlag(ConfigurationSection section, String id) {
         String path = id + ".hidden-until-earned";
+        if ("last_watch_remembered_2026".equalsIgnoreCase(id)) return true;
         // A malformed explicit flag must never silently turn an intended private reward public.
         return section.contains(path) && (!section.isBoolean(path) || section.getBoolean(path));
     }

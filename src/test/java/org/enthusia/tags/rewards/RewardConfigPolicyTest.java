@@ -29,7 +29,7 @@ class RewardConfigPolicyTest {
         assertEquals(7, config.getInt("config-version"));
         ConfigurationSection rewards = config.getConfigurationSection("rewards");
         assertNotNull(rewards);
-        assertEquals(101, rewards.getKeys(false).size());
+        assertEquals(102, rewards.getKeys(false).size());
 
         int moneyActions = 0;
         int maximumActions = 0;

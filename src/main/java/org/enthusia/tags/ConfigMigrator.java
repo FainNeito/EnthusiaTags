@@ -65,6 +65,9 @@ public final class ConfigMigrator {
                 changed = true;
             }
             changed |= copyMissing(defaults, config, "", resourceName, report);
+            if (REWARDS_RESOURCE.equals(resourceName)) {
+                changed |= RememberedRewardMigration.addIfMissing(config, defaults, report);
+            }
             if (REWARDS_RESOURCE.equals(resourceName)
                 && ActivePlaytimeRewardMigration.needsUpdate(config, defaults)) {
                 if (existingVersion >= targetVersion) backup(file, resourceName, report);
