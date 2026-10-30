@@ -2952,6 +2952,7 @@ public final class RewardService {
         RewardCriterion criterion = criteria.getFirst();
         RewardAction action = actions.getFirst();
         return criterion.isValid() && criterion.getType() == RewardCriterionType.CUSTOM_COUNTER
+            && criterion.getSourceType() == RewardSourceType.CUSTOM_COUNTER
             && "last_watch_halloween_2026".equals(criterion.getKey()) && criterion.getAmount() == 1
             && action.isValid() && action.getType() == RewardActionType.TAG && "remembered".equals(action.getValue());
     }

@@ -69,11 +69,13 @@ class PrivateRewardVisibilityTest {
         assertTrue(RewardService.privateRewardFlag(config, "last_watch_remembered_2026"));
     }
     @org.junit.jupiter.api.Test void rememberedRejectsAlteredRewardOrEligibilityContract() {
-        var criterion = new RewardCriterion(RewardCriterionType.CUSTOM_COUNTER, 1, null, "last_watch_halloween_2026", 0, "");
+        var criterion = new RewardCriterion(RewardCriterionType.CUSTOM_COUNTER, RewardSourceType.CUSTOM_COUNTER, 1, null, null, null, "last_watch_halloween_2026", 0, "", true);
         var action = new RewardAction(RewardActionType.TAG, "remembered", 0, "");
         assertTrue(RewardService.validRememberedReward(java.util.List.of(criterion), java.util.List.of(action)));
-        var wrong = new RewardCriterion(RewardCriterionType.CUSTOM_COUNTER, 1, null, "unrelated", 0, "");
+        var wrong = new RewardCriterion(RewardCriterionType.CUSTOM_COUNTER, RewardSourceType.CUSTOM_COUNTER, 1, null, null, null, "unrelated", 0, "", true);
         assertFalse(RewardService.validRememberedReward(java.util.List.of(wrong), java.util.List.of(action)));
+        var wrongSource = new RewardCriterion(RewardCriterionType.CUSTOM_COUNTER, RewardSourceType.PLACEHOLDER, 1, null, null, null, "last_watch_halloween_2026", 0, "", true);
+        assertFalse(RewardService.validRememberedReward(java.util.List.of(wrongSource), java.util.List.of(action)));
         assertFalse(RewardService.validRememberedReward(java.util.List.of(), java.util.List.of(action)));
         assertFalse(RewardService.validRememberedReward(java.util.List.of(criterion), java.util.List.of()));
     }
