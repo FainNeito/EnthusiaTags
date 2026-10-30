@@ -27,7 +27,8 @@ class NestedDefaultsMigrationTest {
         assertTrue(migrated.contains("categories.advancements"));
         assertEquals("holidays",migrated.getString("categories.halloween.parent"));
         assertFalse(migrated.contains("categories.categories"));
-        assertEquals(1,migrated.getConfigurationSection("rewards").getKeys(false).size());
+        assertEquals(2,migrated.getConfigurationSection("rewards").getKeys(false).size());
+        assertTrue(migrated.contains("rewards.last_watch_remembered_2026"));
         String once=Files.readString(file.toPath());
         migrator.migrate("rewards.yml",new ConfigMigrator.MigrationReport());
         assertEquals(once,Files.readString(file.toPath()));
