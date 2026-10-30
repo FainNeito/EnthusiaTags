@@ -826,7 +826,11 @@ public final class RewardService {
             RewardPlayerState state = getLoadedState(playerId);
             if (state == null || !state.isLoaded()) return false;
             String id = reward.getId().toLowerCase(Locale.ROOT);
-            return PrivateRewardVisibility.reveal(true, historicallyCompleted(state, id));
+            // Holidays reconciles this reserved signal from its durable encounter ledger.
+            // The separate post-event criterion still controls whether the reward can be claimed.
+            boolean earned = "last_watch_remembered_2026".equals(id)
+                && state.getCounter("last_watch_earned_halloween_2026") >= 1;
+            return PrivateRewardVisibility.reveal(true, earned || historicallyCompleted(state, id));
         } catch (RuntimeException unavailable) {
             return false;
         }
