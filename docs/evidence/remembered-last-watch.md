@@ -11,3 +11,7 @@ Local proof: initial focused tests failed for missing reserved-ID protections; t
 The local HTML preview is a simulation only and is not a mobile-accessible hosted link. The generic privacy draft remains a dependency; its general pairing failure paths remain a separate release gate.
 
 Additional gate check: the real bundled rewards.yml was loaded through RewardService with a mocked tag registry; the exact Remembered entry loaded private, and an altered placeholder source caused the entry to be omitted. This is a local configuration-level check, not proof of client packets or the deployed runtime. The two public drafts' hosted verification and Codacy checks passed on their previously reviewed heads.
+
+Startup review found reward definitions were validated before the bundled holiday catalog was installed. The plugin now installs the holiday and portable catalogs before loading the tag registry and validating rewards. A local first-install regression loads the real Remembered tag into a real registry before loading bundled reward configuration and verifies the action is valid; no server startup was exercised.
+
+After the startup-order fix, full Maven verify passed 320 tests. The unmerged local Tags build SHA-256 is 8cf795b77e53a1aca125abd32f63fc76dbf78fb2a2caf7328408e305ab0f0566; its public reward-service method descriptors match the Holidays reflection calls. This local artifact is not identified as the deployed runtime.
