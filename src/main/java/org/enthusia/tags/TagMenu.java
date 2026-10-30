@@ -79,10 +79,10 @@ public final class TagMenu {
 
         frame(inventory);
         PlayerTagData data = tagService.getPlayerData(player.getUniqueId());
-        inventory.setItem(4, header(data, tags.size(), normalizedFilter, adminPreview));
+        inventory.setItem(4, header(player, data, tags.size(), normalizedFilter, adminPreview));
         populateFilters(player, inventory, normalizedFilter, adminPreview);
         populateTags(inventory, data, tags, page, adminPreview);
-        populateFooter(inventory, data, tags.size(), page, pageCount);
+        populateFooter(player, inventory, data, tags.size(), page, pageCount);
         return inventory;
     }
 
@@ -118,7 +118,7 @@ public final class TagMenu {
 
     }
 
-    private void populateFooter(Inventory inventory, PlayerTagData data, int tagCount, int page, int pageCount) {
+    private void populateFooter(Player player, Inventory inventory, PlayerTagData data, int tagCount, int page, int pageCount) {
         inventory.setItem(45, action(Material.CHEST, "&6Rewards",
             List.of("&7Open your reward browser.", "&eClick to open"), rewardsKey));
         if (page > 0) inventory.setItem(46, action(Material.ARROW, "&fPrevious Page", List.of("&eClick"), prevKey));
@@ -126,7 +126,7 @@ public final class TagMenu {
             List.of("&7Open the cosmetics browser.", "&eClick to open"), cosmeticsKey));
         inventory.setItem(49, plain(Material.PAPER, "&fPage " + (page + 1) + " &8/ &f" + pageCount,
             "&7Showing " + tagCount + (tagCount == 1 ? " tag" : " tags") + "."));
-        inventory.setItem(51, clearItem(data));
+        inventory.setItem(51, clearItem(player, data));
         if (page + 1 < pageCount) inventory.setItem(52, action(Material.ARROW, "&fNext Page", List.of("&eClick"), nextKey));
         inventory.setItem(53, action(Material.BARRIER, "&cClose", List.of("&7Close this menu."), closeKey));
     }
@@ -145,18 +145,22 @@ public final class TagMenu {
         inventory.setItem(5, orange);
     }
 
-    private ItemStack header(PlayerTagData data, int visible, String filter, boolean preview) {
+    private ItemStack header(Player player, PlayerTagData data, int visible, String filter, boolean preview) {
         String selected = data.getSelectedTag();
         TagDefinition selectedDefinition = selected == null ? null : tagService.getRegistry().get(selected);
+        if (selectedDefinition != null && !canReveal(player, selectedDefinition)) selectedDefinition = null;
+        long hiddenOwned = data.getOwnedTags().stream().map(tagService.getRegistry()::get)
+            .filter(java.util.Objects::nonNull).filter(tag -> !canReveal(player, tag)).count();
+        long ownedVisible = data.getOwnedTags().size() - hiddenOwned;
         List<String> lore = new ArrayList<>();
-        lore.add("&7Owned: &f" + data.getOwnedTags().size());
+        lore.add("&7Owned: &f" + ownedVisible);
         lore.add("&7Selected: " + (selectedDefinition == null ? "&fNone" : "&f" + TagTextFormat.legacyText(selectedDefinition.getDisplayName())));
         lore.add("&7Filter: &f" + filterName(filter));
         lore.add("&7Visible: &f" + visible);
         if (preview) {
             lore.add("");
             lore.add("&eADMIN PREVIEW");
-            lore.add("&7All configured tags are visible.");
+            lore.add("&7Eligible configured tags are visible.");
             lore.add("&7Clicks are read-only.");
         }
         return plain(Material.NAME_TAG, preview ? "&eTag Catalog Preview" : "&6Your Tags", lore.toArray(String[]::new));
@@ -203,9 +207,10 @@ public final class TagMenu {
         }
     }
 
-    private ItemStack clearItem(PlayerTagData data) {
+    private ItemStack clearItem(Player player, PlayerTagData data) {
         String selected = data.getSelectedTag();
         TagDefinition definition = selected == null ? null : tagService.getRegistry().get(selected);
+        if (definition != null && !canReveal(player, definition)) definition = null;
         return action(Material.BARRIER, "&cClear Active Tag", List.of(
             "&7Selected: " + (definition == null ? "&fNone" : "&f" + TagTextFormat.legacyText(definition.getDisplayName())),
             "&7Remove the tag from your display.",
@@ -226,9 +231,19 @@ public final class TagMenu {
         inventory.setItem(slot, item);
     }
 
+    private boolean canReveal(Player player, TagDefinition tag) {
+        if (tag.getHiddenUntilReward() == null) return true;
+        try {
+            return plugin.getRewardService() != null && plugin.getRewardService().canRevealTag(player, tag);
+        } catch (RuntimeException unavailable) {
+            return false;
+        }
+    }
+
     private List<TagDefinition> visibleTags(Player player, boolean preview, String filter) {
         Set<String> owned = tagService.getPlayerData(player.getUniqueId()).getOwnedTags();
         return tagService.getRegistry().getAll().stream()
+            .filter(tag -> canReveal(player, tag))
             .filter(tag -> preview || owned.contains(tag.getId().toLowerCase(Locale.ROOT)))
             .filter(tag -> matchesFilter(tag, filter))
             .sorted(Comparator.comparing(TagDefinition::getId, String.CASE_INSENSITIVE_ORDER))

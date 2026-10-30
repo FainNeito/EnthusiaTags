@@ -81,7 +81,7 @@ public final class RewardListener implements Listener {
     }
     private void claim(Player player, RewardMenuHolder holder, String id) {
         RewardDefinition reward = service.getRewards().get(id.toLowerCase(Locale.ROOT));
-        if(reward == null) { menu.refresh(player,holder,false); return; }
+        if(reward == null || (reward.isHiddenUntilEarned() && !service.canReveal(player, reward))) { menu.refresh(player,holder,false); return; }
         UUID playerId = player.getUniqueId();
         if(!menu.beginClaim(playerId,id)) return;
         holder.clearNotice(id);

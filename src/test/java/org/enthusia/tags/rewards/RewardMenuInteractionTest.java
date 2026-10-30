@@ -48,6 +48,16 @@ class RewardMenuInteractionTest {
         f.callbacks.removeFirst().run();
         verify(f.service, never()).claimAsync(any(Player.class), any(RewardDefinition.class));
     }
+    @Test void stalePrivateRewardClickFailsClosed() {
+        Fixture f = new Fixture();
+        var hidden = new RewardDefinition("goal", "Private", List.of(), null, List.of(), List.of(), "misc", RewardCompletionMode.LATCHED, true);
+        when(f.service.getRewards()).thenReturn(Map.of("goal", hidden));
+        when(f.service.canReveal(f.player, hidden)).thenReturn(false);
+        f.listener.onInventoryClick(f.event);
+        f.callbacks.removeFirst().run();
+        verify(f.service, never()).claimAsync(any(Player.class), any(RewardDefinition.class));
+        verify(f.menu).refresh(f.player, f.holder, false);
+    }
     @Test void legitimateClaimUsesExistingServiceAndReleasesGuardOnFailure() {
         Fixture f = new Fixture();
         f.listener.onInventoryClick(f.event);

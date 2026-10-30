@@ -50,6 +50,7 @@ public final class RewardMenu implements AutoCloseable {
     public Inventory createCategory(Player player, String category) { return create(player, RewardMenuState.category(category)); }
     public Inventory createCategory(Player player, String category, int page) { return create(player, RewardMenuState.category(category).withPage(page)); }
     public Inventory createFocused(Player player, RewardDefinition target) {
+        if ((target.isHiddenUntilEarned() && !service.canReveal(player, target))) return create(player);
         Snapshot snapshot = snapshot(player);
         RewardMenuState state = RewardMenuState.category(AdvancementCategories.category(target)).focus(target.getId());
         List<RewardMenuModel.Entry> selected = RewardMenuModel.select(snapshot.entries(), state);
@@ -103,7 +104,8 @@ public final class RewardMenu implements AutoCloseable {
         }
         configured.values().stream()
             .forEach(c -> categories.putIfAbsent(c.id().toLowerCase(Locale.ROOT),c));
-        Map<String,RewardDefinition> rewards = service.getRewards();
+        Map<String,RewardDefinition> rewards = new LinkedHashMap<>();
+        service.getRewards().forEach((id, reward) -> { if (!reward.isHiddenUntilEarned() || service.canReveal(player, reward)) rewards.put(id, reward); });
         if (configured.containsKey(AdvancementCategories.ROOT)) {
             for (var child : AdvancementCategories.CHILDREN) {
                 if (rewards.values().stream().anyMatch(r->AdvancementCategories.category(r).equals(child.id()))) categories.putIfAbsent(child.id(),child);
@@ -224,7 +226,7 @@ public final class RewardMenu implements AutoCloseable {
         }
         for (String id : current.tags()) {
             var tag = tags.getRegistry().get(id);
-            if (tag == null) continue;
+            if (tag == null || (tag.getHiddenUntilReward() != null && !service.canRevealTag(player, tag))) continue;
             entries.add(() -> holidayTag(player, tag));
             actions.add(null);
         }

@@ -128,4 +128,30 @@ class CachedTagPlaceholderResolverTest {
         data.setSelectedTag("hero");
         return data;
     }
+    @Test void privateSelectedTagRequiresExplicitEligibility() {
+        var registry = new TagRegistry();
+        registry.register(new TagDefinition("secret", "Secret", "Secret", Material.NAME_TAG, List.of(), "reward"));
+        var data = new PlayerTagData(); data.getOwnedTags().add("secret"); data.setSelectedTag("secret");
+        assertSame(TagPlaceholderOutput.EMPTY, CachedTagPlaceholderResolver.resolve(data, registry, false, LINE_FORMAT, "Player", value -> value));
+        assertSame(TagPlaceholderOutput.EMPTY, CachedTagPlaceholderResolver.resolve(data, registry, false, LINE_FORMAT, "Player", value -> value, tag -> false));
+        assertEquals("secret", CachedTagPlaceholderResolver.resolve(data, registry, false, LINE_FORMAT, "Player", value -> value, tag -> true).id());
+    }
+
+    @Test void malformedPrivateTagReferenceDoesNotBecomePublic() {
+        var config = new org.bukkit.configuration.file.YamlConfiguration();
+        assertNull(TagService.privateRewardReference(config, "tag"));
+        config.set("tag.hidden-until-reward", "");
+        assertNotNull(TagService.privateRewardReference(config, "tag"));
+        config.set("tag.hidden-until-reward", "reward_id");
+        assertEquals("reward_id", TagService.privateRewardReference(config, "tag"));
+    }
+
+    @Test void failedPrivateVisibilityCheckReturnsEmpty() {
+        var registry = new TagRegistry();
+        registry.register(new TagDefinition("secret", "Secret", "Secret", Material.NAME_TAG, List.of(), "reward"));
+        var data = new PlayerTagData(); data.getOwnedTags().add("secret"); data.setSelectedTag("secret");
+        assertSame(TagPlaceholderOutput.EMPTY, CachedTagPlaceholderResolver.resolve(data, registry, false, LINE_FORMAT, "Player", value -> value,
+            tag -> { throw new IllegalStateException("state unavailable"); }));
+    }
+
 }

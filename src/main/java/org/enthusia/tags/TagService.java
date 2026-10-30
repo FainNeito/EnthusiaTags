@@ -185,7 +185,8 @@ public final class TagService implements TagVisibilityService {
             TagTextFormat.canonicalMiniMessage(tag.getDisplayName()),
             TagTextFormat.canonicalMiniMessage(tag.getTagText()),
             tag.getIcon(),
-            tag.getDescription()
+            tag.getDescription(),
+            tag.getHiddenUntilReward()
         );
         registry.register(canonical);
         refreshSelectedForTag(canonical.getId());
@@ -221,7 +222,7 @@ public final class TagService implements TagVisibilityService {
         plugin.getConfig().set("tags." + key + ".tag-text", canonicalText);
         plugin.saveConfig();
         registerTag(new TagDefinition(key, existing.getDisplayName(), canonicalText,
-            existing.getIcon(), existing.getDescription()));
+            existing.getIcon(), existing.getDescription(), existing.getHiddenUntilReward()));
         return true;
     }
 
@@ -362,7 +363,8 @@ public final class TagService implements TagVisibilityService {
             lineFormat, playerName, line -> {
                 String internal = player == null ? line : placeholderRegistry.apply(player, line);
                 return player == null ? internal : placeholderApiHook.apply(player, internal);
-            });
+            }, tag -> tag.getHiddenUntilReward() == null ||
+                (plugin.getRewardService() != null && plugin.getRewardService().canRevealTag(playerId, tag)));
     }
 
     public void requestNametagRefresh(Player player) {
@@ -455,8 +457,16 @@ public final class TagService implements TagVisibilityService {
             Material icon = Material.matchMaterial(iconName);
             List<String> description = section.getStringList(id + ".description");
             registerTag(new TagDefinition(id, displayName, tagText,
-                icon == null ? Material.NAME_TAG : icon, description));
+                icon == null ? Material.NAME_TAG : icon, description, privateRewardReference(section, id)));
         }
+    }
+
+    static String privateRewardReference(ConfigurationSection section, String id) {
+        String path = id + ".hidden-until-reward";
+        if (!section.contains(path)) return null;
+        String reference = section.getString(path);
+        // A blank or malformed reference is intentionally unresolvable, never public.
+        return reference == null || reference.isBlank() ? "__invalid_private_reward__" : reference;
     }
 
     private void refreshSelectedForTag(String tagId) {

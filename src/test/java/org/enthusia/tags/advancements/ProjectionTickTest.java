@@ -181,4 +181,17 @@ class ProjectionTickTest {
         assertDoesNotThrow(controller::close);
         verify(projection).removeTree(plugin, "enthusia");
     }
+    @Test void privateRewardNeverRegistersOrProjectsInPublicTree() {
+        var hidden = new RewardDefinition("private", "Private name", List.of("Private details"), Material.PAPER,
+            List.of(), List.of(), "misc", org.enthusia.tags.rewards.RewardCompletionMode.LATCHED, true);
+        when(rewards.getRewards()).thenReturn(Map.of("private", hidden));
+        when(projection.ready(player)).thenReturn(true);
+        tick.run();
+        verify(projection, atLeastOnce()).registerTree(eq(plugin), eq("enthusia"), any(ItemStack.class), argThat(nodes ->
+            nodes.stream().noneMatch(node -> node.key().equals(NativeAdvancementController.key("private")) || node.title().contains("Private name"))));
+        verify(projection).project(eq(plugin), eq("enthusia"), eq(player), argThat(progress ->
+            !progress.containsKey(NativeAdvancementController.key("private"))));
+        verify(projection, never()).celebrate(plugin, "enthusia", player, NativeAdvancementController.key("private"));
+    }
+
 }

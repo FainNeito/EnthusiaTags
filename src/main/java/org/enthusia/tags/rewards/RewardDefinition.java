@@ -14,6 +14,7 @@ public final class RewardDefinition {
     private final List<RewardAction> actions;
     private final String category;
     private final RewardCompletionMode completionMode;
+    private final boolean hiddenUntilEarned;
 
     public RewardDefinition(String id,
                             String name,
@@ -28,6 +29,12 @@ public final class RewardDefinition {
     public RewardDefinition(String id, String name, List<String> description, Material icon,
                             List<RewardCriterion> criteria, List<RewardAction> actions, String category,
                             RewardCompletionMode completionMode) {
+        this(id, name, description, icon, criteria, actions, category, completionMode, false);
+    }
+
+    public RewardDefinition(String id, String name, List<String> description, Material icon,
+                            List<RewardCriterion> criteria, List<RewardAction> actions, String category,
+                            RewardCompletionMode completionMode, boolean hiddenUntilEarned) {
         this.id = Objects.requireNonNull(id, "id");
         this.name = Objects.requireNonNull(name, "name");
         this.description = description == null ? List.of() : List.copyOf(description);
@@ -36,6 +43,7 @@ public final class RewardDefinition {
         this.actions = actions == null ? List.of() : List.copyOf(actions);
         this.category = category == null ? "misc" : category;
         this.completionMode = completionMode == null ? RewardCompletionMode.LATCHED : completionMode;
+        this.hiddenUntilEarned = hiddenUntilEarned;
     }
 
     public String getId() {
@@ -65,6 +73,8 @@ public final class RewardDefinition {
     public String getCategory() {
         return category;
     }
+
+    public boolean isHiddenUntilEarned() { return hiddenUntilEarned; }
 
     public RewardCompletionMode getCompletionMode() {
         return completionMode;

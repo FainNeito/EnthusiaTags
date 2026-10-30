@@ -814,6 +814,35 @@ public final class RewardService {
         }
     }
 
+    /** Uses only loaded durable state; safe for cached placeholder calls and unavailable state fails closed. */
+    public boolean canReveal(Player player, RewardDefinition reward) {
+        return canReveal(player.getUniqueId(), reward);
+    }
+
+    public boolean canReveal(UUID playerId, RewardDefinition reward) {
+        if (!reward.isHiddenUntilEarned()) return true;
+        try {
+            if (!isAvailable()) return false;
+            RewardPlayerState state = getLoadedState(playerId);
+            if (state == null || !state.isLoaded()) return false;
+            String id = reward.getId().toLowerCase(Locale.ROOT);
+            return PrivateRewardVisibility.reveal(true, historicallyCompleted(state, id));
+        } catch (RuntimeException unavailable) {
+            return false;
+        }
+    }
+
+    public boolean canRevealTag(Player player, org.enthusia.tags.TagDefinition tag) {
+        return canRevealTag(player.getUniqueId(), tag);
+    }
+
+    public boolean canRevealTag(UUID playerId, org.enthusia.tags.TagDefinition tag) {
+        String rewardId = tag.getHiddenUntilReward();
+        if (rewardId == null) return true;
+        RewardDefinition reward = rewards.get(rewardId);
+        return reward != null && reward.isHiddenUntilEarned() && canReveal(playerId, reward);
+    }
+
     public boolean isComplete(Player player, RewardDefinition reward) {
         if (!isAvailable()) return false;
         return evaluate(player, reward).claimable();
@@ -1928,7 +1957,7 @@ public final class RewardService {
                     if (live == null || throwable != null || persistedUnlocks.isEmpty()
                         || getLoadedState(playerId) != state) return;
                     List<RewardDefinition> celebrations = persistedUnlocks.stream()
-                        .filter(reward -> liveUnlocks.contains(reward.getId().toLowerCase(Locale.ROOT))).toList();
+                        .filter(reward -> !reward.isHiddenUntilEarned() && liveUnlocks.contains(reward.getId().toLowerCase(Locale.ROOT))).toList();
                     if (celebrations.isEmpty()) return;
                     if (advancementNotifications != null && plugin.getConfig().getBoolean("advancements.enabled", true))
                         advancementNotifications.accept(live, celebrations);
@@ -2908,9 +2937,16 @@ public final class RewardService {
                 plugin.getLogger().warning("Invalid completion-mode for reward " + id + "; using LATCHED");
             }
             loadedRewards.put(id.toLowerCase(Locale.ROOT),
-                new RewardDefinition(id, name, description, icon, criteria, actions, category, completionMode));
+                new RewardDefinition(id, name, description, icon, criteria, actions, category, completionMode,
+                    privateRewardFlag(section, id)));
         }
         rewards = java.util.Collections.unmodifiableMap(loadedRewards);
+    }
+
+    static boolean privateRewardFlag(ConfigurationSection section, String id) {
+        String path = id + ".hidden-until-earned";
+        // A malformed explicit flag must never silently turn an intended private reward public.
+        return section.contains(path) && (!section.isBoolean(path) || section.getBoolean(path));
     }
 
     List<RewardCriterion> loadCriteria(ConfigurationSection section) {

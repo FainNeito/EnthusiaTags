@@ -85,7 +85,8 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         List<ProjectionService.Node> nodes = new ArrayList<>();
         Map<String, List<RewardDefinition>> categories = new LinkedHashMap<>();
         Map<String, RewardDefinition> next = rewards.getRewards();
-        for (RewardDefinition reward : next.values()) categories.computeIfAbsent(reward.getCategory(), ignored -> new ArrayList<>()).add(reward);
+        for (RewardDefinition reward : next.values()) if (!reward.isHiddenUntilEarned())
+            categories.computeIfAbsent(reward.getCategory(), ignored -> new ArrayList<>()).add(reward);
         int row = 0;
         for (List<RewardDefinition> group : categories.values()) {
             String fallbackParentId = null;
@@ -128,8 +129,9 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
             plugin.getConfig().getInt("advancements.logo-custom-model-data", 815001),
             plugin.getConfig().getString("advancements.logo-item-model", "enthusia:advancement/logo"));
         icon.setItemMeta(meta);
-        nodes = NativeTabPresentation.organize(nodes, next.values());
-        NativeMilestonePresentation nextPresentation = NativeMilestonePresentation.create(nodes, next.values());
+        var publicRewards = next.values().stream().filter(reward -> !reward.isHiddenUntilEarned()).toList();
+        nodes = NativeTabPresentation.organize(nodes, publicRewards);
+        NativeMilestonePresentation nextPresentation = NativeMilestonePresentation.create(nodes, publicRewards);
         nodes = nextPresentation.nodes();
         projection.registerTree(plugin, "enthusia", icon, AdvancementNodeOrder.parentFirst(nodes));
         presentation = nextPresentation;
@@ -209,6 +211,7 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
     private Map<String, Integer> collectProgress(Player player) {
         Map<String, Integer> progress = new LinkedHashMap<>();
         for (RewardDefinition reward : definitions.values()) {
+            if (reward.isHiddenUntilEarned()) continue;
             int value = rewards.getAdvancementProgress(player, reward);
             if (value >= 0) progress.put(key(reward.getId()), value);
         }

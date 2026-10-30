@@ -33,6 +33,18 @@ class CollectionInventoryTest {
    menu.create(player,1);assertEquals(4,CollectionMenuLayout.SLOTS.stream().filter(i->slots.get(i)!=null).count());assertEquals(Material.ARROW,slots.get(46).getType());
    when(player.hasPermission("enthusia.tags.admin")).thenReturn(true);
    var preview=menu.create(player,true);assertTrue(((TagMenuHolder)preview.getHolder()).isPreview());assertEquals(Material.SPYGLASS,slots.get(17).getType());
+   var hidden = new TagDefinition("aaa_hidden", "Hidden", "Hidden", Material.DIAMOND, List.of(), "private_reward");
+   registry.register(hidden);
+   var rewards = mock(org.enthusia.tags.rewards.RewardService.class); when(plugin.getRewardService()).thenReturn(rewards);
+   when(rewards.canRevealTag(player, hidden)).thenReturn(false);
+   menu.create(player,true);
+   assertFalse(CollectionMenuLayout.SLOTS.stream().map(slots::get).filter(Objects::nonNull).anyMatch(item -> item.getType() == Material.DIAMOND));
+   when(rewards.canRevealTag(player, hidden)).thenThrow(new IllegalStateException("unavailable"));
+   menu.create(player,true);
+   assertFalse(CollectionMenuLayout.SLOTS.stream().map(slots::get).filter(Objects::nonNull).anyMatch(item -> item.getType() == Material.DIAMOND));
+   doReturn(true).when(rewards).canRevealTag(player, hidden);
+   menu.create(player,true);
+   assertTrue(CollectionMenuLayout.SLOTS.stream().map(slots::get).filter(Objects::nonNull).anyMatch(item -> item.getType() == Material.DIAMOND));
    when(player.hasPermission("enthusia.tags.admin")).thenReturn(false);assertFalse(((TagMenuHolder)menu.create(player,true).getHolder()).isPreview());
    var cosmeticMenu=new CosmeticsMenu(cosmetics,tags,messages);cosmeticMenu.createMain(player,1);
    assertEquals(7,CollectionMenuLayout.SLOTS.stream().filter(i->slots.get(i)!=null).count());assertEquals(Material.NAME_TAG,slots.get(47).getType());assertEquals(Material.CHEST,slots.get(45).getType());
