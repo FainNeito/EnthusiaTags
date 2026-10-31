@@ -17,7 +17,7 @@ class PrivateRewardCommandTest {
         when(plugin.getName()).thenReturn("EnthusiaTags"); when(plugin.namespace()).thenReturn("enthusiatags");
         var tags = mock(TagService.class); when(tags.getPlugin()).thenReturn(plugin);
         var service = mock(RewardService.class); when(service.isAvailable()).thenReturn(true);
-        var secret = new RewardDefinition("private", "Private", List.of(), Material.PAPER, List.of(), List.of(), "misc", RewardCompletionMode.LATCHED, true);
+        var secret = new RewardDefinition("private", "Private", List.of(), Material.PAPER, List.of(), List.of(), "misc", RewardCompletionMode.LATCHED).withHiddenUntilEarned(true);
         when(service.getRewards()).thenReturn(Map.of("private", secret));
         var player = mock(Player.class); when(service.canReveal(player, secret)).thenReturn(false);
         var command = new RewardsCommand(service, tags, mock(Messages.class), plugin);

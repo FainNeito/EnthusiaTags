@@ -2945,8 +2945,8 @@ public final class RewardService {
                 plugin.getLogger().warning("Invalid completion-mode for reward " + id + "; using LATCHED");
             }
             loadedRewards.put(id.toLowerCase(Locale.ROOT),
-                new RewardDefinition(id, name, description, icon, criteria, actions, category, completionMode,
-                    privateRewardFlag(section, id)));
+                new RewardDefinition(id, name, description, icon, criteria, actions, category, completionMode)
+                    .withHiddenUntilEarned(privateRewardFlag(section, id)));
         }
         rewards = java.util.Collections.unmodifiableMap(loadedRewards);
     }

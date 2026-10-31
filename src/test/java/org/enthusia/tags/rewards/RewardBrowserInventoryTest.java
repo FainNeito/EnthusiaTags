@@ -72,7 +72,7 @@ class RewardBrowserInventoryTest {
             menu.refresh(player, holder, true);
             assertEquals(before, holder.visibleRewards());
             assertEquals(new RewardMenuAction(RewardMenuAction.Type.CLAIM, "goal23"), holder.action(21));
-            var hidden = new RewardDefinition("private", "Private", List.of(), Material.PAPER, List.of(), List.of(), "misc", RewardCompletionMode.LATCHED, true);
+            var hidden = new RewardDefinition("private", "Private", List.of(), Material.PAPER, List.of(), List.of(), "misc", RewardCompletionMode.LATCHED).withHiddenUntilEarned(true);
             rewards.put("private", hidden);
             when(service.canReveal(player, hidden)).thenReturn(false);
             menu.create(player, RewardMenuState.category("misc").withPage(1));

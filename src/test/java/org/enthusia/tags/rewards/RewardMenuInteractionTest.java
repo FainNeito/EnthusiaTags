@@ -50,7 +50,7 @@ class RewardMenuInteractionTest {
     }
     @Test void stalePrivateRewardClickFailsClosed() {
         Fixture f = new Fixture();
-        var hidden = new RewardDefinition("goal", "Private", List.of(), null, List.of(), List.of(), "misc", RewardCompletionMode.LATCHED, true);
+        var hidden = new RewardDefinition("goal", "Private", List.of(), null, List.of(), List.of(), "misc", RewardCompletionMode.LATCHED).withHiddenUntilEarned(true);
         when(f.service.getRewards()).thenReturn(Map.of("goal", hidden));
         when(f.service.canReveal(f.player, hidden)).thenReturn(false);
         f.listener.onInventoryClick(f.event);

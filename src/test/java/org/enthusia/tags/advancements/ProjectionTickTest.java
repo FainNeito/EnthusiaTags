@@ -183,7 +183,7 @@ class ProjectionTickTest {
     }
     @Test void privateRewardNeverRegistersOrProjectsInPublicTree() {
         var hidden = new RewardDefinition("private", "Private name", List.of("Private details"), Material.PAPER,
-            List.of(), List.of(), "misc", org.enthusia.tags.rewards.RewardCompletionMode.LATCHED, true);
+            List.of(), List.of(), "misc", org.enthusia.tags.rewards.RewardCompletionMode.LATCHED).withHiddenUntilEarned(true);
         when(rewards.getRewards()).thenReturn(Map.of("private", hidden));
         when(projection.ready(player)).thenReturn(true);
         tick.run();

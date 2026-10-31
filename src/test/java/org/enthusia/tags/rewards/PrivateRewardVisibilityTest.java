@@ -26,7 +26,7 @@ class PrivateRewardVisibilityTest {
         var storage = new RewardStorage(dir.resolve("rewards.db").toFile(), new PerformanceMonitor(null));
         storage.init();
         try {
-            var hidden = new RewardDefinition("private", "Private", List.of(), Material.PAPER, List.of(), List.of(), "misc", RewardCompletionMode.LATCHED, true);
+            var hidden = new RewardDefinition("private", "Private", List.of(), Material.PAPER, List.of(), List.of(), "misc", RewardCompletionMode.LATCHED).withHiddenUntilEarned(true);
             var ordinary = new RewardDefinition("public", "Public", List.of(), Material.PAPER, List.of(), List.of(), "misc");
             var first = spy(new RewardService(plugin, null, null, new PerformanceMonitor(null), storage));
             doReturn(true).when(first).isAvailable();

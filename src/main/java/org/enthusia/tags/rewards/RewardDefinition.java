@@ -29,12 +29,6 @@ public final class RewardDefinition {
     public RewardDefinition(String id, String name, List<String> description, Material icon,
                             List<RewardCriterion> criteria, List<RewardAction> actions, String category,
                             RewardCompletionMode completionMode) {
-        this(id, name, description, icon, criteria, actions, category, completionMode, false);
-    }
-
-    public RewardDefinition(String id, String name, List<String> description, Material icon,
-                            List<RewardCriterion> criteria, List<RewardAction> actions, String category,
-                            RewardCompletionMode completionMode, boolean hiddenUntilEarned) {
         this.id = Objects.requireNonNull(id, "id");
         this.name = Objects.requireNonNull(name, "name");
         this.description = description == null ? List.of() : List.copyOf(description);
@@ -43,7 +37,23 @@ public final class RewardDefinition {
         this.actions = actions == null ? List.of() : List.copyOf(actions);
         this.category = category == null ? "misc" : category;
         this.completionMode = completionMode == null ? RewardCompletionMode.LATCHED : completionMode;
+        this.hiddenUntilEarned = false;
+    }
+
+    private RewardDefinition(RewardDefinition source, boolean hiddenUntilEarned) {
+        this.id = source.id;
+        this.name = source.name;
+        this.description = source.description;
+        this.icon = source.icon;
+        this.criteria = source.criteria;
+        this.actions = source.actions;
+        this.category = source.category;
+        this.completionMode = source.completionMode;
         this.hiddenUntilEarned = hiddenUntilEarned;
+    }
+
+    public RewardDefinition withHiddenUntilEarned(boolean hidden) {
+        return hidden == hiddenUntilEarned ? this : new RewardDefinition(this, hidden);
     }
 
     public String getId() {
