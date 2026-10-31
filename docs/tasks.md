@@ -416,3 +416,15 @@ References: REQ-1128; implementation.md Layer Dependency Rules.
 Evidence: PR17 initial head8284348 passed hosted verify121762224361 and artifact121762224207; strict Codacy gate121763174063 reported one heading blank-line issue and two fully qualified ProviderRewardTracker references. Existing org.enthusia.tags.advancements.ProviderRewardTracker supplies the unchanged class imported explicitly; no new dependency or behavior.
 Acceptance: standard import and heading spacing only, full suite and exact-head hosted gates. Prove/engine do not apply to formatting-only infrastructure refinement; no behavioral red is invented.
 Status: [x] local refinement verified; repeated clean verification passes305 tests, zero failures/errors/skips. Updated-head hosted checks remain pending.
+
+## T-1130 [TDD] Optional private reward visibility
+
+References: REQ-PRIVATE-REWARD-001/002. Implement explicit opt-in, preserve ordinary defaults and constructor compatibility, filter before summaries and all UI surfaces, prevent unearned direct opens, avoid native public advancement/celebration, and fail closed when data is unavailable. Verify durable claimed/unlocked status and event-independent claims, tag preview, counts, partial errors, refresh, and no normal reward regression. Provide a mobile-accessible interactive preview of any changed menu behavior; native client acceptance is separate. Do not add user-specific secret content to public documentation or source.
+
+Evidence: Current `RewardMenu` snapshots every configured reward before counting or rendering; direct focused opens and holiday tag catalogs bypass eligibility-based visibility. `TagMenu` admin preview includes every registered tag. `NativeAdvancementController` globally registers all reward nodes. The private projection companion is still an unmerged draft; no private reward configuration or entitlement is being installed by this task.
+
+Tooling note: the first task ID used letters after the hyphen, which the state helper cannot parse; its newly-created transient state was reset before selecting valid task T-1130. No test result was recorded.
+
+Actual prove: the focused `PrivateRewardVisibilityTest` failed test compilation because `PrivateRewardVisibility` did not yet exist; this is contract-red evidence, not a reproduced production leak. Pinned renderer and LoreItems bootstrap checks passed. Proceed to engine.
+
+Result: `mvn clean verify` passed 314 tests; 12 SPEAR Node and 11 companion Python tests passed, as did the EARS check. Source review and a simulated local preview cover the visibility surfaces; paired configuration validation, a mobile-accessible hosted preview, and native/client and producer integration remain release gates. See docs/evidence/private-reward-visibility.md.

@@ -141,6 +141,7 @@ final class AdvancementLayout {
         chain(map, "lag_was_crazy", 2, 25,
             "all_rounder", "server_legend", "ultimate_survivor");
         put(map, "watcher_melody", "ultimate_survivor", 5, 25);
+        put(map, "last_watch_remembered_2026", "watcher_melody", 6, 25);
 
         return Map.copyOf(map);
     }

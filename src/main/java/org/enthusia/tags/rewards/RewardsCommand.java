@@ -63,7 +63,7 @@ public final class RewardsCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("open")) {
             RewardDefinition reward = rewardService.getRewards().get(args[1].toLowerCase(java.util.Locale.ROOT));
-            if (reward == null) {
+            if (reward == null || (reward.isHiddenUntilEarned() && !rewardService.canReveal(player, reward))) {
                 player.sendMessage(Component.text("Unknown reward."));
                 return true;
             }

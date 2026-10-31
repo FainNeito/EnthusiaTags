@@ -139,3 +139,6 @@ The user explicitly authorized the remaining non-guild WarzoneDuels advancement 
 - REQ-1124: IF EnthusiaHolidays is absent or disabled THE SYSTEM SHALL retain the Tags Forgotten Melody celebration and preserve celebrations for all unrelated rewards.
 
 - REQ-SOUND-001: WHEN a configured sound is a valid namespaced resource-pack event THE SYSTEM SHALL play that exact event once at the existing trigger while preserving legacy sound names, gain, pitch, recipients, enablement and invalid-value fallback.
+
+- REQ-PRIVATE-REWARD-001: WHEN a reward is explicitly marked hidden until earned THE SYSTEM SHALL omit its name, description, icon and counts from unearned or unknown viewers' reward screens, focused openings, tag previews and public advancement projection; WHEN durable earned eligibility is verified THE SYSTEM SHALL permit the normal one-time claim even after the originating event ends.
+- REQ-PRIVATE-REWARD-002: IF reward evidence or storage is unavailable THE SYSTEM SHALL fail closed for private visibility without altering existing public reward, tag, claim, sibling, daily or gold policies.

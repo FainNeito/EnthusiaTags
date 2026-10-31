@@ -72,6 +72,14 @@ class RewardBrowserInventoryTest {
             menu.refresh(player, holder, true);
             assertEquals(before, holder.visibleRewards());
             assertEquals(new RewardMenuAction(RewardMenuAction.Type.CLAIM, "goal23"), holder.action(21));
+            var hidden = new RewardDefinition("private", "Private", List.of(), Material.PAPER, List.of(), List.of(), "misc", RewardCompletionMode.LATCHED).withHiddenUntilEarned(true);
+            rewards.put("private", hidden);
+            when(service.canReveal(player, hidden)).thenReturn(false);
+            menu.create(player, RewardMenuState.category("misc").withPage(1));
+            assertFalse(captured[0].visibleRewards().contains("private"));
+            when(service.canReveal(player, hidden)).thenReturn(true);
+            menu.create(player, RewardMenuState.category("misc").withPage(1));
+            assertTrue(captured[0].visibleRewards().contains("private"));
             verify(service, never()).claimAsync(any(Player.class), any(RewardDefinition.class));
             verify(player, never()).openInventory(any(Inventory.class));
             BukkitScheduler scheduler = mock(BukkitScheduler.class);

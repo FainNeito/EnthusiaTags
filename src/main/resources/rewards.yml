@@ -24,7 +24,7 @@ categories:
     name: "&6&lHalloween"
     icon: JACK_O_LANTERN
     parent: holidays
-    tags: [pumpkin_hunter, no_pumpkin_left_behind, pumpkin_king, pumpkin_patcher, seen_the_watcher]
+    tags: [pumpkin_hunter, no_pumpkin_left_behind, pumpkin_king, pumpkin_patcher, seen_the_watcher, remembered]
   christmas:
     name: "&a&lChristmas"
     icon: SPRUCE_SAPLING
@@ -1718,3 +1718,20 @@ rewards:
       r1:
         type: COMMAND
         id: 'give %player% minecraft:music_disc_11[minecraft:item_model="enthusia:watcher_disc",minecraft:jukebox_playable="enthusia:forgotten_melody",minecraft:item_name={"text":"Music Disc","color":"#F5F5F5"},minecraft:rarity="rare"] 1'
+
+  last_watch_remembered_2026:
+    name: "&7Remembered"
+    description:
+      - "&7Complete The Last Watch. Claim after the event."
+    icon: NAME_TAG
+    category: halloween
+    hidden-until-earned: true
+    criteria:
+      eligibility:
+        type: CUSTOM_COUNTER
+        key: last_watch_halloween_2026
+        amount: 1
+    rewards:
+      remembered:
+        type: TAG
+        id: remembered
