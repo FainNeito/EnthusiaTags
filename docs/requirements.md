@@ -1,5 +1,10 @@
 # EnthusiaTags advancement pilot
 
+- REQ-1140: WHEN tag ownership is read before storage has supplied a successful snapshot THE SYSTEM SHALL permit the persisted load without treating a presentation placeholder as verified empty ownership.
+- REQ-1141: IF a tag ownership read fails THEN THE SYSTEM SHALL permit a subsequent ownership read or preload to retry without granting tags or replaying rewards.
+- REQ-1142: WHEN a tag load completes after its player session or load attempt has been superseded THE SYSTEM SHALL discard the stale result without replacing the current snapshot or removing its pending load.
+- REQ-1143: WHEN storage verifies genuinely empty ownership THE SYSTEM SHALL cache that successful empty snapshot while preserving existing tag, selection, entitlement and claim semantics.
+
 - REQ-1128: WHEN any existing provider milestone is verified complete THE SYSTEM SHALL persist its reward completion counter independently of rendering, preserving manual claims, existing payouts, stored ownership and provider criteria.
 - REQ-1129: IF provider evidence is unavailable, incomplete, stale or belongs to a previous player session THEN THE SYSTEM SHALL avoid inventing completion while retaining previously earned reward eligibility.
 
