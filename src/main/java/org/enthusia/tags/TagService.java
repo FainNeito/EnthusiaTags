@@ -455,7 +455,7 @@ public final class TagService implements TagVisibilityService {
         PlayerTagData loaded = failure == null ? toPlayerTagData(stored) : null;
         boolean current;
         synchronized (loadLock) {
-            current = pendingLoads.get(playerId) == attempt;
+            current = attempt.equals(pendingLoads.get(playerId));
             if (current) {
                 if (loaded != null) cache.put(playerId, loaded);
                 pendingLoads.remove(playerId, attempt);
