@@ -134,6 +134,70 @@ class TagServiceLoadingTest {
         assertEquals(Set.of("baltop_elite"), service.getPlayerData(playerId).getOwnedTags());
     }
 
+    @Test
+    void grantingDuringLoadPreservesPreviouslyPersistedTagsAndSelection() throws Exception {
+        TagStorage storage = mock(TagStorage.class);
+        CompletableFuture<TagStorage.StoredTagData> read = new CompletableFuture<>();
+        when(storage.loadAsync(playerId)).thenReturn(read);
+        when(storage.grantTagAsync(playerId, "new_tag")).thenReturn(CompletableFuture.completedFuture(null));
+        TagService service = service(storage);
+        service.getRegistry().register(new TagDefinition("new_tag", "New", "New", org.bukkit.Material.PAPER, java.util.List.of()));
+
+        CompletableFuture<Boolean> granted = service.grantTagPersisted(playerId, "new_tag");
+        assertFalse(granted.isDone());
+        verify(storage, never()).grantTagAsync(any(), any());
+        read.complete(saved("baltop_elite"));
+
+        assertTrue(granted.join());
+        assertEquals(Set.of("baltop_elite", "new_tag"), service.getPlayerData(playerId).getOwnedTags());
+        assertEquals("baltop_elite", service.getPlayerData(playerId).getSelectedTag());
+    }
+
+    @Test
+    void aFailedGrantDoesNotDiscardPreviouslyPersistedOwnership() throws Exception {
+        TagStorage storage = mock(TagStorage.class);
+        when(storage.loadAsync(playerId)).thenReturn(CompletableFuture.completedFuture(saved("baltop_elite")));
+        when(storage.grantTagAsync(playerId, "new_tag")).thenReturn(
+            CompletableFuture.failedFuture(new SQLException("grant failed")));
+        TagService service = service(storage);
+        service.getRegistry().register(new TagDefinition("new_tag", "New", "New", org.bukkit.Material.PAPER, java.util.List.of()));
+
+        assertFalse(service.grantTagPersisted(playerId, "new_tag").join());
+        assertEquals(Set.of("baltop_elite"), service.getPlayerData(playerId).getOwnedTags());
+        assertEquals("baltop_elite", service.getPlayerData(playerId).getSelectedTag());
+    }
+
+    @Test
+    void revocationWaitsForOwnershipAndPreservesUnrelatedTags() throws Exception {
+        TagStorage storage = mock(TagStorage.class);
+        CompletableFuture<TagStorage.StoredTagData> read = new CompletableFuture<>();
+        when(storage.loadAsync(playerId)).thenReturn(read);
+        when(storage.revokeTagAsync(playerId, "old_tag")).thenReturn(CompletableFuture.completedFuture(null));
+        when(storage.setSelectedTagAsync(playerId, null)).thenReturn(CompletableFuture.completedFuture(null));
+        TagService service = service(storage);
+
+        service.revokeTag(playerId, "old_tag");
+        verify(storage, never()).revokeTagAsync(any(), any());
+        read.complete(new TagStorage.StoredTagData(Set.of("baltop_elite", "old_tag"), "old_tag"));
+
+        assertEquals(Set.of("baltop_elite"), service.getPlayerData(playerId).getOwnedTags());
+        assertNull(service.getPlayerData(playerId).getSelectedTag());
+        verify(storage).revokeTagAsync(playerId, "old_tag");
+    }
+
+    @Test
+    void selectionCannotWriteAnUnloadedPlaceholderToStorage() throws Exception {
+        TagStorage storage = mock(TagStorage.class);
+        when(storage.loadAsync(playerId)).thenReturn(new CompletableFuture<>());
+        TagService service = service(storage);
+        Player player = mock(Player.class);
+        when(player.getUniqueId()).thenReturn(playerId);
+
+        assertFalse(service.setSelectedTag(player, null));
+        verify(storage, never()).setSelectedTagAsync(any(), any());
+        verify(storage).loadAsync(playerId);
+    }
+
     private TagService service(TagStorage storage) throws Exception {
         EnthusiaTagsPlugin plugin = mock(EnthusiaTagsPlugin.class);
         when(plugin.getLogger()).thenReturn(Logger.getAnonymousLogger());
