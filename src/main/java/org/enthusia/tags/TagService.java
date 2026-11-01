@@ -27,7 +27,8 @@ public final class TagService implements TagVisibilityService {
     private final PlaceholderApiHook placeholderApiHook = new PlaceholderApiHook();
     private final VanishHook vanishHook = new VanishHook();
     private final Map<UUID, PlayerTagData> cache = new ConcurrentHashMap<>();
-    private final Map<UUID, CompletableFuture<Void>> pendingLoads = new ConcurrentHashMap<>();
+    private final Map<UUID, CompletableFuture<PlayerTagData>> pendingLoads = new ConcurrentHashMap<>();
+    private final Object loadLock = new Object();
     private final Map<UUID, Set<Object>> suppressionOwners = new ConcurrentHashMap<>();
 
     private TagStorage storage;
@@ -68,57 +69,47 @@ public final class TagService implements TagVisibilityService {
             refreshCoordinator.close();
             refreshCoordinator = null;
         }
-        pendingLoads.clear();
+        synchronized (loadLock) {
+            pendingLoads.clear();
+            cache.clear();
+        }
         suppressionOwners.clear();
-        cache.clear();
         if (storage != null) {
             storage.close();
         }
     }
 
     public void preloadPlayer(UUID playerId) {
-        if (cache.containsKey(playerId)) {
-            return;
-        }
-        pendingLoads.computeIfAbsent(playerId, ignored ->
-            storage.loadAsync(playerId).handle((data, throwable) -> {
-                if (throwable != null) {
-                    plugin.getLogger().warning("Failed to load tags for " + playerId + ": " + throwable.getMessage());
-                } else {
-                    cache.put(playerId, toPlayerTagData(data));
-                }
-                return (Void) null;
-            }).whenComplete((ignoredResult, ignoredThrowable) -> {
-                pendingLoads.remove(playerId);
-                scheduleRefresh(playerId, TagRefreshReason.PLAYER_DATA_LOADED);
-            }));
+        loadDataAsync(playerId);
     }
 
     public void preloadPlayerBlocking(UUID playerId) {
-        if (cache.containsKey(playerId)) {
-            return;
+        CompletableFuture<PlayerTagData> attempt = new CompletableFuture<>();
+        CompletableFuture<PlayerTagData> previous;
+        synchronized (loadLock) {
+            if (cache.containsKey(playerId)) return;
+            previous = pendingLoads.put(playerId, attempt);
         }
+        if (previous != null) previous.cancel(false);
         try {
-            cache.put(playerId, toPlayerTagData(storage.loadNow(playerId)));
+            finishLoad(playerId, attempt, storage.loadNow(playerId), null);
         } catch (SQLException ex) {
-            plugin.getLogger().warning("Failed to preload tags for " + playerId + ": " + ex.getMessage());
+            finishLoad(playerId, attempt, null, ex);
         }
     }
 
     public void loadPlayer(Player player) {
         UUID playerId = player.getUniqueId();
-        preloadPlayer(playerId);
-        CompletableFuture<Void> pending = pendingLoads.get(playerId);
-        if (pending == null) {
-            requestNametagRefresh(player, TagRefreshReason.PLAYER_DATA_LOADED);
-            return;
-        }
-        pending.thenRun(() -> scheduleRefresh(playerId, TagRefreshReason.PLAYER_DATA_LOADED));
+        loadDataAsync(playerId).thenRun(() -> scheduleRefresh(playerId, TagRefreshReason.PLAYER_DATA_LOADED));
     }
 
     public void unloadPlayer(Player player) {
-        cache.remove(player.getUniqueId());
-        pendingLoads.remove(player.getUniqueId());
+        CompletableFuture<PlayerTagData> pending;
+        synchronized (loadLock) {
+            cache.remove(player.getUniqueId());
+            pending = pendingLoads.remove(player.getUniqueId());
+        }
+        if (pending != null) pending.cancel(false);
     }
 
     public void reloadAll() {
@@ -235,7 +226,15 @@ public final class TagService implements TagVisibilityService {
         if (registry.get(lowered) == null) {
             return CompletableFuture.completedFuture(false);
         }
-        PlayerTagData data = cache.computeIfAbsent(playerId, ignored -> new PlayerTagData());
+        return loadDataAsync(playerId).thenCompose(data -> persistGrant(playerId, lowered, data))
+            .exceptionally(throwable -> {
+                plugin.getLogger().warning("Failed to load tags before granting " + lowered + " to " + playerId
+                    + ": " + throwable.getMessage());
+                return false;
+            });
+    }
+
+    private CompletableFuture<Boolean> persistGrant(UUID playerId, String lowered, PlayerTagData data) {
         boolean alreadyOwned = data.getOwnedTags().contains(lowered);
         data.getOwnedTags().add(lowered);
         scheduleRefresh(playerId, TagRefreshReason.GRANTED);
@@ -277,7 +276,15 @@ public final class TagService implements TagVisibilityService {
 
     public void revokeTag(UUID playerId, String tagId) {
         String lowered = tagId.toLowerCase(Locale.ROOT);
-        PlayerTagData data = cache.computeIfAbsent(playerId, ignored -> new PlayerTagData());
+        loadDataAsync(playerId).thenAccept(data -> revokeLoadedTag(playerId, lowered, data))
+            .exceptionally(throwable -> {
+                plugin.getLogger().warning("Failed to load tags before revoking " + lowered + " from " + playerId
+                    + ": " + throwable.getMessage());
+                return null;
+            });
+    }
+
+    private void revokeLoadedTag(UUID playerId, String lowered, PlayerTagData data) {
         data.getOwnedTags().remove(lowered);
         if (lowered.equalsIgnoreCase(data.getSelectedTag())) {
             data.setSelectedTag(null);
@@ -307,7 +314,11 @@ public final class TagService implements TagVisibilityService {
 
     public boolean setSelectedTag(Player player, String tagId) {
         String normalized = tagId == null ? null : tagId.toLowerCase(Locale.ROOT);
-        PlayerTagData data = cache.computeIfAbsent(player.getUniqueId(), ignored -> new PlayerTagData());
+        PlayerTagData data = cache.get(player.getUniqueId());
+        if (data == null) {
+            preloadPlayer(player.getUniqueId());
+            return false;
+        }
         if (normalized != null && (registry.get(normalized) == null || !data.getOwnedTags().contains(normalized))) {
             return false;
         }
@@ -350,7 +361,11 @@ public final class TagService implements TagVisibilityService {
     }
 
     public PlayerTagData getPlayerData(UUID playerId) {
-        return cache.computeIfAbsent(playerId, ignored -> new PlayerTagData());
+        PlayerTagData data = cache.get(playerId);
+        if (data != null) return data;
+        preloadPlayer(playerId);
+        // Presentation placeholders must never become authoritative ownership snapshots.
+        return cache.getOrDefault(playerId, new PlayerTagData());
     }
 
     public TagPlaceholderOutput getPlaceholderOutput(UUID playerId, Player player) {
@@ -418,11 +433,45 @@ public final class TagService implements TagVisibilityService {
     }
 
     private CompletableFuture<PlayerTagData> loadDataAsync(UUID playerId) {
-        PlayerTagData cachedData = cache.get(playerId);
-        if (cachedData != null) {
-            return CompletableFuture.completedFuture(cachedData);
+        CompletableFuture<PlayerTagData> attempt;
+        synchronized (loadLock) {
+            PlayerTagData cachedData = cache.get(playerId);
+            if (cachedData != null) return CompletableFuture.completedFuture(cachedData);
+            CompletableFuture<PlayerTagData> pending = pendingLoads.get(playerId);
+            if (pending != null) return pending;
+            attempt = new CompletableFuture<>();
+            pendingLoads.put(playerId, attempt);
         }
-        return storage.loadAsync(playerId).thenApply(this::toPlayerTagData);
+        try {
+            storage.loadAsync(playerId).whenComplete((data, failure) -> finishLoad(playerId, attempt, data, failure));
+        } catch (RuntimeException failure) {
+            finishLoad(playerId, attempt, null, failure);
+        }
+        return attempt;
+    }
+
+    private void finishLoad(UUID playerId, CompletableFuture<PlayerTagData> attempt,
+                            TagStorage.StoredTagData stored, Throwable failure) {
+        PlayerTagData loaded = failure == null ? toPlayerTagData(stored) : null;
+        boolean current;
+        synchronized (loadLock) {
+            current = attempt.equals(pendingLoads.get(playerId));
+            if (current) {
+                if (loaded != null) cache.put(playerId, loaded);
+                pendingLoads.remove(playerId, attempt);
+            }
+        }
+        if (!current) {
+            attempt.cancel(false);
+            return;
+        }
+        if (failure != null) {
+            plugin.getLogger().warning("Failed to load tags for " + playerId + ": " + failure.getMessage());
+            attempt.completeExceptionally(failure);
+        } else {
+            attempt.complete(loaded);
+            scheduleRefresh(playerId, TagRefreshReason.PLAYER_DATA_LOADED);
+        }
     }
 
     private PlayerTagData toPlayerTagData(TagStorage.StoredTagData data) {
