@@ -147,3 +147,12 @@ The user explicitly authorized the remaining non-guild WarzoneDuels advancement 
 
 - REQ-PRIVATE-REWARD-001: WHEN a reward is explicitly marked hidden until earned THE SYSTEM SHALL omit its name, description, icon and counts from unearned or unknown viewers' reward screens, focused openings, tag previews and public advancement projection; WHEN durable earned eligibility is verified THE SYSTEM SHALL permit the normal one-time claim even after the originating event ends.
 - REQ-PRIVATE-REWARD-002: IF reward evidence or storage is unavailable THE SYSTEM SHALL fail closed for private visibility without altering existing public reward, tag, claim, sibling, daily or gold policies.
+
+## Guild prestige advancements
+
+LumaGuilds credits counters (REQ-152 to REQ-154 in LumaGuilds); Tags owns the definitions. Operator snippet and decisions: `docs/guild-prestige-advancements.md`.
+
+- REQ-1150: THE SYSTEM SHALL bundle a `prestige` reward category with six latched achievements, one per guild prestige tier I to VI, each completed by the custom counter `guild_prestige_<tier>` reaching 1, so that a repeated credit cannot complete or pay an achievement twice.
+- REQ-1151: THE SYSTEM SHALL bundle six server-first achievements in the same category, completed by `guild_prestige_first_<tier>` reaching 1 and marked hidden until earned, so they stay out of the public advancement tab and completion broadcasts until a player has earned one.
+- REQ-1152: THE SYSTEM SHALL keep guild prestige rewards cosmetic: their actions SHALL be tags only (no MONEY, ITEM or COMMAND actions), and every referenced tag SHALL be defined in the bundled tag catalogue.
+- REQ-1153: THE SYSTEM SHALL bundle native advancement frames for the prestige achievements: TASK for tiers I and II, GOAL for tiers III to V, and CHALLENGE for tier VI.
