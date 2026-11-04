@@ -35,6 +35,8 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
     private final JavaPlugin plugin;
     private final RewardService rewards;
     private final ProjectionService projection;
+    private final CelebrationGateway celebrations;
+    private Set<String> quietKeys = Set.of();
     private final Map<UUID, Set<String>> pendingCelebrations = new HashMap<>();
     private final ArrayDeque<UUID> queue = new ArrayDeque<>();
     private Map<String, RewardDefinition> definitions;
@@ -58,6 +60,7 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         this.rewards = rewards;
         projection = Bukkit.getServicesManager().load(ProjectionService.class);
         if (projection == null) throw new IllegalStateException("EnthusiaAdvancements projection service unavailable; install the pilot companion build");
+        celebrations = new CelebrationGateway(projection, plugin, plugin.getLogger());
         ownsProviders = providers == null;
         this.providers = ownsProviders ? new ProviderRewardTracker(plugin, rewards) : providers;
         duels = this.providers.duels();
@@ -135,6 +138,8 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         nodes = nextPresentation.nodes();
         projection.registerTree(plugin, "enthusia", icon, AdvancementNodeOrder.parentFirst(nodes));
         presentation = nextPresentation;
+        quietKeys = next.values().stream().filter(reward -> !reward.isAnnounceCompletion())
+            .map(reward -> key(reward.getId())).collect(java.util.stream.Collectors.toUnmodifiableSet());
         registered = true;
         definitions = next;
         plugin.getLogger().info("Enthusia native track: " + nodes.size() + " challenges; no reward execution in renderer.");
@@ -225,7 +230,7 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
         if (pending == null) return;
         pending.removeIf(key -> !presentation.ownsCelebration(key));
         PendingCelebrations.deliver(
-            pending, progress, key -> projection.celebrate(plugin, "enthusia", player, key));
+            pending, progress, key -> celebrations.celebrate(player, "enthusia", key, !quietKeys.contains(key)));
         if (pending.isEmpty()) pendingCelebrations.remove(player.getUniqueId());
     }
     private void warnAndRetry(Throwable error) {
