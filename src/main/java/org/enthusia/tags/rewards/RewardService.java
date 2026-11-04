@@ -2946,7 +2946,8 @@ public final class RewardService {
             }
             loadedRewards.put(id.toLowerCase(Locale.ROOT),
                 new RewardDefinition(id, name, description, icon, criteria, actions, category, completionMode)
-                    .withHiddenUntilEarned(privateRewardFlag(section, id)));
+                    .withHiddenUntilEarned(privateRewardFlag(section, id))
+                    .withAnnounceCompletion(announceCompletionFlag(section, id)));
         }
         rewards = java.util.Collections.unmodifiableMap(loadedRewards);
     }
@@ -2959,6 +2960,12 @@ public final class RewardService {
             && criterion.getSourceType() == RewardSourceType.CUSTOM_COUNTER
             && "last_watch_halloween_2026".equals(criterion.getKey()) && criterion.getAmount() == 1
             && action.isValid() && action.getType() == RewardActionType.TAG && "remembered".equals(action.getValue());
+    }
+
+    static boolean announceCompletionFlag(ConfigurationSection section, String id) {
+        String path = id + ".announce-completion";
+        // Only an explicit boolean false silences; a typo keeps the normal announcement.
+        return !(section.isBoolean(path) && !section.getBoolean(path));
     }
 
     static boolean privateRewardFlag(ConfigurationSection section, String id) {

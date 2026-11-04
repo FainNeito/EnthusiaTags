@@ -42,6 +42,9 @@ class PrestigeAdvancementCatalogTest {
             assertNotNull(reward, "rewards.prestige_" + tier + " missing");
             assertEquals("prestige", reward.getString("category"));
             assertFalse(reward.getBoolean("hidden-until-earned", false), "tier achievements are public");
+            // REQ-1154: one toast per member, no chat line or Discord post per member.
+            assertTrue(reward.isBoolean("announce-completion"), "prestige_" + tier + " needs announce-completion");
+            assertFalse(reward.getBoolean("announce-completion"), "prestige_" + tier + " must be toast-only");
             assertSingleCounter(reward, "guild_prestige_" + tier);
         }
     }

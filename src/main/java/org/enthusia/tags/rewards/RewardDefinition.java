@@ -15,6 +15,7 @@ public final class RewardDefinition {
     private final String category;
     private final RewardCompletionMode completionMode;
     private final boolean hiddenUntilEarned;
+    private final boolean announceCompletion;
 
     public RewardDefinition(String id,
                             String name,
@@ -38,9 +39,10 @@ public final class RewardDefinition {
         this.category = category == null ? "misc" : category;
         this.completionMode = completionMode == null ? RewardCompletionMode.LATCHED : completionMode;
         this.hiddenUntilEarned = false;
+        this.announceCompletion = true;
     }
 
-    private RewardDefinition(RewardDefinition source, boolean hiddenUntilEarned) {
+    private RewardDefinition(RewardDefinition source, boolean hiddenUntilEarned, boolean announceCompletion) {
         this.id = source.id;
         this.name = source.name;
         this.description = source.description;
@@ -50,10 +52,11 @@ public final class RewardDefinition {
         this.category = source.category;
         this.completionMode = source.completionMode;
         this.hiddenUntilEarned = hiddenUntilEarned;
+        this.announceCompletion = announceCompletion;
     }
 
     public RewardDefinition withHiddenUntilEarned(boolean hidden) {
-        return hidden == hiddenUntilEarned ? this : new RewardDefinition(this, hidden);
+        return hidden == hiddenUntilEarned ? this : new RewardDefinition(this, hidden, announceCompletion);
     }
 
     public String getId() {
@@ -85,6 +88,13 @@ public final class RewardDefinition {
     }
 
     public boolean isHiddenUntilEarned() { return hiddenUntilEarned; }
+
+    /** False makes the completion toast-only: no chat line or Discord post (REQ-1154). */
+    public boolean isAnnounceCompletion() { return announceCompletion; }
+
+    public RewardDefinition withAnnounceCompletion(boolean announce) {
+        return announce == announceCompletion ? this : new RewardDefinition(this, hiddenUntilEarned, announce);
+    }
 
     public RewardCompletionMode getCompletionMode() {
         return completionMode;
