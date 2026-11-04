@@ -27,7 +27,14 @@ advancements:
   # Same named model as the physical DiaryKeeper diary. Blank opts into legacy PAPER/CMD.
   diary-icon-item-model: nexo:diary_book
   # Optional per-existing-reward frame overrides: TASK, GOAL or CHALLENGE.
-  frames: {}
+  frames:
+    # Guild prestige tiers (REQ-1153).
+    prestige_1: TASK
+    prestige_2: TASK
+    prestige_3: GOAL
+    prestige_4: GOAL
+    prestige_5: GOAL
+    prestige_6: CHALLENGE
 
 # MiniMessage format exposed to nametag consumers. `{tag}` is replaced with configured tag text.
 line-format: "<gray>[{tag}<gray>]"
@@ -331,3 +338,20 @@ tags:
     display-name: "<#ffb700><bold>High Roller"
     tag-text: "<#ffb700><bold>High Roller"
     icon: "GOLD_BLOCK"
+  # Guild prestige tags (REQ-1152), granted by the prestige achievements in rewards.yml.
+  prestiged:
+    display-name: "<#e09650><bold>Prestiged"
+    tag-text: "<#e09650><bold>Prestiged"
+    icon: "COPPER_INGOT"
+  winged:
+    display-name: "<#c4d0dc><bold>Winged"
+    tag-text: "<#c4d0dc><bold>Winged"
+    icon: "IRON_INGOT"
+  crowned:
+    display-name: "<gradient:#fcc404:#c84cec><bold>Crowned</bold></gradient>"
+    tag-text: "<gradient:#fcc404:#c84cec><bold>Crowned</bold></gradient>"
+    icon: "NETHER_STAR"
+  first_crowned:
+    display-name: "<gradient:#fff070:#9030c0><bold>First Crowned</bold></gradient>"
+    tag-text: "<gradient:#fff070:#9030c0><bold>First Crowned</bold></gradient>"
+    icon: "DRAGON_EGG"

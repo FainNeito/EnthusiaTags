@@ -63,6 +63,9 @@ categories:
   events:
     name: '&5Events'
     icon: AMETHYST_SHARD
+  prestige:
+    name: '&6Guild Prestige'
+    icon: SHIELD
 underground-max-y: 56
 rewards:
   first_hour:
@@ -1735,3 +1738,161 @@ rewards:
       remembered:
         type: TAG
         id: remembered
+
+  # Guild prestige (REQ-1150 to REQ-1152). LumaGuilds credits these counters for
+  # members of a prestiging guild; see docs/guild-prestige-advancements.md.
+  prestige_1:
+    name: '&6Prestige I'
+    description:
+      - '&7Be in your guild when it reaches Prestige I.'
+    icon: COPPER_INGOT
+    category: prestige
+    criteria:
+      prestige:
+        type: CUSTOM_COUNTER
+        key: guild_prestige_1
+        amount: 1
+    rewards:
+      tag:
+        type: TAG
+        id: prestiged
+  prestige_2:
+    name: '&6Prestige II'
+    description:
+      - '&7Be in your guild when it reaches Prestige II.'
+    icon: COPPER_BLOCK
+    category: prestige
+    criteria:
+      prestige:
+        type: CUSTOM_COUNTER
+        key: guild_prestige_2
+        amount: 1
+  prestige_3:
+    name: '&6Prestige III'
+    description:
+      - '&7Be in your guild when it reaches Prestige III.'
+    icon: IRON_INGOT
+    category: prestige
+    criteria:
+      prestige:
+        type: CUSTOM_COUNTER
+        key: guild_prestige_3
+        amount: 1
+    rewards:
+      tag:
+        type: TAG
+        id: winged
+  prestige_4:
+    name: '&6Prestige IV'
+    description:
+      - '&7Be in your guild when it reaches Prestige IV.'
+    icon: IRON_BLOCK
+    category: prestige
+    criteria:
+      prestige:
+        type: CUSTOM_COUNTER
+        key: guild_prestige_4
+        amount: 1
+  prestige_5:
+    name: '&6Prestige V'
+    description:
+      - '&7Be in your guild when it reaches Prestige V.'
+    icon: GOLD_BLOCK
+    category: prestige
+    criteria:
+      prestige:
+        type: CUSTOM_COUNTER
+        key: guild_prestige_5
+        amount: 1
+  prestige_6:
+    name: '&6Crowned'
+    description:
+      - '&7Be in your guild when it reaches Prestige VI,'
+      - '&7the final tier.'
+    icon: NETHER_STAR
+    category: prestige
+    criteria:
+      prestige:
+        type: CUSTOM_COUNTER
+        key: guild_prestige_6
+        amount: 1
+    rewards:
+      tag:
+        type: TAG
+        id: crowned
+  prestige_first_1:
+    name: '&dFirst to Prestige I'
+    description:
+      - '&7Be in the first guild on the server to reach Prestige I.'
+    icon: BEACON
+    category: prestige
+    hidden-until-earned: true
+    criteria:
+      first:
+        type: CUSTOM_COUNTER
+        key: guild_prestige_first_1
+        amount: 1
+  prestige_first_2:
+    name: '&dFirst to Prestige II'
+    description:
+      - '&7Be in the first guild on the server to reach Prestige II.'
+    icon: BEACON
+    category: prestige
+    hidden-until-earned: true
+    criteria:
+      first:
+        type: CUSTOM_COUNTER
+        key: guild_prestige_first_2
+        amount: 1
+  prestige_first_3:
+    name: '&dFirst to Prestige III'
+    description:
+      - '&7Be in the first guild on the server to reach Prestige III.'
+    icon: BEACON
+    category: prestige
+    hidden-until-earned: true
+    criteria:
+      first:
+        type: CUSTOM_COUNTER
+        key: guild_prestige_first_3
+        amount: 1
+  prestige_first_4:
+    name: '&dFirst to Prestige IV'
+    description:
+      - '&7Be in the first guild on the server to reach Prestige IV.'
+    icon: BEACON
+    category: prestige
+    hidden-until-earned: true
+    criteria:
+      first:
+        type: CUSTOM_COUNTER
+        key: guild_prestige_first_4
+        amount: 1
+  prestige_first_5:
+    name: '&dFirst to Prestige V'
+    description:
+      - '&7Be in the first guild on the server to reach Prestige V.'
+    icon: BEACON
+    category: prestige
+    hidden-until-earned: true
+    criteria:
+      first:
+        type: CUSTOM_COUNTER
+        key: guild_prestige_first_5
+        amount: 1
+  prestige_first_6:
+    name: '&dFirst Crowned'
+    description:
+      - '&7Be in the first guild on the server to reach Prestige VI.'
+    icon: DRAGON_EGG
+    category: prestige
+    hidden-until-earned: true
+    criteria:
+      first:
+        type: CUSTOM_COUNTER
+        key: guild_prestige_first_6
+        amount: 1
+    rewards:
+      tag:
+        type: TAG
+        id: first_crowned

@@ -46,7 +46,7 @@ class RewardConfigV5MigrationTest {
 
         ConfigurationSection rewards = existing.getConfigurationSection("rewards");
         assertNotNull(rewards);
-        assertEquals(103, rewards.getKeys(false).size());
+        assertEquals(115, rewards.getKeys(false).size()); // 114 bundled (incl. 12 guild prestige) + 1 custom
         assertTrue(existing.contains("rewards.ultimate_survivor"));
     }
 
