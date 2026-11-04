@@ -1765,6 +1765,7 @@ rewards:
       - '&7Be in your guild when it reaches Prestige I.'
     icon: COPPER_INGOT
     category: prestige
+    announce-completion: false
     criteria:
       prestige:
         type: CUSTOM_COUNTER
@@ -1780,6 +1781,7 @@ rewards:
       - '&7Be in your guild when it reaches Prestige II.'
     icon: COPPER_BLOCK
     category: prestige
+    announce-completion: false
     criteria:
       prestige:
         type: CUSTOM_COUNTER
@@ -1791,6 +1793,7 @@ rewards:
       - '&7Be in your guild when it reaches Prestige III.'
     icon: IRON_INGOT
     category: prestige
+    announce-completion: false
     criteria:
       prestige:
         type: CUSTOM_COUNTER
@@ -1806,6 +1809,7 @@ rewards:
       - '&7Be in your guild when it reaches Prestige IV.'
     icon: IRON_BLOCK
     category: prestige
+    announce-completion: false
     criteria:
       prestige:
         type: CUSTOM_COUNTER
@@ -1817,6 +1821,7 @@ rewards:
       - '&7Be in your guild when it reaches Prestige V.'
     icon: GOLD_BLOCK
     category: prestige
+    announce-completion: false
     criteria:
       prestige:
         type: CUSTOM_COUNTER
@@ -1829,6 +1834,7 @@ rewards:
       - '&7the final tier.'
     icon: NETHER_STAR
     category: prestige
+    announce-completion: false
     criteria:
       prestige:
         type: CUSTOM_COUNTER

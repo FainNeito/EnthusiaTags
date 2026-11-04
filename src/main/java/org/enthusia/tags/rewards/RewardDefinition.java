@@ -16,6 +16,7 @@ public final class RewardDefinition {
     private final RewardCompletionMode completionMode;
     private final boolean hiddenUntilEarned;
     private final String iconModel;
+    private final boolean announceCompletion;
 
     public RewardDefinition(String id,
                             String name,
@@ -40,9 +41,11 @@ public final class RewardDefinition {
         this.completionMode = completionMode == null ? RewardCompletionMode.LATCHED : completionMode;
         this.hiddenUntilEarned = false;
         this.iconModel = null;
+        this.announceCompletion = true;
     }
 
-    private RewardDefinition(RewardDefinition source, boolean hiddenUntilEarned, String iconModel) {
+    private RewardDefinition(RewardDefinition source, boolean hiddenUntilEarned, String iconModel,
+                             boolean announceCompletion) {
         this.id = source.id;
         this.name = source.name;
         this.description = source.description;
@@ -53,16 +56,17 @@ public final class RewardDefinition {
         this.completionMode = source.completionMode;
         this.hiddenUntilEarned = hiddenUntilEarned;
         this.iconModel = iconModel;
+        this.announceCompletion = announceCompletion;
     }
 
     public RewardDefinition withHiddenUntilEarned(boolean hidden) {
-        return hidden == hiddenUntilEarned ? this : new RewardDefinition(this, hidden, iconModel);
+        return hidden == hiddenUntilEarned ? this : new RewardDefinition(this, hidden, iconModel, announceCompletion);
     }
 
     /** Returns a copy whose menu icon uses this item model, such as {@code enthusia:silent_snow_disc}. Blank clears it. */
     public RewardDefinition withIconModel(String model) {
         String cleaned = model == null || model.isBlank() ? null : model.trim();
-        return Objects.equals(cleaned, iconModel) ? this : new RewardDefinition(this, hiddenUntilEarned, cleaned);
+        return Objects.equals(cleaned, iconModel) ? this : new RewardDefinition(this, hiddenUntilEarned, cleaned, announceCompletion);
     }
 
     /** The item model drawn on the menu icon, or {@code null} to use the icon material's own look. */
@@ -99,6 +103,13 @@ public final class RewardDefinition {
     }
 
     public boolean isHiddenUntilEarned() { return hiddenUntilEarned; }
+
+    /** False makes the completion toast-only: no chat line or Discord post (REQ-1154). */
+    public boolean isAnnounceCompletion() { return announceCompletion; }
+
+    public RewardDefinition withAnnounceCompletion(boolean announce) {
+        return announce == announceCompletion ? this : new RewardDefinition(this, hiddenUntilEarned, iconModel, announce);
+    }
 
     public RewardCompletionMode getCompletionMode() {
         return completionMode;
