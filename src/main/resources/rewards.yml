@@ -1722,6 +1722,23 @@ rewards:
         type: COMMAND
         id: 'give %player% minecraft:music_disc_11[minecraft:item_model="enthusia:watcher_disc",minecraft:jukebox_playable="enthusia:forgotten_melody",minecraft:item_name={"text":"Music Disc","color":"#F5F5F5"},minecraft:rarity="rare"] 1'
 
+  silent_snow_disc:
+    name: "&dSilent Snow"
+    description:
+      - "&7Find all 25 peppermints in the Christmas hunt."
+      - "&7Reward: the Silent Snow music disc by The Giver."
+    icon: MUSIC_DISC_11
+    category: christmas
+    criteria:
+      c1:
+        type: CUSTOM_COUNTER
+        key: silent_snow_disc
+        amount: 1
+    rewards:
+      r1:
+        type: COMMAND
+        id: 'give %player% minecraft:music_disc_11[minecraft:item_model="enthusia:silent_snow_disc",minecraft:jukebox_playable="enthusia:silent_snow",minecraft:item_name={"text":"Music Disc","color":"#F5F5F5"},minecraft:rarity="rare"] 1'
+
   last_watch_remembered_2026:
     name: "&7Remembered"
     description:
