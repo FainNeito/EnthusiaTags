@@ -49,6 +49,15 @@ final class RewardMenuItems {
         item.setItemMeta(meta);
         return item;
     }
+    static ItemStack withModel(ItemStack item, String model) {
+        if (model == null) return item;
+        var key = org.bukkit.NamespacedKey.fromString(model);
+        if (key == null) return item;
+        var meta = item.getItemMeta();
+        meta.setItemModel(key);
+        item.setItemMeta(meta);
+        return item;
+    }
     static ItemStack item(Material material, String name, String... lines) { return item(material, name, List.of(lines), false); }
     ItemStack category(RewardCategory category, RewardMenuModel.Summary summary, boolean selected) {
         List<String> lore = new ArrayList<>();
@@ -103,7 +112,8 @@ final class RewardMenuItems {
         addStatus(lore, row.displayState(), claiming);
         addNotice(lore, notice, claiming);
         if (focused) lore.add("&7Opened from your selected goal");
-        return item(definition.getIcon(), (row.claimed() ? "&7" : "&f") + RewardMenuText.plain(definition.getName()), lore, row.ready() && !claiming);
+        return withModel(item(definition.getIcon(), (row.claimed() ? "&7" : "&f") + RewardMenuText.plain(definition.getName()), lore, row.ready() && !claiming),
+            definition.getIconModel());
     }
     private void addRewards(List<String> lore, RewardDefinition definition) {
         if (definition.getActions().isEmpty()) lore.add("&7Reward: &fRecognition only");

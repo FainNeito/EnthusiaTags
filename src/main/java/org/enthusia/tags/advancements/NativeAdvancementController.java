@@ -98,7 +98,7 @@ public final class NativeAdvancementController implements Listener, AutoCloseabl
                     reward.getId(), fallbackParentId, index + 1, row * 4 + 1);
                 String parent = placement.parentId() == null ? null : key(placement.parentId());
                 nodes.add(new ProjectionService.Node(key(reward.getId()), parent, color(reward.getName()),
-                    description(reward), reward.getIcon(), frame, placement.x(), placement.y()));
+                    description(reward), reward.getIcon(), null, reward.getIconModel(), frame, placement.x(), placement.y()));
                 fallbackParentId = reward.getId();
             }
             row++;

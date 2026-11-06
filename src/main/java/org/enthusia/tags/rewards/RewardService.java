@@ -2946,9 +2946,19 @@ public final class RewardService {
             }
             loadedRewards.put(id.toLowerCase(Locale.ROOT),
                 new RewardDefinition(id, name, description, icon, criteria, actions, category, completionMode)
-                    .withHiddenUntilEarned(privateRewardFlag(section, id)));
+                    .withHiddenUntilEarned(privateRewardFlag(section, id))
+                    .withIconModel(iconModel(section.getString(id + ".icon-model"), id)));
         }
         rewards = java.util.Collections.unmodifiableMap(loadedRewards);
+    }
+
+    private String iconModel(String raw, String id) {
+        if (raw == null || raw.isBlank()) return null;
+        if (org.bukkit.NamespacedKey.fromString(raw.trim().toLowerCase(Locale.ROOT)) == null) {
+            plugin.getLogger().warning("Invalid icon-model for reward " + id + "; using the icon material");
+            return null;
+        }
+        return raw.trim().toLowerCase(Locale.ROOT);
     }
 
     static boolean validRememberedReward(List<RewardCriterion> criteria, List<RewardAction> actions) {

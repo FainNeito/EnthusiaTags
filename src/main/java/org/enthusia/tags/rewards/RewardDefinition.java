@@ -15,6 +15,7 @@ public final class RewardDefinition {
     private final String category;
     private final RewardCompletionMode completionMode;
     private final boolean hiddenUntilEarned;
+    private final String iconModel;
 
     public RewardDefinition(String id,
                             String name,
@@ -38,9 +39,10 @@ public final class RewardDefinition {
         this.category = category == null ? "misc" : category;
         this.completionMode = completionMode == null ? RewardCompletionMode.LATCHED : completionMode;
         this.hiddenUntilEarned = false;
+        this.iconModel = null;
     }
 
-    private RewardDefinition(RewardDefinition source, boolean hiddenUntilEarned) {
+    private RewardDefinition(RewardDefinition source, boolean hiddenUntilEarned, String iconModel) {
         this.id = source.id;
         this.name = source.name;
         this.description = source.description;
@@ -50,10 +52,22 @@ public final class RewardDefinition {
         this.category = source.category;
         this.completionMode = source.completionMode;
         this.hiddenUntilEarned = hiddenUntilEarned;
+        this.iconModel = iconModel;
     }
 
     public RewardDefinition withHiddenUntilEarned(boolean hidden) {
-        return hidden == hiddenUntilEarned ? this : new RewardDefinition(this, hidden);
+        return hidden == hiddenUntilEarned ? this : new RewardDefinition(this, hidden, iconModel);
+    }
+
+    /** Returns a copy whose menu icon uses this item model, such as {@code enthusia:silent_snow_disc}. Blank clears it. */
+    public RewardDefinition withIconModel(String model) {
+        String cleaned = model == null || model.isBlank() ? null : model.trim();
+        return Objects.equals(cleaned, iconModel) ? this : new RewardDefinition(this, hiddenUntilEarned, cleaned);
+    }
+
+    /** The item model drawn on the menu icon, or {@code null} to use the icon material's own look. */
+    public String getIconModel() {
+        return iconModel;
     }
 
     public String getId() {
