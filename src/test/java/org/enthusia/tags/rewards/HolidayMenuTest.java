@@ -79,4 +79,47 @@ class HolidayMenuTest {
             verify(service,never()).claimAsync(any(),any());
         }
     }
+    @Test void holidayPagesListTheirRewardsAfterTheirTags() {
+        var categories = new LinkedHashMap<String, RewardCategory>();
+        categories.put("holidays",new RewardCategory("holidays","Holidays",Material.FIREWORK_ROCKET));
+        categories.put("christmas",new RewardCategory("christmas","Christmas",Material.SPRUCE_SAPLING,"holidays",List.of("present_seeker")));
+        var plugin=mock(EnthusiaTagsPlugin.class);
+        when(plugin.getName()).thenReturn("EnthusiaTags"); when(plugin.namespace()).thenReturn("enthusiatags");
+        when(plugin.getPerformanceMonitor()).thenReturn(new PerformanceMonitor(null));
+        var tags=mock(TagService.class); when(tags.getPlugin()).thenReturn(plugin);
+        var registry=new TagRegistry(); registry.register(new TagDefinition("present_seeker","Present Seeker","Present Seeker",Material.CHEST,List.of("Find presents")));
+        when(tags.getRegistry()).thenReturn(registry); when(tags.getPlayerData(any())).thenReturn(new PlayerTagData());
+        var service=mock(RewardService.class); var config=mock(RewardsConfig.class);
+        when(service.getConfig()).thenReturn(config); when(config.categories()).thenReturn(categories);
+        when(service.getMessage(anyString())).thenReturn("Event reward");
+        var criterion=new RewardCriterion(RewardCriterionType.CUSTOM_COUNTER,1,null,"silent_snow_disc",0,"Peppermints");
+        var disc=new RewardDefinition("silent_snow_disc","Silent Snow",List.of(),Material.MUSIC_DISC_11,List.of(criterion),List.of(),"christmas")
+            .withIconModel("enthusia:silent_snow_disc");
+        var other=new RewardDefinition("payday","Payday",List.of(),Material.SUNFLOWER,List.of(criterion),List.of(),"economy");
+        var rewards=new LinkedHashMap<String,RewardDefinition>(); rewards.put(disc.getId(),disc); rewards.put(other.getId(),other);
+        when(service.getRewards()).thenReturn(rewards);
+        when(service.evaluate(any(),any(),any())).thenReturn(new RewardEvaluation(RewardStatus.CLAIMED,Map.of(),false,false,"Claimed"));
+        when(service.getVerifiedMenuProgress(any(),any(),any())).thenReturn(java.util.OptionalLong.of(1));
+        var player=mock(Player.class); when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+        var slots=new HashMap<Integer,ItemStack>(); var held=new RewardMenuHolder[1];
+        try(var bukkit=mockStatic(Bukkit.class); var items=mockConstruction(ItemStack.class,(item,context)->{
+            var meta=mock(ItemMeta.class); when(meta.getPersistentDataContainer()).thenReturn(mock(PersistentDataContainer.class)); when(item.getItemMeta()).thenReturn(meta);
+            if(!context.arguments().isEmpty() && context.arguments().get(0) instanceof Material material) when(item.getType()).thenReturn(material);
+        })) {
+            bukkit.when(()->Bukkit.createInventory(any(InventoryHolder.class),anyInt(),any(net.kyori.adventure.text.Component.class))).thenAnswer(call->{
+                slots.clear(); held[0]=call.getArgument(0); var inventory=mock(Inventory.class);
+                int size=call.getArgument(1); when(inventory.getSize()).thenReturn(size);
+                doAnswer(set->{slots.put(set.getArgument(0),set.getArgument(1));return null;}).when(inventory).setItem(anyInt(),any());
+                doAnswer(clear->{slots.clear();return null;}).when(inventory).clear(); return inventory;
+            });
+            var menu=new RewardMenu(service,tags);
+            menu.createCategory(player,"christmas");
+            assertEquals(Material.CHEST,slots.get(19).getType()); assertNull(held[0].action(19));
+            assertEquals(new RewardMenuAction(RewardMenuAction.Type.CLAIM,"silent_snow_disc"),held[0].action(20));
+            assertEquals(Material.MUSIC_DISC_11,slots.get(20).getType());
+            verify(slots.get(20).getItemMeta()).setItemModel(NamespacedKey.fromString("enthusia:silent_snow_disc"));
+            assertNull(held[0].action(21));
+            verify(service,never()).claimAsync(any(),any());
+        }
+    }
 }

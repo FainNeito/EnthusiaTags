@@ -230,6 +230,15 @@ public final class RewardMenu implements AutoCloseable {
             entries.add(() -> holidayTag(player, tag));
             actions.add(null);
         }
+        // Rewards filed under this holiday (such as a music disc) are listed after its tags,
+        // so they can be seen and claimed here instead of only from Ready to Claim.
+        // Hub pages without tags (such as Advancements) keep showing only their sub-categories.
+        for (RewardMenuModel.Entry row : current.tags().isEmpty() ? List.<RewardMenuModel.Entry>of() : snapshot.entries()) {
+            if (!row.reward().getCategory().equalsIgnoreCase(current.id())) continue;
+            String id = row.id();
+            entries.add(() -> rewardItem(player, holder, row, id));
+            actions.add(new RewardMenuAction(CLAIM, id));
+        }
         var page = RewardMenuModel.page(entries, holder.getPage(), RewardMenuModel.REWARD_SLOTS.size());
         holder.page(List.of(), page.count(), page.index());
         browserFooter(holder);
@@ -291,10 +300,12 @@ public final class RewardMenu implements AutoCloseable {
         }
     }
     private void renderReward(Player player, RewardMenuHolder holder, RewardMenuModel.Entry row, String id, int slot) {
-        RewardMenuState state = holder.state();
-            ItemStack item=items.reward(row,claiming(player.getUniqueId(),id),id.equalsIgnoreCase(state.focusedReward()),holder.notice(id));
-            var meta=item.getItemMeta(); meta.getPersistentDataContainer().set(rewardKey,PersistentDataType.STRING,id); item.setItemMeta(meta);
-            put(holder,slot,item,new RewardMenuAction(CLAIM,id));
+        put(holder,slot,rewardItem(player,holder,row,id),new RewardMenuAction(CLAIM,id));
+    }
+    private ItemStack rewardItem(Player player, RewardMenuHolder holder, RewardMenuModel.Entry row, String id) {
+        ItemStack item=items.reward(row,claiming(player.getUniqueId(),id),id.equalsIgnoreCase(holder.state().focusedReward()),holder.notice(id));
+        var meta=item.getItemMeta(); meta.getPersistentDataContainer().set(rewardKey,PersistentDataType.STRING,id); item.setItemMeta(meta);
+        return item;
     }
     private void browserFooter(RewardMenuHolder holder) {
         RewardMenuState state = holder.state();
