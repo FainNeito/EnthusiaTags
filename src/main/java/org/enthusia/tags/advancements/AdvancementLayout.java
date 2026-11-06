@@ -142,7 +142,8 @@ final class AdvancementLayout {
             "all_rounder", "server_legend", "ultimate_survivor");
         put(map, "watcher_melody", "ultimate_survivor", 5, 25);
         put(map, "last_watch_remembered_2026", "watcher_melody", 6, 25);
-        put(map, "silent_snow_disc", "last_watch_remembered_2026", 7, 25);
+        // The hidden reward above never enters the public graph, so Silent Snow hangs off the melody.
+        put(map, "silent_snow_disc", "watcher_melody", 7, 25);
 
         // Guild prestige (T-1150): tiers I-VI in one row. The eighth category moves
         // provider rows to y = 33, so y = 29 is free. Server firsts are hidden until
