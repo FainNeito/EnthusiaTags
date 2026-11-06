@@ -1728,6 +1728,7 @@ rewards:
       - "&7Find all 25 peppermints in the Christmas hunt."
       - "&7Reward: the Silent Snow music disc by The Giver."
     icon: MUSIC_DISC_11
+    icon-model: "enthusia:silent_snow_disc"
     category: christmas
     criteria:
       c1:
