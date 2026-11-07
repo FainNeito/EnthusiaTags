@@ -62,4 +62,40 @@ class HolidayTagCatalogTest {
         verify(plugin).saveConfig();
         verify(plugin, never()).reloadConfig();
     }
+
+    @Test
+    void christmasTagsNamePeppermintsAndUpgradeUneditedOldDefaults() {
+        EnthusiaTagsPlugin plugin = mock(EnthusiaTagsPlugin.class);
+        YamlConfiguration config = new YamlConfiguration();
+        // A server installed before the rename still has the untouched present wording.
+        config.set("tags.present_seeker.display-name", "<gradient:#c0392b:#27ae60>Present Seeker</gradient>");
+        config.set("tags.present_seeker.tag-text", "<gradient:#c0392b:#27ae60>Present Seeker</gradient>");
+        config.set("tags.present_seeker.description", List.of("&7Found 12 presents in a Christmas hunt"));
+        config.set("tags.present_seeker.icon", "CHEST_MINECART");
+        // An administrator's own wording is kept.
+        config.set("tags.home_for_the_holidays.description", List.of("&7Our own words"));
+        when(plugin.getConfig()).thenReturn(config);
+        when(plugin.getLogger()).thenReturn(Logger.getLogger("HolidayTagCatalogTest"));
+
+        assertTrue(HolidayTagCatalog.ensureInstalled(plugin));
+
+        assertEquals("<gradient:#c0392b:#27ae60>Mint Condition</gradient>", config.getString("tags.present_seeker.display-name"));
+        assertEquals("<gradient:#c0392b:#27ae60>Mint Condition</gradient>", config.getString("tags.present_seeker.tag-text"));
+        assertEquals(List.of("&7Found 12 peppermints in a Christmas hunt"), config.getStringList("tags.present_seeker.description"));
+        assertEquals(List.of("&7Our own words"), config.getStringList("tags.home_for_the_holidays.description"));
+        assertFalse(HolidayTagCatalog.ensureInstalled(plugin), "the upgrade runs once");
+    }
+
+    @Test
+    void anEditedPresentSeekerNameIsNotRenamed() {
+        EnthusiaTagsPlugin plugin = mock(EnthusiaTagsPlugin.class);
+        YamlConfiguration config = new YamlConfiguration();
+        config.set("tags.present_seeker.display-name", "<green>Gift Finder");
+        when(plugin.getConfig()).thenReturn(config);
+        when(plugin.getLogger()).thenReturn(Logger.getLogger("HolidayTagCatalogTest"));
+
+        HolidayTagCatalog.ensureInstalled(plugin);
+
+        assertEquals("<green>Gift Finder", config.getString("tags.present_seeker.display-name"));
+    }
 }
