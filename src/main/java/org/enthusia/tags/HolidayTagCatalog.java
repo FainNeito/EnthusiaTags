@@ -3,6 +3,7 @@ package org.enthusia.tags;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Seasonal event and staff-recognition tags granted with {@code tag give <player> <id>} (REQ-910).
@@ -17,10 +18,11 @@ final class HolidayTagCatalog {
             "&7Found 15 pumpkins in a Halloween hunt"),
         tag("no_pumpkin_left_behind", "<bold><gradient:#ff7b00:#8a2be2>No Pumpkin Left Behind</gradient>",
             "CARVED_PUMPKIN", "&7Found every pumpkin in a Halloween hunt"),
-        tag("present_seeker", "<gradient:#c0392b:#27ae60>Present Seeker</gradient>", "CHEST_MINECART",
-            "&7Found 12 presents in a Christmas hunt"),
+        // The id stays present_seeker so earned tags and event configs keep working; the 2026 hunt is peppermints.
+        tag("present_seeker", "<gradient:#c0392b:#27ae60>Mint Condition</gradient>", "CHEST_MINECART",
+            "&7Found 12 peppermints in a Christmas hunt"),
         tag("home_for_the_holidays", "<bold><gradient:#c0392b:#27ae60>Home for the Holidays</gradient>",
-            "CAMPFIRE", "&7Found every present in a Christmas hunt"),
+            "CAMPFIRE", "&7Found every peppermint in a Christmas hunt"),
         tag("advent_keeper", "<#f4d03f>Advent Keeper", "CLOCK",
             "&7Opened the last door of the Advent calendar"),
         tag("secret_santa", "<#e74c3c>Secret <#27ae60>Santa", "CHEST",
@@ -34,6 +36,17 @@ final class HolidayTagCatalog {
             "&7The first to find every pumpkin in a Halloween hunt")
     );
 
+    /**
+     * Earlier built-in values, by config path. A value still equal to one of these was never edited, so it is
+     * upgraded to the current default; anything an administrator changed is left alone.
+     */
+    private static final Map<String, Object> RETIRED_DEFAULTS = Map.of(
+        "tags.present_seeker.display-name", "<gradient:#c0392b:#27ae60>Present Seeker</gradient>",
+        "tags.present_seeker.tag-text", "<gradient:#c0392b:#27ae60>Present Seeker</gradient>",
+        "tags.present_seeker.description", List.of("&7Found 12 presents in a Christmas hunt"),
+        "tags.home_for_the_holidays.description", List.of("&7Found every present in a Christmas hunt")
+    );
+
     private HolidayTagCatalog() {
     }
 
@@ -42,10 +55,10 @@ final class HolidayTagCatalog {
         boolean changed = false;
         for (HolidayTag tag : DEFINITIONS) {
             String root = "tags." + tag.id();
-            changed |= setIfMissing(config, root + ".display-name", tag.displayName());
-            changed |= setIfMissing(config, root + ".tag-text", tag.displayName());
-            changed |= setIfMissing(config, root + ".icon", tag.icon());
-            changed |= setIfMissing(config, root + ".description", List.of(tag.description()));
+            changed |= install(config, root + ".display-name", tag.displayName());
+            changed |= install(config, root + ".tag-text", tag.displayName());
+            changed |= install(config, root + ".icon", tag.icon());
+            changed |= install(config, root + ".description", List.of(tag.description()));
         }
         if (changed) {
             plugin.saveConfig();
@@ -58,12 +71,21 @@ final class HolidayTagCatalog {
         return DEFINITIONS;
     }
 
-    private static boolean setIfMissing(FileConfiguration config, String path, Object value) {
-        if (config.contains(path)) {
+    private static boolean install(FileConfiguration config, String path, Object value) {
+        if (config.contains(path) && !isRetiredDefault(config, path)) {
             return false;
         }
         config.set(path, value);
         return true;
+    }
+
+    private static boolean isRetiredDefault(FileConfiguration config, String path) {
+        Object retired = RETIRED_DEFAULTS.get(path);
+        if (retired == null) {
+            return false;
+        }
+        Object current = retired instanceof List<?> ? config.getStringList(path) : config.getString(path);
+        return retired.equals(current);
     }
 
     private static HolidayTag tag(String id, String displayName, String icon, String description) {
