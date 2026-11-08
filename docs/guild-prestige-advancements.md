@@ -1,6 +1,6 @@
 # Guild prestige advancements
 
-Requirements REQ-1150 to REQ-1153, task T-1150.
+Requirements REQ-1150 to REQ-1154, tasks T-1150 and T-1154.
 
 ## How it works
 
@@ -54,16 +54,21 @@ On upgrade, `ConfigMigrator` copies the new `categories.prestige` entry and the
 restart that enables LumaGuilds member credits, copy into production:
 
 1. The `prestige_*` and `prestige_first_*` entries from the bundled `rewards.yml`
-   into the `rewards:` section.
+   into the `rewards:` section, including `announce-completion: false` on the six
+   tier entries.
 2. The `prestiged`, `winged`, `crowned` and `first_crowned` entries from the
    bundled `config.yml` into the `tags:` section.
 
 Test on TEST first: prestige a guild with an online member, confirm the counter
 (`/enthusiatags rewards inspect <player> prestige_1`), the toast and the tag claim.
 
-## Known behaviour to decide on
+## Toast-only celebrations
 
-The pilot broadcasts each player's tier completion to chat and, if enabled, to
-Discord. A guild prestige therefore produces one line per credited online member,
-on top of LumaGuilds' public prestige announcement. A quieter, toast-only
-celebration would need a pilot API change.
+The tier achievements set `announce-completion: false` (REQ-1154). Each credited
+member sees their own toast; there is no chat line or Discord post per member,
+because LumaGuilds already announces the prestige publicly. This needs
+EnthusiaAdvancements `1.0.0-pilot.7` or later. On an older pilot, Tags logs one
+warning and falls back to the full celebration, so nothing breaks.
+
+`announce-completion: false` works on any reward. Only a boolean `false` silences
+a reward; a missing or mistyped value keeps the normal announcement.
