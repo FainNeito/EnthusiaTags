@@ -29,6 +29,10 @@ class AnnounceCompletionFlagTest {
         RewardDefinition quietHidden = base.withHiddenUntilEarned(true).withAnnounceCompletion(false);
         assertFalse(quietHidden.isAnnounceCompletion());
         assertTrue(quietHidden.isHiddenUntilEarned());
+        RewardDefinition modelled = quietHidden.withIconModel("enthusia:prestige_badge_1");
+        assertFalse(modelled.isAnnounceCompletion());
+        assertEquals("enthusia:prestige_badge_1", modelled.getIconModel());
+        assertFalse(modelled.withAnnounceCompletion(true).getIconModel() == null);
         RewardDefinition stillQuiet = quietHidden.withHiddenUntilEarned(false);
         assertFalse(stillQuiet.isAnnounceCompletion());
         assertFalse(stillQuiet.isHiddenUntilEarned());
