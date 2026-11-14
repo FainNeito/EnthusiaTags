@@ -52,4 +52,18 @@ class RewardIconModelTest {
         assertNotEquals(config.getString("rewards.watcher_melody.icon-model"),
             config.getString("rewards.silent_snow_disc.icon-model"));
     }
+
+    @Test
+    void silentSnowIsAnEpicDiscWithAPurpleName() throws Exception {
+        YamlConfiguration config;
+        try (var stream = getClass().getClassLoader().getResourceAsStream("rewards.yml")) {
+            assertNotNull(stream);
+            config = YamlConfiguration.loadConfiguration(new InputStreamReader(stream, StandardCharsets.UTF_8));
+        }
+        String give = config.getString("rewards.silent_snow_disc.rewards.r1.id");
+        assertNotNull(give);
+        // Epic shows the name in purple, like an elytra; a colour on item_name would override it.
+        org.junit.jupiter.api.Assertions.assertTrue(give.contains("minecraft:rarity=\"epic\""), give);
+        org.junit.jupiter.api.Assertions.assertTrue(give.contains("minecraft:item_name={\"text\":\"Music Disc\"}"), give);
+    }
 }
