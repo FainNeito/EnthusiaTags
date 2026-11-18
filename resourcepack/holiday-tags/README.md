@@ -39,3 +39,21 @@ Nexo install:
 
 The glyph uses U+A0A0, next to the LumaGuilds glyphs (U+A040–U+A080), and is written straight into the tag text,
 so it renders in chat, TAB and name tags without a glyph placeholder. Without the pack (or on Bedrock) it shows as `ꂠ`.
+
+## Mint Condition and Peppermint Royalty
+
+Christmas 2026 (owner, 2026-11-18): the 25-peppermint tag is Mint Condition, with the peppermint on both sides;
+the 12-peppermint tag is Home for the Holidays. The ids stay on their tiers (`present_seeker` is 12 finds,
+`home_for_the_holidays` every find), so tags earned in earlier years keep their meaning. Peppermint Royalty goes to
+the first players to find every peppermint.
+
+- `peppermint.png`, U+A0A2 (`peppermint_find_icon`): the red and white pinwheel. The same glyph shows over a block when
+  a player finds a peppermint (EnthusiaHolidays `christmas/find/`); the entry here and there is the same, so install
+  it once.
+- `peppermint_royalty.png`, U+A0A3 (`peppermint_royalty_icon`): the pinwheel wearing a gold crown with a blue gem.
+  `peppermint_royalty_icon.py` redraws it.
+
+Both live in `minecraft:default` beside the pumpkins; U+A0A1 belongs to the Pumpkin Patcher seeds. Install as for the
+Pumpkin King: copy `Nexo/glyphs/enthusia_holiday_tags.yml` and both PNGs, then `/nexo reload all` and
+`/enthusiatags reload`.
+

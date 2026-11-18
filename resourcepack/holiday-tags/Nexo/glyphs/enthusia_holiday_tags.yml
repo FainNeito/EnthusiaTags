@@ -7,3 +7,18 @@ pumpkin_king_icon:
   height: 9
   ascent: 8
   char: ꂠ
+# The peppermint: Mint Condition's icon and the peppermint find icon (EnthusiaHolidays christmas/find, same entry).
+# U+A0A1 is the Pumpkin Patcher seeds (pumpkin_patcher.yml), so this is U+A0A2.
+peppermint_find_icon:
+  texture: enthusia:font/tags/peppermint.png
+  font: minecraft:default
+  height: 9
+  ascent: 8
+  char: ꂢ
+# The crowned peppermint: Peppermint Royalty, the Christmas hunt's first finishers.
+peppermint_royalty_icon:
+  texture: enthusia:font/tags/peppermint_royalty.png
+  font: minecraft:default
+  height: 9
+  ascent: 8
+  char: ꂣ
