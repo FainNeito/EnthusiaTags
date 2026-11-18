@@ -29,7 +29,7 @@ categories:
     name: "&a&lChristmas"
     icon: SPRUCE_SAPLING
     parent: holidays
-    tags: [present_seeker, home_for_the_holidays, advent_keeper, secret_santa]
+    tags: [present_seeker, home_for_the_holidays, peppermint_royalty, advent_keeper, secret_santa]
   playtime:
     name: "&bPlaytime"
     icon: "CLOCK"
