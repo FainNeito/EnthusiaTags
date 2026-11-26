@@ -96,7 +96,7 @@ debug:
 daily:
   # Optional chat discovery; no automatic claim or menu opening.
   discovery:
-    enabled: false
+    enabled: true
     new-player-delay-seconds: 120
     returning-delay-seconds: 20
   timezone: "America/Indiana/Indianapolis"
